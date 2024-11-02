@@ -34,7 +34,7 @@ S = TENAX(
     )
 
 
-country = 'US' #folder name that contains country data
+country = 'germany' #folder name that contains country data
 name_col = "ppt"
 year_size_limit = 3 # won't bother getting clean years if file smaller than this times percent missing
 
@@ -45,7 +45,7 @@ str_start = 7+len(country) # for getting filename number in loop
 # initialize info table IT WOULD PROBABLY BE BETTER TO DO THIS AS A DF
 info = np.zeros([4,np.size(files)]) # filename, perc, years, cleaned_yrs
 times = np.zeros([2,np.size(files)]) # times table to check whats slow.
-latslons = np.zeros([2,np.size(files)]) #get location data of stations
+latslons = np.zeros([2,np.size(files)]) #get location data of stations [lat, lon]
 
 start_time = time.time()
 
@@ -68,6 +68,7 @@ while i<np.size(files):
     i=i+1
     
 print('time to do quick: '+str(time.time()-start_time))
+np.save('D:/'+country+'_latslons.npy',latslons)
  
 
 # THIS TAKES AGESSSSS (US=7.5HRS)   
@@ -78,7 +79,7 @@ i=0
 while i<np.size(files):  
     data_meta = readIntense(files[i], only_metadata=True, opened=False) 
     if data_meta.number_of_records*(1-data_meta.percent_missing_data/100)>365*24*year_size_limit: #don't bother reading ones less than x years incl missing data
-        G = np.genfromtxt(files[i],skip_header=21)
+        G = pd.read_csv(files[i],skiprows=21,names=[name_col])
                    
         #extract start and end dates from metadata
         start_date_G= dt.datetime.strptime(data_meta.start_datetime, "%Y%m%d%H")
@@ -88,9 +89,11 @@ while i<np.size(files):
         # replace -999 with nan
         G[G == -999] = np.nan
         
-        df = pd.DataFrame({'prec_time':time_list_G,name_col:G}).set_index('prec_time')
+        G['prec_time'] = time_list_G
+        G = G.set_index('prec_time')
+        
     
-        data_clean = S.remove_incomplete_years(df, name_col) #remove incomplete years (below tolerance)
+        data_clean = S.remove_incomplete_years(G, name_col) #remove incomplete years (below tolerance)
         info[3,i] = np.size(np.unique(data_clean.index.year))
         
     else:
