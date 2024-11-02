@@ -68,7 +68,9 @@ while i<np.size(files):
     i=i+1
     
 print('time to do quick: '+str(time.time()-start_time))
-    
+ 
+
+# THIS TAKES AGESSSSS (US=7.5HRS)   
 start_time = time.time()
   
     
@@ -90,7 +92,6 @@ while i<np.size(files):
     
         data_clean = S.remove_incomplete_years(df, name_col) #remove incomplete years (below tolerance)
         info[3,i] = np.size(np.unique(data_clean.index.year))
-        times[1,i] = start_timei-time.time()
         
     else:
         print('less than '+str(year_size_limit)+' year')
@@ -116,7 +117,7 @@ plt.show()
 #filename = DE_+info[0,:]+.txt
     
     
-#info = np.load('D:/germany_data.npy')
+#info_g = np.load('D:/germany_data.npy')
 
 
 
