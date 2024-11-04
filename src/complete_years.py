@@ -34,21 +34,23 @@ S = TENAX(
     )
 
 
-country = 'germany' #folder name that contains country data
+country = 'Germany' #folder name that contains country data
 name_col = "ppt"
 year_size_limit = 3 # won't bother getting clean years if file smaller than this times percent missing
 
 
 files = glob.glob('D:/'+country+'/*') #list of filenames in folder
-str_start = 7+len(country) # for getting filename number in loop
+str_start = 7+len(country) # for getting filename number in loopstr_end = -4
 
 # initialize info table IT WOULD PROBABLY BE BETTER TO DO THIS AS A DF
 info = np.zeros([4,np.size(files)]) # filename, perc, years, cleaned_yrs
 times = np.zeros([2,np.size(files)]) # times table to check whats slow.
 latslons = np.zeros([2,np.size(files)]) #get location data of stations [lat, lon]
+dates = np.zeros([2,np.size(files)]) #time date - [start, end]
 
 start_time = time.time()
 
+folder_size = np.size(files)
 
 print('folder size: '+str(np.size(files))+' files')
 print('first file: '+files[0])
@@ -57,19 +59,27 @@ print('first file: '+files[0])
 i=0 
 while i<np.size(files):
     data_meta = readIntense(files[i], only_metadata=True, opened=False)
-    info[0,i] = files[i][str_start:str_start+6] #filename number only, 6 digits
+    info[0,i] = files[i][str_start:-4] #filename number only, 6 digits
+    #info[0,i] = files[i][12:17] # HAVE TO DO DIFFERENT FOR ISD AS NAMED DIFFERENTLY
     info[1,i] = data_meta.percent_missing_data #percent missing
     info[2,i] = data_meta.number_of_records/24/365 #years uncleaned
     latslons[0,i] = data_meta.latitude
     latslons[1,i] = data_meta.longitude
+    dates[0,i] = data_meta.start_datetime
+    dates[1,i] = data_meta.end_datetime
     
     if i % 100 == 0:
         print(i)
     i=i+1
     
 print('time to do quick: '+str(time.time()-start_time))
+np.save('D:/'+country+'_dates.npy',dates)
 np.save('D:/'+country+'_latslons.npy',latslons)
  
+print('latitudes: '+str(np.min(latslons[0]))+':'+str(np.max(latslons[0])))
+print('longitudes: '+str(np.min(latslons[1]))+':'+str(np.max(latslons[1])))
+print('dates: '+str(np.min(dates[0]))+':'+str(np.max(dates[1])))
+
 
 # THIS TAKES AGESSSSS (US=7.5HRS)   
 start_time = time.time()
@@ -101,8 +111,9 @@ while i<np.size(files):
         print(i)
         print(str(time.time()-start_time))
         
-    if i % 100 == 0:
+    if (i-1) % 100 == 0: #i-1 to skip 0 
         print(i)
+        print('Estimated time to complete: '+str((folder_size-i)*(time.time()-start_time)/(i*60))+' mins')
     i=i+1
 
   
@@ -115,6 +126,14 @@ np.save('D:/'+country+'_data.npy',info)
 plt.hist(info[3])
 plt.title('Number of complete years '+country)
 plt.show()
+
+yrs_above_10 =  info[3][info[3]>10]
+yrs_above_20 =  info[3][info[3]>20]
+
+print('files longer than 20 years: '+str(np.size(yrs_above_20)))
+print('files longer than 10 years: '+str(np.size(yrs_above_10)))
+print('total files: '+str(np.size(info[3])))
+
 
 # num_above_10 = np.size(info[3][info[3]>10])
 #filename = DE_+info[0,:]+.txt
