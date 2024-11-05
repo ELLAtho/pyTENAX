@@ -1079,7 +1079,7 @@ def TNX_FIG_scaling(P,T,P_mc,T_mc,F_phat,niter_smev,eT,iTs,qs = [0.99],obscol='r
     """
     percentile_lines = inverse_magnitude_model(F_phat,eT,qs)
     scaling_rate = (np.exp(F_phat[3])-1)*100
-    qhat = TNX_obs_scaling_rate(P,T,qs[0],niter_smev)
+    qhat = TNX_obs_scaling_rate(P,T,qs[0])
     
     
     plt.figure(figsize = (5,5))
