@@ -707,7 +707,9 @@ def gen_norm_loglik(x, par, beta):
     sigma = par[1]
     
     # Compute the log-likelihood
-    loglik = np.sum(np.log(gen_norm_pdf(x, mu, sigma, beta)))
+    pdf = gen_norm_pdf(x, mu, sigma, beta)
+    pdf[pdf==0]=1e-10 #to get rid of issue if 0 generated
+    loglik = np.sum(np.log(pdf))
     
     return loglik
 

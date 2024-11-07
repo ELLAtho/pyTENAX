@@ -40,9 +40,9 @@ temp_name_col = "t2m"
 
 
 #READ IN META INFO FOR COUNTRY
-latslons = pd.DataFrame(np.load('D:/'+country+'_latslons.npy').T,columns = ['latitude','longitude'])
-dates = pd.DataFrame(np.load('D:/'+country+'_dates.npy').T,columns = ['startdate','enddate'])
-info = pd.DataFrame(np.load('D:/'+country+'_data.npy').T,columns = ['station','missing_data_perc','total_years','cleaned_years'])
+latslons = pd.DataFrame(np.load('D:/metadata/'+country+'_latslons.npy').T,columns = ['latitude','longitude'])
+dates = pd.DataFrame(np.load('D:/metadata/'+country+'_dates.npy').T,columns = ['startdate','enddate'])
+info = pd.DataFrame(np.load('D:/metadata/'+country+'_data.npy').T,columns = ['station','missing_data_perc','total_years','cleaned_years'])
 
 comb = pd.concat([info, latslons,dates], axis=1)
 
@@ -117,6 +117,7 @@ S = TENAX(
         durations = [60, 180, 360, 720, 1440],
         left_censoring = [0, 0.90],
         alpha = 0.05,
+        min_ev_dur = 60,
     )
 
 

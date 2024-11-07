@@ -33,11 +33,11 @@ info = []
 
 
 for c in countries:
-    dd = np.load('D:/'+c+'_latslons.npy')
+    dd = np.load('D:/metadata/'+c+'_latslons.npy')
     latslons.append(dd)
-    dd = np.load('D:/'+c+'_dates.npy')
+    dd = np.load('D:/metadata/'+c+'_dates.npy')
     dates.append(dd)
-    dd = np.load('D:/'+c+'_data.npy')
+    dd = np.load('D:/metadata/'+c+'_data.npy')
     info.append(dd)
     
     
