@@ -708,6 +708,10 @@ def gen_norm_loglik(x, par, beta):
     
     # Compute the log-likelihood
     pdf = gen_norm_pdf(x, mu, sigma, beta)
+    n = len(pdf[pdf==0])
+    if n > 5:
+        print('warning: '+n+' zero values')
+    
     pdf[pdf==0]=1e-10 #to get rid of issue if 0 generated
     loglik = np.sum(np.log(pdf))
     

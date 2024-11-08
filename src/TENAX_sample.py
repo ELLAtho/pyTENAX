@@ -29,9 +29,11 @@ from pyTENAX.intense import *
 from pyTENAX.pyTENAX import *
 import xarray as xr
 import time
+import pickle
 
 
 country = 'Germany'
+code_str = 'DE'
 n_stations = 5
 min_yrs = 15 #atm this probably introduces a bug... need to put in if statement or something
 name_col = 'ppt'
@@ -40,11 +42,8 @@ temp_name_col = "t2m"
 
 
 #READ IN META INFO FOR COUNTRY
-latslons = pd.DataFrame(np.load('D:/metadata/'+country+'_latslons.npy').T,columns = ['latitude','longitude'])
-dates = pd.DataFrame(np.load('D:/metadata/'+country+'_dates.npy').T,columns = ['startdate','enddate'])
-info = pd.DataFrame(np.load('D:/metadata/'+country+'_data.npy').T,columns = ['station','missing_data_perc','total_years','cleaned_years'])
-
-comb = pd.concat([info, latslons,dates], axis=1)
+comb = pd.read_csv('D:/metadata/'+country+'_fulldata.csv')
+comb.station = comb['station'].apply(lambda x: f'{int(x):05}') #need to edit this according to file
 
 
 #select stations
@@ -97,7 +96,7 @@ T_files = sorted(glob.glob('D:/ERA5_land/'+country+'*/*'))
 lats_sel = [selected.latitude[i] for i in selected.index]
 lons_sel = [selected.longitude[i] for i in selected.index]
 
-
+start_time = time.time()
 T_ERA = [0]*n_stations
 
 for i in np.arange(0,n_stations): #for each selected station
@@ -108,7 +107,7 @@ for i in np.arange(0,n_stations): #for each selected station
         
     T_ERA[i] = xr.concat(T_temp,dim = 'valid_time')  #combine multiple time files
 
-
+print('time to read era5 '+str(time.time()-start_time))
 print('Data reading finished.')
 
 #NOW WE  DO TENAX
@@ -314,3 +313,13 @@ for i in np.arange(0,n_stations):
     plt.show()
     
     print('finished loop '+str(i+1)+' out of '+str(n_stations))
+    
+    
+    
+    
+#SAVE EXTRACTED DATA
+# for i in np.arange(0,n_stations):
+#     file_save = 'D:/sample_outputs/'+country+'_'+selected['station'][selected.index[i]]+'_dict'
+
+
+    
