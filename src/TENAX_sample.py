@@ -33,9 +33,10 @@ import pickle
 
 
 country = 'Germany'
-code_str = 'DE'
-n_stations = 5
+code_str = 'DE' 
+n_stations = 5 #number of stations to sample
 min_yrs = 15 #atm this probably introduces a bug... need to put in if statement or something
+max_yrs = 100 #if no max, set to very high
 name_col = 'ppt'
 temp_name_col = "t2m"
 
@@ -47,7 +48,8 @@ comb.station = comb['station'].apply(lambda x: f'{int(x):05}') #need to edit thi
 
 
 #select stations
-val_comb = comb[comb['cleaned_years']>=min_yrs] #comb as in combination
+val_comb = comb[comb['cleaned_years']>=min_yrs] #filter out stations that are less than min
+val_comb = val_comb[val_comb['cleaned_years']<=max_yrs] #filter out stations that are more than max 
 
 
 comb_sort = val_comb.sort_values(by=['cleaned_years'],ascending=0) #sort by size so can choose top sizes
@@ -56,7 +58,15 @@ comb_sort = val_comb.sort_values(by=['cleaned_years'],ascending=0) #sort by size
 selected = comb_sort[0:n_stations] #choose top n_stations stations
 
 #PLOT SELECTED STATIONS LOCATIONS
+
+fig = plt.figure(figsize=(10, 10))
+proj = ccrs.PlateCarree()
+ax1 = fig.add_subplot(1, 1, 1, projection=proj)
+ax1.coastlines()
+ax1.add_feature(cfeature.BORDERS)
 plt.scatter(selected['longitude'],selected['latitude'])
+plt.xlim(np.min(comb.longitude)-5,np.max(comb.longitude)+5)
+plt.ylim(np.min(comb.latitude)-5,np.max(comb.latitude)+5)
 plt.show()
 
 #READ IN RAIN DATA
@@ -96,6 +106,8 @@ T_files = sorted(glob.glob('D:/ERA5_land/'+country+'*/*'))
 lats_sel = [selected.latitude[i] for i in selected.index]
 lons_sel = [selected.longitude[i] for i in selected.index]
 
+
+#need to add in start and end dates here
 start_time = time.time()
 T_ERA = [0]*n_stations
 
