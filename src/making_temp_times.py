@@ -49,12 +49,16 @@ nan_files = []
 #need to add in start and end dates here
 start_time = time.time()
 
+
+
 for i in np.arange(0,len(info)): #for each selected station
     
     T_temp = [0]*np.size(T_files)
     for n, file in enumerate(T_files):
         with xr.open_dataarray(file) as da:
             T_temp[n] = da.sel(latitude = info.latitude[info.index[i]],method = 'nearest').sel(longitude = info.longitude[info.index[i]],method = 'nearest')
+    
+    
     #TODO: add selection of start and end times    
     T_ERA = xr.concat(T_temp,dim = 'valid_time')  #combine multiple time files
     

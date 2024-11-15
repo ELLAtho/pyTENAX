@@ -553,8 +553,8 @@ class TENAX():
         
         return g_phat
     
-    def model_inversion(self, F_phat, g_phat, n, Ts, n_mc=0):
-        
+    def model_inversion(self, F_phat, g_phat, n, Ts, n_mc=0,gen_P_mc = False):
+        P_mc = []
         pdf_values = gen_norm_pdf(Ts, g_phat[0], g_phat[1], self.beta)
         df = np.vstack([pdf_values, Ts])
 
@@ -569,17 +569,21 @@ class TENAX():
                                     F_phat[2] * np.exp(F_phat[3] * T_mc),
                                     F_phat[0] + F_phat[1] * T_mc
                                     ))
-        
-        # Generate P_mc if needed
 
-        if n_mc == 0:
-            P_mc = weibull_min.ppf(np.random.rand(self.n_monte_carlo), c=wbl_phat[:, 1], scale=wbl_phat[:, 0])
-        else:
-            P_mc = weibull_min.ppf(np.random.rand(n_mc), c=wbl_phat[:, 1], scale=wbl_phat[:, 0])
-  
+       
         vguess = 10 ** np.arange(np.log10(F_phat[2]), np.log10(5e2), 0.05)
         
         ret_lev = SMEV_Mc_inversion(wbl_phat, n, self.return_period, vguess)
+        
+                
+        # Generate P_mc if needed
+        if gen_P_mc:
+            if n_mc == 0:
+                P_mc = weibull_min.ppf(np.random.rand(self.n_monte_carlo), c=wbl_phat[:, 1], scale=wbl_phat[:, 0])
+            else:
+                P_mc = weibull_min.ppf(np.random.rand(n_mc), c=wbl_phat[:, 1], scale=wbl_phat[:, 0])
+        else:
+            pass
         
         return ret_lev, T_mc, P_mc
         
