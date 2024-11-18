@@ -14,6 +14,7 @@ from scipy.optimize import root_scalar
 import time
 import statsmodels.api as sm
 import matplotlib.pyplot as plt
+from packaging.version import parse
 
 class TENAX():
     """
@@ -74,13 +75,13 @@ class TENAX():
                  durations,
                  beta=4, 
                  temp_time_hour = -24,
-                 alpha =0,
+                 alpha =0.05,
                  n_monte_carlo = int(2e4),
                  tolerance = 0.1,
                  min_ev_dur = 30,
                  separation = 24,
                  left_censoring = [0,1],
-                 niter_smev = 100,
+                 niter_smev = 100, #why is this here? 
                  niter_tnx = 100,
                  temp_res_monte_carlo = .001,
                  temp_delta = 10,
@@ -174,7 +175,10 @@ class TENAX():
         # Step 1: get resolution of dataset (MUST BE SAME in whole dataset!!!)
         time_res = (data_pr.index[-1] - data_pr.index[-2]).total_seconds()/60
         # Step 2: Resample by year and count total and NaN values
-        yearly_valid = data_pr.resample('YE').apply(lambda x: x.notna().sum())  # Count not NaNs per year
+        if parse(pd.__version__) > parse("2.2"):
+            yearly_valid = data_pr.resample('YE').apply(lambda x: x.notna().sum())  # Count not NaNs per year
+        else: 
+            yearly_valid = data_pr.resample('Y').apply(lambda x: x.notna().sum())  # Count not NaNs per year
         # Step 3: Estimate expected lenght of yearly timeseries
         expected = pd.DataFrame(index = yearly_valid.index)
         expected["Total"] = 1440/time_res*365
@@ -421,7 +425,7 @@ class TENAX():
                 ll_dates.append(ll_date)
                 
             #years  of ordinary events
-            ll_yrs=[arr_dates_oe[_,1].astype('datetime64[Y]').item().year for _ in range(arr_dates_oe.shape[0])]
+            ll_yrs=[arr_dates_oe[_,0].astype('datetime64[Y]').item().year for _ in range(arr_dates_oe.shape[0])]
             
             blocks = np.unique(ll_yrs)
            
@@ -543,8 +547,11 @@ class TENAX():
             
         return phat, loglik, loglik_H1, loglik_H0shape
    
-    def temperature_model(self, data_oe_temp):
-        beta = self.beta
+    def temperature_model(self, data_oe_temp, beta = 0):
+        if beta == 0:
+            beta = self.beta
+        else:
+            beta = beta
         
         mu, sigma = norm.fit(data_oe_temp)
         init_g = [mu, sigma]
@@ -552,18 +559,17 @@ class TENAX():
         g_phat = minimize(lambda par: -gen_norm_loglik(data_oe_temp, par, beta), init_g, method='Nelder-Mead').x
         
         return g_phat
-    
-    def model_inversion(self, F_phat, g_phat, n, Ts, n_mc=0,gen_P_mc = False):
+
+    def model_inversion(self, F_phat, g_phat, n, Ts, gen_P_mc = False,gen_RL=True):
         P_mc = []
+        ret_lev = []
+        
         pdf_values = gen_norm_pdf(Ts, g_phat[0], g_phat[1], self.beta)
         df = np.vstack([pdf_values, Ts])
 
         # Generates random T values according to the temperature model
-        if n_mc == 0:
-            T_mc = randdf(self.n_monte_carlo, df, 'pdf').T              
-        else:
-            T_mc = randdf(n_mc, df, 'pdf').T
-        
+        T_mc = randdf(self.n_monte_carlo, df, 'pdf').T              
+       
         # Generates random P according to the magnitude model
         wbl_phat = np.column_stack((
                                     F_phat[2] * np.exp(F_phat[3] * T_mc),
@@ -573,21 +579,109 @@ class TENAX():
        
         vguess = 10 ** np.arange(np.log10(F_phat[2]), np.log10(5e2), 0.05)
         
-        ret_lev = SMEV_Mc_inversion(wbl_phat, n, self.return_period, vguess)
-        
+        if gen_RL:
+            ret_lev = SMEV_Mc_inversion(wbl_phat, n, self.return_period, vguess)
+        else:
+            pass
                 
         # Generate P_mc if needed
         if gen_P_mc:
-            if n_mc == 0:
-                P_mc = weibull_min.ppf(np.random.rand(self.n_monte_carlo), c=wbl_phat[:, 1], scale=wbl_phat[:, 0])
-            else:
-                P_mc = weibull_min.ppf(np.random.rand(n_mc), c=wbl_phat[:, 1], scale=wbl_phat[:, 0])
+            start = time.time()
+            P_mc = weibull_min.ppf(np.random.rand(self.n_monte_carlo), c=wbl_phat[:, 1], scale=wbl_phat[:, 0])
+            end = time.time() - start
+            print(f'mc {self.n_monte_carlo}: {end}')
+            
         else:
             pass
         
+        
         return ret_lev, T_mc, P_mc
         
+    #uncerteinty TENAX MODEL HERE
+    def TNX_tenax_bootstrap_uncertainty(self, P, T, blocks_id, Ts):
+        """
+        Bootstrap uncertainty estimation for the TENAX model.
+
+        Parameters:
+        - P: numpy array of precipitation data.
+        - T: numpy array of temperature data.
+        - blocks_id: numpy array of block identifiers (e.g., years).
+        - perc_thres: percentile threshold for left-censoring.
+        - S: object containing model parameters and methods.
+        - RP: return periods (numpy array).
+        - N: number of Monte Carlo simulations.
+        - Ts: time scales (numpy array).
+        - niter: number of bootstrap iterations.
+
+        Returns:
+        - F_phat_unc: array of magnitude model parameters from bootstrap samples.
+        - g_phat_unc: array of temperature model parameters from bootstrap samples.
+        - RL_unc: array of estimated return levels from bootstrap samples.
+        - n_unc: array of mean number of events per block from bootstrap samples.
+        - n_err: number of iterations where the model fitting failed.
+        """
+
+        perc_thres = self.left_censoring[1]
+        niter = self.niter_tnx
+        RP = self.return_period
         
+        blocks = np.unique(blocks_id)
+        M = len(blocks)
+        randy = np.random.randint(0, M, size=(M, niter))
+        
+
+        # Initialize variables
+        F_phat_unc = np.full((niter, 4), np.nan)
+        g_phat_unc = np.full((niter, 2), np.nan)
+        RL_unc = np.full((niter, len(RP)), np.nan)
+        n_unc = np.full(niter, np.nan)
+        n_err = 0
+
+        # Random sampling iterations
+        for ii in range(niter):
+            Pr = []
+            Tr = []
+            Bid = []
+
+            # Create bootstrapped data sample and corresponding 'fake' blocks id
+            for iy in range(M):
+                selected = blocks_id == blocks[randy[iy, ii]]
+                Pr.append(P[selected])
+                Tr.append(T[selected])
+                Bid.append(np.full(np.sum(selected), iy + 1))  # MATLAB indexing starts at 1
+
+            # Concatenate the resampled data
+            Pr = np.concatenate(Pr)
+            Tr = np.concatenate(Tr)
+            Bid = np.concatenate(Bid)
+
+            try:
+                # Left-censoring threshold
+                #TODO: double check on this, I think it should be from Pr not P
+                thr = np.quantile(P, perc_thres) 
+
+                # TENAX model components
+                # Magnitude model
+                F_phat_temporary, loglik_temp, _, _ = self.magnitude_model(Pr, Tr, thr)
+                # Temperature model
+                g_phat_temporary = self.temperature_model(Tr)
+                # Mean number of events per block
+                n_temporary = len(Pr) / M
+                # Estimate return levels using Monte Carlo samples
+                #TODO: check this cause it is slow...
+                RL_temporary, _, _ = self.model_inversion(F_phat_temporary, g_phat_temporary, 
+                                                          n_temporary, Ts, )
+
+                # Store results
+                F_phat_unc[ii, :] = F_phat_temporary
+                g_phat_unc[ii, :] = g_phat_temporary
+                RL_unc[ii, :] = RL_temporary
+                n_unc[ii] = n_temporary
+            except Exception as err:
+                n_err += 1
+
+        return F_phat_unc, g_phat_unc, RL_unc, n_unc, n_err
+    
         
 def wbl_leftcensor_loglik(theta, x, t, thr):
     """
@@ -713,10 +807,12 @@ def gen_norm_loglik(x, par, beta):
     # Compute the log-likelihood
     pdf = gen_norm_pdf(x, mu, sigma, beta)
     n = len(pdf[pdf==0])
-    if n > 5:
-        print('warning: '+n+' zero values')
-    
-    pdf[pdf==0]=1e-10 #to get rid of issue if 0 generated
+
+    if n>5:
+        print("warning: "+n+" zero values")
+        
+    pdf[pdf==0] = 1e-10 #stops issue if zero generated
+
     loglik = np.sum(np.log(pdf))
     
     return loglik
@@ -847,7 +943,7 @@ def SMEV_Mc_inversion(wbl_phat, n, target_return_periods, vguess):
 
     return qnt
 
-def TNX_FIG_temp_model(T, g_phat, beta, eT, obscol='r',valcol='b',xlimits = [-15,30],ylimits = [0,0.06]):
+def TNX_FIG_temp_model(T, g_phat, beta, eT, obscol='r',valcol='b',obslabel = 'observations',vallabel = 'temperature model g(T)',xlimits = [-15,30],ylimits = [0,0.06]):
     """
     Plots the observational and model temperature pdf    
 
@@ -865,6 +961,10 @@ def TNX_FIG_temp_model(T, g_phat, beta, eT, obscol='r',valcol='b',xlimits = [-15
         color to plot observations. The default is 'r'.
     valcol : string, optional
         color to plot magnitude model. The default is 'b'.
+    obslabel : string, optional
+        Label for observations. The default is 'observations'.
+    vallabel : string, optional
+        Label for model plot. The default is 'temperature model g(T)'.
     xlimits : list, optional
         limits for the x axis [lower_x_limit, upper_x_limit]. The default is [-15,30].
     ylimits : list, optional
@@ -880,10 +980,10 @@ def TNX_FIG_temp_model(T, g_phat, beta, eT, obscol='r',valcol='b',xlimits = [-15
     # Plot empirical PDF of T
     eT_edges = np.concatenate([np.array([eT[0]-(eT[1]-eT[0])/2]),(eT + (eT[1]-eT[0])/2)]) #convert bin centres into bin edges
     hist, bin_edges = np.histogram(T, bins=eT_edges, density=True)
-    plt.plot(eT, hist, '--', color=obscol, label='observations')
+    plt.plot(eT, hist, '--', color=obscol, label=obslabel)
     
     # Plot analytical PDF of T (validation)
-    plt.plot(eT, gen_norm_pdf(eT, g_phat[0], g_phat[1], beta), '-', color=valcol, label='temperature model g(T)')
+    plt.plot(eT, gen_norm_pdf(eT, g_phat[0], g_phat[1], beta), '-', color=valcol, label=vallabel)
     
     # Set plot parameters
     #ax.set_xlim(Tlims)
@@ -923,9 +1023,9 @@ def inverse_magnitude_model(F_phat,eT,qs):
    
     return percentile_lines
 
-def TNX_obs_scaling_rate(P,T,qs):
+def TNX_obs_scaling_rate(P,T,qs,niter):
     """
-    calculate scaling rate for quantile regression
+    calculate quantile regression parameters.
 
     Parameters
     ----------
@@ -945,16 +1045,15 @@ def TNX_obs_scaling_rate(P,T,qs):
     T = sm.add_constant(T)  # Add a constant (intercept) term
     model = sm.QuantReg(np.log(P), T)
     qhat = model.fit(q=qs).params
-    return qhat
+    
+    qhat_unc = np.zeros([2,niter])
+    for iter in np.arange(0,niter):
+        rr = np.random.randint(0, len(T), size=(niter))
+        model =sm.QuantReg(np.log(P[rr]),T[rr])
+        qhat_unc[:,iter] = model.fit(q=qs).params
 
-def temperature_model_free(beta, data_oe_temp): #this is the same as before just allows you to define beta... should probably change
-    
-    mu, sigma = norm.fit(data_oe_temp)
-    init_g = [mu, sigma]
-    
-    g_phat = minimize(lambda par: -gen_norm_loglik(data_oe_temp, par, beta), init_g, method='Nelder-Mead').x
-    
-    return g_phat
+    return qhat, qhat_unc
+
 
 
 
@@ -995,9 +1094,15 @@ def TNX_FIG_magn_model(P,T,F_phat,thr,eT,qs,obscol='r',valcol='b',xlimits = [-12
     percentile_lines = inverse_magnitude_model(F_phat,eT,qs)
     plt.scatter(T,P,s=1,color=obscol,label = 'observations')
     plt.plot(eT,[thr]*np.size(eT),'--',alpha = 0.5,color = 'k',label = 'Left censoring threshold') #plot threshold
+    
+    #first one outside loop so can be in legend
     n=0
+    plt.plot(eT,percentile_lines[n],label = 'Magnitude model W(x,T)',color = valcol)
+    plt.text(eT[-1], percentile_lines[n][-1], str(qs[n]*100)+'th', ha='left', va='center')
+    n=1
     while n<np.size(qs):
-        plt.plot(eT,percentile_lines[n],label = str(qs[n]),color = valcol)
+        plt.plot(eT,percentile_lines[n],color = valcol) #,label = str(qs[n]),
+        plt.text(eT[-1], percentile_lines[n][-1], str(qs[n]*100)+'th', ha='left', va='center')
         n=n+1
 
     plt.legend()
@@ -1008,7 +1113,7 @@ def TNX_FIG_magn_model(P,T,F_phat,thr,eT,qs,obscol='r',valcol='b',xlimits = [-12
     
     
     
-def TNX_FIG_valid(AMS,RP,RL,TENAXcol='b',obscol_shape = 'g+',xlimits = [1,200],ylimits = [0,50]): #figure 4
+def TNX_FIG_valid(AMS,RP,RL,smev_RL=[],RL_unc=0,smev_RL_unc=0,TENAXcol='b',obscol_shape = 'g+',smev_colshape = '--r',TENAXlabel = 'The TENAX model',obslabel='Observed annual maxima',smevlabel = 'The SMEV model',alpha = 0.2,xlimits = [1,200],ylimits = [0,50]): #figure 4
     """
     Plots figure 4.
 
@@ -1024,6 +1129,11 @@ def TNX_FIG_valid(AMS,RP,RL,TENAXcol='b',obscol_shape = 'g+',xlimits = [1,200],y
         color for tenax line plot. The default is 'b'.
     obscol_shape : string, optional
         color and shape of annual maxima observations. The default is 'g+'.
+    TENAXlabel : string, optional
+        label for tenax in legend. The default is 'The TENAX model'.
+    obslabel : string, optional
+        label for annual maxima observations in legend . The default is 'Observed annual maxima'.
+        
     xlimits : list, optional
         [min_x,max_x]. x limits to plot. The default is [1,200].
     ylimits : list, optional
@@ -1038,13 +1148,28 @@ def TNX_FIG_valid(AMS,RP,RL,TENAXcol='b',obscol_shape = 'g+',xlimits = [1,200],y
     AMS_sort = AMS.sort_values(by=['AMS'])['AMS']
     plot_pos = np.arange(1,np.size(AMS_sort)+1)/(1+np.size(AMS_sort))
     eRP = 1/(1-plot_pos)
+    if np.size(smev_RL) != 0:
+        
+        #calculate uncertainty bounds. between 5% and 95%
+        RL_up = np.quantile(RL_unc, 0.95, axis=0)
+        RL_low = np.quantile(RL_unc, 0.05, axis=0)
+        smev_RL_up = np.quantile(smev_RL_unc, 0.95, axis=0)
+        smev_RL_low = np.quantile(smev_RL_unc, 0.05, axis=0)
+        
+        #plot uncertainties
+        plt.fill_between(RP, RL_low, RL_up, color=TENAXcol, alpha=alpha) #TENAX
+        plt.fill_between(RP, smev_RL_low, smev_RL_up, color=smev_colshape[-1], alpha=alpha) #SMEV
+        
+    
+    plt.plot(RP,RL,TENAXcol, label = TENAXlabel)  #plot TENAX return levels
+    plt.plot(eRP,AMS_sort,obscol_shape,label = obslabel) #plot observed return levels
+    if np.size(smev_RL) != 0:
+        plt.plot(RP,smev_RL,smev_colshape,label = smevlabel) #plot SMEV return lvls
     
     
-    plt.plot(RP,RL,color = TENAXcol, label = 'The TENAX model')  #plot calculated return levels
-    plt.plot(eRP,AMS_sort,obscol_shape,label = 'Observed annual maxima') #plot observed return levels
+    
     plt.xscale('log')
     plt.xlabel('return period (years)')
-    plt.ylabel('10-minute precipitation (mm)')
     plt.legend()
     plt.xlim(xlimits[0],xlimits[1])
     plt.ylim(ylimits[0],ylimits[1])
@@ -1084,19 +1209,36 @@ def TNX_FIG_scaling(P,T,P_mc,T_mc,F_phat,niter_smev,eT,iTs,qs = [0.99],obscol='r
 
     Returns
     -------
-    None.
+    scaling_rate : float
+        scaling rate of 
 
     """
     percentile_lines = inverse_magnitude_model(F_phat,eT,qs)
-    scaling_rate = (np.exp(F_phat[3])-1)*100
-    qhat = TNX_obs_scaling_rate(P,T,qs[0])
+
+    scaling_rate_W = (np.exp(F_phat[3])-1)*100
+
     
+    #TODO: this doesn't seem quite right ... uncertainty is way off compared to paper
+    qhat,qhat_unc = TNX_obs_scaling_rate(P,T,qs[0],niter_smev)
+    scaling_rate_q = (np.exp(qhat[1])-1)*100
+    
+    
+    #quantile regression uncertainties
+    q_reg_full_unc = np.zeros([len(iTs), niter_smev])
+    for i in np.arange(0,len(iTs)):
+        q_reg_full_unc[i,:] = np.exp(qhat_unc[0,:])*np.exp(iTs[i]*qhat_unc[1,:])
+    
+    q_up = np.quantile(q_reg_full_unc, 0.95, axis=1)
+    q_low = np.quantile(q_reg_full_unc, 0.05, axis=1)
     
     plt.figure(figsize = (5,5))
     plt.scatter(T,P,s=1.5,color=obscol,alpha = 0.3,label = 'observations')
-    plt.plot(iTs[0:-7],np.exp(qhat[0])*np.exp(iTs[0:-7]*qhat[1]),'--k',label = 'Quantile regression method')
+    plt.plot(iTs[0:-7],np.exp(qhat[0])*np.exp(iTs[0:-7]*qhat[1]),'--k',label = 'Quantile regression method') #need uncertainty on this too...
+    plt.fill_between(iTs[0:-7],q_low[0:-7],q_up[0:-7],color = 'k', alpha = 0.2) #quantile regression uncertainty
     
-    ############################################################### PUT THIS ESLEWHERE    
+    
+    
+    ############################################################### PUT THIS ELSEWHERE    
     T_mc_bins = np.reshape(T_mc,[np.size(T),niter_smev])
     P_mc_bins = np.reshape(P_mc,[np.size(P),niter_smev])
     
@@ -1118,7 +1260,15 @@ def TNX_FIG_scaling(P,T,P_mc,T_mc,F_phat,niter_smev,eT,iTs,qs = [0.99],obscol='r
     qperc_obs_med = np.median(qperc_obs,axis=1)
     qperc_model_med = np.median(qperc_model,axis=1)
     
+    qperc_model_up = np.quantile(qperc_model, 0.95, axis=1)
+    qperc_model_low = np.quantile(qperc_model, 0.05, axis=1)
+    
     #####################################################################################
+    
+    #plot uncertainty
+    plt.fill_between(iTs[1:-6]+(iTs[2]-iTs[1])/2,qperc_model_low[1:-6],qperc_model_up[1:-6],color = 'm', alpha = 0.2) #TENAX
+    
+    
     
     plt.plot(iTs[1:-7]+(iTs[2]-iTs[1])/2,qperc_obs_med[1:-7],'-xr',label = 'Binning method') # don't really know why we cut off at the end like this
     plt.plot(iTs[1:-6]+(iTs[2]-iTs[1])/2,qperc_model_med[1:-6],'-om',label = 'The TENAX model')
@@ -1132,7 +1282,8 @@ def TNX_FIG_scaling(P,T,P_mc,T_mc,F_phat,niter_smev,eT,iTs,qs = [0.99],obscol='r
     plt.ylim(ylimits[0],ylimits[1])
     plt.xlim(xlimits[0],xlimits[1])
     plt.legend(title = str(qs[0]*100)+'th percentile lines computed by:')
-      
+    
+    return scaling_rate_W, scaling_rate_q
 
 def all_bueno():
     print("d(・ᴗ・)")

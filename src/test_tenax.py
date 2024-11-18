@@ -10,6 +10,7 @@ import os
 from os.path import dirname, abspath, join
 from os import getcwd
 import sys
+
 #run this fro src folder, otherwise it doesn't work
 THIS_DIR = dirname(getcwd())
 CODE_DIR = join(THIS_DIR, 'src')
@@ -25,9 +26,12 @@ import matplotlib.pyplot as plt
 from scipy.stats import chi2
 
 
+#import smev 
+from pyTENAX.smev_class import *
 
 S = TENAX(
-        return_period = [1.1,1.2,1.5,2,5,10,20,50,100, 200],  #for some reason it doesnt like calculating RP =<1
+        return_period = [2,5,10,20,50,100, 200],  #for some reason it doesnt like calculating RP =<1
+
         durations = [10, 60, 180, 360, 720, 1440],
         left_censoring = [0, 0.90],
         alpha = 0.05,
@@ -95,7 +99,7 @@ start_time = time.time()
 # Your data (P, T arrays) and threshold thr=3.8
 P = dict_ordinary["10"]["ordinary"].to_numpy() # Replace with your actual data
 T = dict_ordinary["10"]["T"].to_numpy()  # Replace with your actual data
-
+blocks_id = dict_ordinary["10"]["year"].to_numpy()  # Replace with your actual data
 
 
 # Number of threshold 
@@ -112,8 +116,48 @@ g_phat = S.temperature_model(T)
 # M is mean n of ordinary events
 n = n_ordinary_per_year.sum() / len(n_ordinary_per_year)  
 #estimates return levels using MC samples
-RL, T_mc, P_mc = S.model_inversion(F_phat, g_phat, n, Ts,n_mc = np.size(P)*S.niter_smev) 
+
+
+RL, _, P_check = S.model_inversion(F_phat, g_phat, n, Ts) 
 print(RL)
+elapsed_time = time.time() - start_time
+# Print the elapsed time
+print(f"Elapsed time TENAX : {elapsed_time:.4f} seconds")
+
+
+
+start_time = time.time()
+
+S.n_monte_carlo = 20000
+
+# tENAX uncertainty
+start_time = time.time()
+F_phat_unc, g_phat_unc, RL_unc, n_unc, n_err = S.TNX_tenax_bootstrap_uncertainty(P, T, blocks_id, Ts)
+
+elapsed_time = time.time() - start_time
+print(f"Time to do TENAX uncertainty: {elapsed_time:.4f} seconds")
+
+# SMEV and its uncertainty
+start_time = time.time()
+#TODO: clean this part cause it is a bit messy with namings
+S_SMEV = SMEV(threshold=0.1,
+              separation = 24,
+              return_period = S.return_period,
+              durations = S.durations,
+              time_resolution = 5, #time resolution in minutes
+              min_duration = 30 ,
+              left_censoring = [S.left_censoring[1],1])      
+
+#estimate shape and  scale parameters of weibull distribution
+smev_shape,smev_scale = S_SMEV.estimate_smev_parameters(P, S_SMEV.left_censoring)
+#estimate return period (quantiles) with SMEV
+smev_RL = S_SMEV.smev_return_values(S_SMEV.return_period, smev_shape, smev_scale, n.item())
+
+smev_RL_unc = S_SMEV.SMEV_bootstrap_uncertainty(P, blocks_id, S.niter_smev, n.item())
+
+
+elapsed_time = time.time() - start_time
+print(f"Time to do SMEV and uncertainty: {elapsed_time:.4f} seconds")
 
 
 
@@ -124,22 +168,33 @@ eT = np.arange(np.min(T),np.max(T)+4,1) # define T values to calculate distribut
 # fig 2a
 qs = [.85,.95,.99,.999]
 TNX_FIG_magn_model(P,T,F_phat,thr,eT,qs)
+plt.ylabel('10-minute precipitation (mm)')
+plt.title('fig 2a')
 plt.show()
 
 #fig 2b
-TNX_FIG_temp_model(T=T, g_phat=g_phat,beta=4,eT=eT)
+TNX_FIG_temp_model(T, g_phat,S.beta,eT)
+plt.title('fig 2b')
 plt.show()
 
-#fig 4 (without SMEV and uncertainty) 
+#fig 4 
 AMS = dict_AMS['10'] # yet the annual maxima
-TNX_FIG_valid(AMS,S.return_period,RL)
+TNX_FIG_valid(AMS,S.return_period,RL,smev_RL,RL_unc,smev_RL_unc)
+plt.title('fig 4')
+plt.ylabel('10-minute precipitation (mm)')
 plt.show()
 
 
 #fig 5 
 iTs = np.arange(-2.5,37.5,1.5) #idk why we need a different T range here 
-
-TNX_FIG_scaling(P,T,P_mc,T_mc,F_phat,S.niter_smev,eT,iTs)
+S.n_monte_carlo = np.size(P)*S.niter_smev
+_, T_mc, P_mc = S.model_inversion(F_phat, g_phat, n, Ts,gen_P_mc = True,gen_RL=False) 
+elapsed_time = time.time() - start_time
+# Print the elapsed time
+print(f"Elapsed time model_inversion all: {elapsed_time:.4f} seconds")
+scaling_rate_W, scaling_rate_q = TNX_FIG_scaling(P,T,P_mc,T_mc,F_phat,S.niter_smev,eT,iTs)
+plt.title('fig 5')
+plt.ylabel('10-minute precipitation (mm)')
 plt.show()
 
 #SPLITTING INTO SUMMER/WINTER
@@ -151,8 +206,8 @@ T_winter = T[winter_inds]
 T_summer = T[summer_inds]
 
 
-g_phat_winter = temperature_model_free(2, T_winter)
-g_phat_summer = temperature_model_free(2, T_summer)
+g_phat_winter = S.temperature_model(T_winter,beta = 2)
+g_phat_summer = S.temperature_model(T_summer,beta = 2)
 
 
 winter_pdf = gen_norm_pdf(eT, g_phat_winter[0], g_phat_winter[1], 2)
@@ -164,10 +219,11 @@ combined_pdf = (winter_pdf*np.size(T_winter)+summer_pdf*np.size(T_summer))/(np.s
 #fig 3
 
 
-TNX_FIG_temp_model(T=T_summer, g_phat=g_phat_summer,beta=2,eT=eT,obscol='r',valcol='r',xlimits = [-15,30],ylimits = [0,0.1])
-TNX_FIG_temp_model(T=T_winter, g_phat=g_phat_winter,beta=2,eT=eT,obscol='b',valcol='b',xlimits = [-15,30],ylimits = [0,0.1])
-TNX_FIG_temp_model(T=T, g_phat=g_phat,beta=4,eT=eT,obscol='k',valcol='k',xlimits = [-15,30],ylimits = [0,0.1])
+TNX_FIG_temp_model(T=T_summer, g_phat=g_phat_summer,beta=2,eT=eT,obscol='r',valcol='r',obslabel = None,vallabel = 'Summer',xlimits = [-15,30],ylimits = [0,0.1])
+TNX_FIG_temp_model(T=T_winter, g_phat=g_phat_winter,beta=2,eT=eT,obscol='b',valcol='b',obslabel = None,vallabel = 'Winter',xlimits = [-15,30],ylimits = [0,0.1])
+TNX_FIG_temp_model(T=T, g_phat=g_phat,beta=4,eT=eT,obscol='k',valcol='k',obslabel = None,vallabel = 'Annual',xlimits = [-15,30],ylimits = [0,0.1])
 plt.plot(eT,combined_pdf,'m',label = 'Combined summer and winter')
+plt.legend()
 plt.show()
 
 
@@ -196,10 +252,11 @@ g_phat2 = S.temperature_model(T2)
 
 
 F_phat1, loglik1, _, _ = S.magnitude_model(P1, T1, thr)
-RL1, T_mc1, P_mc1 = S.model_inversion(F_phat1, g_phat1, n1, Ts,n_mc = np.size(P1)*S.niter_smev)
+RL1, _, _ = S.model_inversion(F_phat1, g_phat1, n1, Ts)
    
+
 F_phat2, loglik2, _, _ = S.magnitude_model(P2, T2, thr)
-RL2, T_mc2, P_mc2 = S.model_inversion(F_phat2, g_phat2, n2, Ts,n_mc = np.size(P2)*S.niter_smev)   
+RL2, _, _ = S.model_inversion(F_phat2, g_phat2, n2, Ts)   
 
 if F_phat[2]==0:
     dof=3
@@ -214,6 +271,10 @@ else:
 #check magnitude model the same in both periods
 lambda_LR = -2*( loglik - (loglik1+loglik2) )
 pval = chi2.sf(lambda_LR, dof)
+if pval > S.alpha:
+    print(f"p={pval}. Magnitude models not  different at {S.alpha*100}% significance.")
+else:
+    print(f"p={pval}. Magnitude models are different at {S.alpha*100}% significance.")
 
 #modelling second model based on first magnitude and changes in mean/std
 mu_delta = np.mean(T2)-np.mean(T1)
@@ -225,14 +286,14 @@ RL2_predict, _,_ = S.model_inversion(F_phat1,g_phat2_predict,n2,Ts)
 
 #fig 7a
 
-TNX_FIG_temp_model(T=T1, g_phat=g_phat1,beta=4,eT=eT,obscol='b',valcol='b')
-TNX_FIG_temp_model(T=T2, g_phat=g_phat2_predict,beta=4,eT=eT,obscol='r',valcol='r') # model based on temp ave and std changes
+TNX_FIG_temp_model(T=T1, g_phat=g_phat1,beta=4,eT=eT,obscol='b',valcol='b',obslabel = None,vallabel = 'Temperature model '+str(yrs_unique[0])+'-'+str(midway))
+TNX_FIG_temp_model(T=T2, g_phat=g_phat2_predict,beta=4,eT=eT,obscol='r',valcol='r',obslabel = None,vallabel = 'Temperature model '+str(midway+1)+'-'+str(yrs_unique[-1])) # model based on temp ave and std changes
 plt.show() #this is slightly different in code and paper I think.. using predicted T vs fitted T
 
 #fig 7b
 
-TNX_FIG_valid(AMS1,S.return_period,RL1,TENAXcol='b',obscol_shape = 'b+')
-TNX_FIG_valid(AMS2,S.return_period,RL2_predict,TENAXcol='r',obscol_shape = 'r+')
+TNX_FIG_valid(AMS1,S.return_period,RL1,TENAXcol='b',obscol_shape = 'b+',TENAXlabel = 'The TENAX model '+str(yrs_unique[0])+'-'+str(midway),obslabel='Observed annual maxima '+str(yrs_unique[0])+'-'+str(midway))
+TNX_FIG_valid(AMS2,S.return_period,RL2_predict,TENAXcol='r',obscol_shape = 'r+',TENAXlabel = 'The predicted TENAX model '+str(midway+1)+'-'+str(yrs_unique[-1]),obslabel='Observed annual maxima '+str(midway+1)+'-'+str(yrs_unique[-1]))
 
 plt.show()
 
@@ -272,53 +333,64 @@ while i<np.size(delta_ns):
 
 
 #fig 6
-fig = plt.figure(figsize = (15,5))
+fig = plt.figure(figsize = (17,5))
 ax1 = fig.add_subplot(1,3,1)
 i = 0
-while i< np.size(delta_Ts):  
-    ax1.plot(S.return_period,T_sens[i],'k',alpha = 0.7,label = str(delta_Ts[i]))
-    
+while i< np.size(delta_Ts)-1:  
+    ax1.plot(S.return_period,T_sens[i],'k',alpha = 0.7)
+    plt.text(S.return_period[-1]+10, T_sens[i][-1], '{0:+}'.format(delta_Ts[i])+'°C', ha='left', va='center')
     i=i+1
+#plot last one differently
+ax1.plot(S.return_period,T_sens[i],'k',alpha = 0.7)
+plt.text(S.return_period[-3], T_sens[i][-1], 'μ\'=μ'+'{0:+}'.format(delta_Ts[i])+'°C', ha='left', va='center')   
+    
 plt.xscale('log')
 ax1.plot(S.return_period,RL,'b')
 ax1.set_title('Sensitivity to changes in mean temp')
-plt.legend()
 plt.xscale('log')
 plt.xlim(1,200)
-plt.ylim(0.60)
+plt.ylim(0,60)
 
 ax2 = fig.add_subplot(1,3,2)
 i = 0
-while i< np.size(delta_as):  
-    ax2.plot(S.return_period,as_sens[i],'k',alpha = 0.7,label = str(delta_as[i]))
-    
+while i< np.size(delta_as)-1:  
+    ax2.plot(S.return_period,as_sens[i],'k',alpha = 0.7)
+    plt.text(S.return_period[-1]+10, as_sens[i][-1], str(delta_as[i])+'σ', ha='left', va='center')
     i=i+1
+ax2.plot(S.return_period,as_sens[i],'k',alpha = 0.7)
+plt.text(S.return_period[-3]+20, as_sens[i][-1], 'σ\'='+str(delta_as[i])+'σ', ha='left', va='center')
+
+    
 plt.xscale('log')
 ax2.plot(S.return_period,RL,'b',label = 'The TENAX MODEL')
 ax2.set_title('Sensitivity to changes in temp std')
 plt.legend()
 plt.xscale('log')
 plt.xlim(1,200)
-plt.ylim(0.60)
+plt.ylim(0,60)
 
 ax3 = fig.add_subplot(1,3,3)
 i = 0
-while i< np.size(delta_ns):  
+while i< np.size(delta_ns)-1:  
     ax3.plot(S.return_period,n_sens[i],'k',alpha = 0.7,label = str(delta_ns[i]))
-    
+    plt.text(S.return_period[-1]+10, n_sens[i][-1], str(delta_ns[i])+'n', ha='left', va='center')
     i=i+1
+    
+ax3.plot(S.return_period,n_sens[i],'k',alpha = 0.7)
+plt.text(S.return_period[-3]+20, n_sens[i][-1], 'n\'='+str(delta_ns[i])+'n', ha='left', va='center')
+
 plt.xscale('log')
 ax3.plot(S.return_period,RL,'b')
 ax3.set_title('Sensitivity to changes in mean events per year (n)')
-plt.legend()
 plt.xscale('log')
 plt.xlim(1,200)
-plt.ylim(0.60)
+plt.ylim(0,60)
 
 
 
 plt.show()
 
+#TODO: n looks a litte different from in paper
 
 
 
