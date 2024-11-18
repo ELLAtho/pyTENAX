@@ -45,6 +45,34 @@ for c in countries:
     
 info_full = pd.concat(info,axis=0)    
 
+#yr bins
+info_10 = info_full[info_full.cleaned_years<10]
+info_20 = info_full[(info_full.cleaned_years<20)&(info_full.cleaned_years>=10)]
+info_30 = info_full[(info_full.cleaned_years<30)&(info_full.cleaned_years>=20)]
+info_30up = info_full[(info_full.cleaned_years>=30)]
+
+#stupid version of truncating
+def truncate_to_one_decimal(num):
+    if num >= 0:
+        return int(num * 10) / 10  # Truncate positive number
+    else:
+        return int(num * 10 - 1) / 10  # Truncate negative number to be more negative
+
+
+
+loc_dic = {}
+
+for n in np.arange(0,len(countries)):
+    loc_dic[countries[n]] = {
+        'minlat': truncate_to_one_decimal(np.min(info[n].latitude)),
+        'maxlat': np.ceil(np.max(info[n].latitude)*10)/10,
+        'minlon': truncate_to_one_decimal(np.min(info[n].longitude)),
+        'maxlon': np.ceil(np.max(info[n].longitude)*10)/10,
+        'startdate' : np.min(info[n].startdate),
+        'enddate' : np.max(info[n].enddate)
+    }
+
+
 #BY DATASET
 fig = plt.figure(figsize=(10, 10))
 proj = ccrs.PlateCarree()
@@ -58,11 +86,6 @@ plt.legend()
 plt.show()
 
 
-year_bins = np.arange(info_full['cleaned_years'].min(), info_full['cleaned_years'].max() + 10, 10)
-
-# Create a discrete colormap with one color per bin
-cmap = plt.get_cmap("viridis", len(year_bins) - 1)  # Replace "viridis" with your preferred colormap
-norm = mcolors.BoundaryNorm(year_bins, cmap.N)
 
 
 #BY YEARS
@@ -70,20 +93,12 @@ fig = plt.figure(figsize=(10, 10))
 proj = ccrs.PlateCarree()
 ax1 = fig.add_subplot(1, 1, 1, projection=proj)
 ax1.coastlines()
-sc = ax1.scatter(
-    info_full['longitude'], 
-    info_full['latitude'], 
-    s=1.5, 
-    c=info_full['cleaned_years'], 
-    cmap=cmap, 
-    norm=norm, 
-    transform=ccrs.PlateCarree()
-)
 
-# Add color bar at the bottom of the plot with discrete labels
-cbar = plt.colorbar(sc, ax=ax1, orientation='horizontal', pad=0.05, fraction=0.05)
-cbar.set_label("Cleaned Years")
-cbar.set_ticks(year_bins)
+ax1.scatter(info_10.longitude,info_10.latitude,s=1.5, color = 'red',label = '<10')
+ax1.scatter(info_20.longitude,info_20.latitude,s=1.5, color = 'orange',label = '10-19')
+ax1.scatter(info_30.longitude,info_30.latitude,s=1.5, color = 'gold',label = '20-29')
+ax1.scatter(info_30.longitude,info_30.latitude,s=1.5, color = 'green',label = '30+')
+plt.legend()
 plt.show()
 
 
@@ -92,20 +107,12 @@ fig = plt.figure(figsize=(10, 10))
 proj = ccrs.PlateCarree()
 ax1 = fig.add_subplot(1, 1, 1, projection=proj)
 ax1.coastlines()
-sc = ax1.scatter(
-    info_full['longitude'], 
-    info_full['latitude'], 
-    s=1.5, 
-    c=info_full['cleaned_years'], 
-    cmap=cmap, 
-    norm=norm, 
-    transform=ccrs.PlateCarree()
-)
 
-# Add color bar at the bottom of the plot with discrete labels
-cbar = plt.colorbar(sc, ax=ax1, orientation='horizontal', pad=0.05, fraction=0.05)
-cbar.set_label("Cleaned Years")
-cbar.set_ticks(year_bins)
+ax1.scatter(info_10.longitude,info_10.latitude, color = 'red',label = '<10')
+ax1.scatter(info_20.longitude,info_20.latitude, color = 'orange',label = '10-19')
+ax1.scatter(info_30.longitude,info_30.latitude, color = 'gold',label = '20-29')
+ax1.scatter(info_30.longitude,info_30.latitude, color = 'green',label = '30+')
+plt.legend()
 plt.xlim(-10,45)
 plt.ylim(20,75)
 
@@ -153,29 +160,4 @@ ax1.coastlines()
 sc = plt.scatter(info_full['longitude'],info_full['latitude'],s=1.5,c=info_full['cleaned_years'],transform=ccrs.PlateCarree())
 ax1.set_xticks(np.arange(-180,190,20), crs=proj)
 ax1.set_yticks(np.arange(-90,100,20), crs=proj)
-plt.show()
-
-
-    
-#FOCUS ON JAPAN
-n=5
-
-info_J = info[n]
-info_J.station = info_J['station'].apply(lambda x: f'{int(x):05}') #convert station id into actual station id
-
-info_J_sort = info_J.sort_values(by=['cleaned_years'],ascending=0)
-
-for i in np.arange(0,10):
-    plt.plot([info_J_sort.startdate[info_J_sort.index[i]],info_J_sort.enddate[info_J_sort.index[i]]],[i,i],label = info_J_sort.station[info_J_sort.index[i]])
-   
-plt.legend()
-plt.show()
-
-
-
-
-for i in np.arange(1000,1010):
-    plt.plot([info_J_sort.startdate[info_J_sort.index[i]],info_J_sort.enddate[info_J_sort.index[i]]],[i,i],label = info_J_sort.station[info_J_sort.index[i]])
-   
-plt.legend()
 plt.show()

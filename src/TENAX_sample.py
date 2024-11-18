@@ -197,7 +197,7 @@ for i in np.arange(0,n_stations):
     print(RL[i])
     
     
-    #PLOTTING THE GRAPHS
+   #PLOTTING THE GRAPHS
     titles = str(i)+': Latitude: '+str(lats_sel[i])+'. Longitude: '+str(lons_sel[i])
     
     
@@ -205,25 +205,25 @@ for i in np.arange(0,n_stations):
     
     # fig 2a
     qs = [.85,.95,.99,.999]
-    TNX_FIG_magn_model(P,T,F_phats[i],thr[i],eT,qs)
+    TNX_FIG_magn_model(P,T,F_phats[i],thr[i],eT,qs,xlimits = [eT[0],eT[-1]])
     plt.title(titles)
     plt.show()
     
     #fig 2b
-    TNX_FIG_temp_model(T=T, g_phat=g_phats[i],beta=4,eT=eT)
+    TNX_FIG_temp_model(T=T, g_phat=g_phats[i],beta=4,eT=eT,xlimits = [eT[0],eT[-1]])
     plt.title(titles)
     plt.show()
     
     #fig 4 (without SMEV and uncertainty) 
     AMS = dict_AMS[i]['60'] # yet the annual maxima
-    TNX_FIG_valid(AMS,S.return_period,RL[i],ylimits = [0,70])
+    TNX_FIG_valid(AMS,S.return_period,RL[i],ylimits = [0,np.max(AMS.AMS)+3])
     plt.title(titles)
     plt.show()
     
     #fig 5 
     iTs = np.arange(-2.5,37.5,1.5) #idk why we need a different T range here 
     
-    TNX_FIG_scaling(P,T,P_mc,T_mc,F_phats[i],S.niter_smev,eT,iTs)
+    TNX_FIG_scaling(P,T,P_mc,T_mc,F_phats[i],S.niter_smev,eT,iTs,xlimits = [eT[0],eT[-1]])
     plt.title(titles)
     plt.show()
     
@@ -236,8 +236,8 @@ for i in np.arange(0,n_stations):
     T_summer = T[summer_inds]
     
     
-    g_phat_winter = temperature_model_free(2, T_winter)
-    g_phat_summer = temperature_model_free(2, T_summer)
+    g_phat_winter = S.temperature_model(T_winter, 2)
+    g_phat_summer = S.temperature_model(T_summer, 2)
     
     
     winter_pdf = gen_norm_pdf(eT, g_phat_winter[0], g_phat_winter[1], 2)
@@ -249,9 +249,9 @@ for i in np.arange(0,n_stations):
     #fig 3
     
     
-    TNX_FIG_temp_model(T=T_summer, g_phat=g_phat_summer,beta=2,eT=eT,obscol='r',valcol='r',xlimits = [-15,30],ylimits = [0,0.1])
-    TNX_FIG_temp_model(T=T_winter, g_phat=g_phat_winter,beta=2,eT=eT,obscol='b',valcol='b',xlimits = [-15,30],ylimits = [0,0.1])
-    TNX_FIG_temp_model(T=T, g_phat=g_phats[i],beta=4,eT=eT,obscol='k',valcol='k',xlimits = [-15,30],ylimits = [0,0.1])
+    TNX_FIG_temp_model(T=T_summer, g_phat=g_phat_summer,beta=2,eT=eT,obscol='r',valcol='r')
+    TNX_FIG_temp_model(T=T_winter, g_phat=g_phat_winter,beta=2,eT=eT,obscol='b',valcol='b')
+    TNX_FIG_temp_model(T=T, g_phat=g_phats[i],beta=4,eT=eT,obscol='k',valcol='k',xlimits = [eT[0],eT[-1]],ylimits = [0,0.1])
     plt.plot(eT,combined_pdf,'m',label = 'Combined summer and winter')
     plt.title(titles)
     plt.show()
@@ -311,18 +311,18 @@ for i in np.arange(0,n_stations):
     
     #fig 7a
     
-    TNX_FIG_temp_model(T=T1, g_phat=g_phat1,beta=4,eT=eT,obscol='b',valcol='b')
-    TNX_FIG_temp_model(T=T2, g_phat=g_phat2_predict,beta=4,eT=eT,obscol='r',valcol='r') # model based on temp ave and std changes
-    plt.title(titles)
+    TNX_FIG_temp_model(T=T1, g_phat=g_phat1,beta=4,eT=eT,obscol='b',valcol='b',obslabel = None,vallabel = 'Temperature model '+str(yrs_unique[0])+'-'+str(midway),xlimits = [eT[0],eT[-1]])
+    TNX_FIG_temp_model(T=T2, g_phat=g_phat2_predict,beta=4,eT=eT,obscol='r',valcol='r',obslabel = None,vallabel = 'Temperature model '+str(midway+1)+'-'+str(yrs_unique[-1]),xlimits = [eT[0],eT[-1]]) # model based on temp ave and std changes
+    plt.title('fig 7a')
     plt.show() #this is slightly different in code and paper I think.. using predicted T vs fitted T
     
     #fig 7b
     
-    TNX_FIG_valid(AMS1,S.return_period,RL1,TENAXcol='b',obscol_shape = 'b+',ylimits = [0,70])
-    TNX_FIG_valid(AMS2,S.return_period,RL2_predict,TENAXcol='r',obscol_shape = 'r+',ylimits = [0,70])
-    plt.title(titles)
-    
+    TNX_FIG_valid(AMS1,S.return_period,RL1,TENAXcol='b',obscol_shape = 'b+',TENAXlabel = 'The TENAX model '+str(yrs_unique[0])+'-'+str(midway),obslabel='Observed annual maxima '+str(yrs_unique[0])+'-'+str(midway))
+    TNX_FIG_valid(AMS2,S.return_period,RL2_predict,TENAXcol='r',obscol_shape = 'r+',TENAXlabel = 'The predicted TENAX model '+str(midway+1)+'-'+str(yrs_unique[-1]),obslabel='Observed annual maxima '+str(midway+1)+'-'+str(yrs_unique[-1]),ylimits = [0,np.max(AMS.AMS)+3])
+    plt.title('fig 7b')
     plt.show()
+    
     
     print('finished loop '+str(i+1)+' out of '+str(n_stations))
     
