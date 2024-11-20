@@ -161,3 +161,74 @@ sc = plt.scatter(info_full['longitude'],info_full['latitude'],s=1.5,c=info_full[
 ax1.set_xticks(np.arange(-180,190,20), crs=proj)
 ax1.set_yticks(np.arange(-90,100,20), crs=proj)
 plt.show()
+
+
+ISD_10 = info[0][info[0].cleaned_years>+10]
+
+
+fig = plt.figure(figsize=(10, 10))
+proj = ccrs.PlateCarree()
+ax1 = fig.add_subplot(1, 1, 1, projection=proj)
+ax1.coastlines()
+
+ax1.scatter(ISD_10.longitude,ISD_10.latitude,s=1.5, color = 'red')
+
+plt.show()
+
+###grid
+
+countries = ['ISD','Belgium','Finland','Germany','Ireland','Japan','Norway','Portugal','UK','US']
+G_loc = np.array([47,3,55,15])
+US_main_loc = np.array([24, -125, 56, -66])
+UK_loc = np.array([49.2, -8.0, 60.8, 1.8])
+J_loc = np.array([24, 122.9, 45.6, 145.8])
+P_loc = np.array([36.9,-9.5,42.1,8.9])
+
+
+fig = plt.figure(figsize=(10, 10))
+proj = ccrs.PlateCarree()
+ax1 = fig.add_subplot(1, 1, 1, projection=proj)
+ax1.coastlines()
+ax1.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+ax1.plot([G_loc[1], G_loc[1]],[G_loc[0], G_loc[2]],  'r', linewidth=2, transform=ccrs.PlateCarree())
+ax1.plot([G_loc[3], G_loc[3]],[G_loc[2], G_loc[0]],  'r', linewidth=2, transform=ccrs.PlateCarree())
+
+ax1.plot([G_loc[1], G_loc[3]],[G_loc[0], G_loc[0]],  'r', linewidth=2, transform=ccrs.PlateCarree())
+ax1.plot([G_loc[3], G_loc[1]],[G_loc[2], G_loc[2]],  'r', linewidth=2, transform=ccrs.PlateCarree(),label = 'Germany')
+
+
+ax1.plot([UK_loc[1], UK_loc[1]],[UK_loc[0], UK_loc[2]],  'b', linewidth=2, transform=ccrs.PlateCarree())
+ax1.plot([UK_loc[3], UK_loc[3]],[UK_loc[2], UK_loc[0]],  'b', linewidth=2, transform=ccrs.PlateCarree())
+
+ax1.plot([UK_loc[1], UK_loc[3]],[UK_loc[0], UK_loc[0]],  'b', linewidth=2, transform=ccrs.PlateCarree())
+ax1.plot([UK_loc[3], UK_loc[1]],[UK_loc[2], UK_loc[2]],  'b', linewidth=2, transform=ccrs.PlateCarree(),label = 'UK')
+
+
+ax1.plot([P_loc[1], P_loc[1]],[P_loc[0], P_loc[2]],  'b', linewidth=2, transform=ccrs.PlateCarree())
+ax1.plot([P_loc[3], P_loc[3]],[P_loc[2], P_loc[0]],  'b', linewidth=2, transform=ccrs.PlateCarree())
+
+ax1.plot([P_loc[1], P_loc[3]],[P_loc[0], P_loc[0]],  'b', linewidth=2, transform=ccrs.PlateCarree())
+ax1.plot([P_loc[3], P_loc[1]],[P_loc[2], P_loc[2]],  'b', linewidth=2, transform=ccrs.PlateCarree(),label = 'UK')
+
+n=0
+while n<len(countries):
+    plt.scatter(info[n]['longitude'],info[n]['latitude'],label = countries[n],transform=ccrs.PlateCarree())
+    n=n+1
+plt.legend()
+plt.xlim(-10,45)
+plt.ylim(20,75)
+
+plt.show()
+
+
+
+#minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+#country = 'Japan'
+
+#minlat,minlon,maxlat,maxlon = 49.2, -8.0, 60.8, 1.8
+
+
+
+
