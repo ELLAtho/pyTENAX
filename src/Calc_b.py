@@ -5,7 +5,7 @@ Created on Tue Nov 19 10:14:46 2024
 @author: ellar
 """
 
-from os.path import dirname, abspath, join
+from os.path import dirname, join
 from os import getcwd
 import sys
 #run this fro src folder, otherwise it doesn't work
@@ -33,15 +33,15 @@ import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 
 
-drive = 'D'
+drive = 'F'
 
-# country = 'Japan'
-# code_str = 'JP_'
-# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+country = 'Japan'
+code_str = 'JP_'
+minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
 
-country = 'Germany' 
-code_str = 'DE_'
-minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
+# country = 'Germany' 
+# code_str = 'DE_'
+# minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
 
 name_col = 'ppt'
 temp_name_col = "t2m"
@@ -58,7 +58,7 @@ info.enddate = pd.to_datetime(info.enddate)
 
 val_info = info[info['cleaned_years']>=min_yrs] #filter out stations that are less than min
 
-files = glob.glob('D:/'+country+'/*') #list of files in country folder
+files = glob.glob(drive+':/'+country+'/*') #list of files in country folder
 files_sel = [files[i] for i in val_info.index]
 
 
@@ -92,10 +92,10 @@ if df_savename not in saved_files: #read in files and create t time series and d
     
     saved_counter = 0
     
-    start_time = time.time()
+    start_time = [0]*len(files_sel)
     
     for i in np.arange(0, len(files_sel)):
-        
+        start_time[i] = time.time()
         #read in ppt data
         G,data_meta = read_GSDR_file(files_sel[i],name_col)
         
@@ -113,67 +113,72 @@ if df_savename not in saved_files: #read in files and create t time series and d
         if save_path not in saved_files:
             print(f'file {save_path} not made yet')
             T_ERA = make_T_timeseries(target_lat,target_lon,start_date,end_date,T_files,nans)
-            
-            T_ERA.to_netcdf(save_path) #save file with same name format as GSDR
-            saved_files.append(save_path)  # Update saved_files to include the newly saved file
-            saved_counter = saved_counter+1
+            if len(T_ERA) == 0:
+                print('skip')
+            else:
+                T_ERA.to_netcdf(save_path) #save file with same name format as GSDR
+                saved_files.append(save_path)  # Update saved_files to include the newly saved file
+                saved_counter = saved_counter+1
         else:
             print(f"File {save_path} already exists. Skipping save.")
             T_ERA = xr.load_dataarray(save_path)
             
             #####################################################################
-        #TENAX     
-        data = G 
-        data = S.remove_incomplete_years(data, name_col)
-        t_data = (T_ERA.squeeze()-273.15).to_dataframe()
-        print(f'{data_meta.latitude},{data_meta.longitude}')
-        print(t_data[0:5])
-        df_arr = np.array(data[name_col])
-        df_dates = np.array(data.index)
-        
-        #extract indexes of ordinary events
-        #these are time-wise indexes =>returns list of np arrays with np.timeindex
-        idx_ordinary=S.get_ordinary_events(data=df_arr,dates=df_dates, name_col=name_col,  check_gaps=False)
+        #TENAX 
+        if len(T_ERA) == 0: # dont do tenax if no T data saved
+            print('skip')
+        else:
+            data = G 
+            data = S.remove_incomplete_years(data, name_col)
+            t_data = (T_ERA.squeeze()-273.15).to_dataframe()
+            print(f'{data_meta.latitude},{data_meta.longitude}')
+            print(t_data[0:5])
+            df_arr = np.array(data[name_col])
+            df_dates = np.array(data.index)
             
-        
-        #get ordinary events by removing too short events
-        #returns boolean array, dates of OE in TO, FROM format, and count of OE in each years
-        arr_vals,arr_dates,n_ordinary_per_year=S.remove_short(idx_ordinary)
-        
-        #assign ordinary events values by given durations, values are in depth per duration, NOT in intensity mm/h
-        dict_ordinary, dict_AMS = S.get_ordinary_events_values(data=df_arr,dates=df_dates, arr_dates_oe=arr_dates)
-        
-        
-        
-        df_arr_t_data = np.array(t_data[temp_name_col])
-        df_dates_t_data = np.array(t_data.index)
-        
-        dict_ordinary, _ , n_ordinary_per_year = S.associate_vars(dict_ordinary, df_arr_t_data, df_dates_t_data)
-        
-        
-        
-        # Your data (P, T arrays) and threshold thr=3.8
-        P = dict_ordinary["60"]["ordinary"].to_numpy() 
-        T = dict_ordinary["60"]["T"].to_numpy()  
-        
-        
-        # Number of threshold 
-        thr[i] = dict_ordinary["60"]["ordinary"].quantile(S.left_censoring[1])
-        
-        
-        #TENAX MODEL HERE
-        #magnitude model
-        F_phats[i], loglik, _, _ = S.magnitude_model(P, T, thr[i])
-        #temperature model
-        g_phats[i] = S.temperature_model(T)
-        # M is mean n of ordinary events
-        ns[i] = n_ordinary_per_year.sum() / len(n_ordinary_per_year)  
-        
-        
-        
-        time_taken = (time.time()-start_time)/(i)
-        time_left = (len(files_sel)-i)*time_taken/60
-        print(f"{i}/{len(files_sel)}. Approx time left: {time_left:.4f} mins")
+            #extract indexes of ordinary events
+            #these are time-wise indexes =>returns list of np arrays with np.timeindex
+            idx_ordinary=S.get_ordinary_events(data=df_arr,dates=df_dates, name_col=name_col,  check_gaps=False)
+                
+            
+            #get ordinary events by removing too short events
+            #returns boolean array, dates of OE in TO, FROM format, and count of OE in each years
+            arr_vals,arr_dates,n_ordinary_per_year=S.remove_short(idx_ordinary)
+            
+            #assign ordinary events values by given durations, values are in depth per duration, NOT in intensity mm/h
+            dict_ordinary, dict_AMS = S.get_ordinary_events_values(data=df_arr,dates=df_dates, arr_dates_oe=arr_dates)
+            
+            
+            
+            df_arr_t_data = np.array(t_data[temp_name_col])
+            df_dates_t_data = np.array(t_data.index)
+            
+            dict_ordinary, _ , n_ordinary_per_year = S.associate_vars(dict_ordinary, df_arr_t_data, df_dates_t_data)
+            
+            
+            
+            # Your data (P, T arrays) and threshold thr=3.8
+            P = dict_ordinary["60"]["ordinary"].to_numpy() 
+            T = dict_ordinary["60"]["T"].to_numpy()  
+            
+            
+            # Number of threshold 
+            thr[i] = dict_ordinary["60"]["ordinary"].quantile(S.left_censoring[1])
+            
+            
+            #TENAX MODEL HERE
+            #magnitude model
+            F_phats[i], loglik, _, _ = S.magnitude_model(P, T, thr[i])
+            #temperature model
+            g_phats[i] = S.temperature_model(T)
+            # M is mean n of ordinary events
+            ns[i] = n_ordinary_per_year.sum() / len(n_ordinary_per_year)  
+            
+            
+            
+            time_taken = (time.time()-start_time[i-50])/(51)
+            time_left = (len(files_sel)-i)*time_taken/60
+            print(f"{i}/{len(files_sel)}. Approx time left: {time_left:.0f} mins") #this is only correct after 50 loops
         
     
     T_temp = []

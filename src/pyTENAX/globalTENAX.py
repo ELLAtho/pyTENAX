@@ -36,15 +36,13 @@ def make_T_timeseries(target_lat,target_lon,start_date,end_date,T_files,nans,T_n
         List of the names of temperatures netcdf files to be concatenated.
     nans : xarray.dataarray
         A 2D plot of the area (e.g from T_files[0]), with nan locations == 0 and land locations == 1.
-    T_nan_limit : float
+    T_nan_limit : float, optional
         maximum fraction of nans allowed (it will usually be either 100% nans or 0% nans so this is a bit unnecessary).
 
     Returns
     -------
-    T_ERA : TYPE
-        DESCRIPTION.
-    location : TYPE
-        DESCRIPTION.
+    T_ERA : xr.dataarray or []
+        time series of ERA5_land temperature data at closest gridpoint to station. if T_ERA == [], there are no land points within 1 degree and the read has been skipped.
 
     """
     
@@ -77,14 +75,18 @@ def make_T_timeseries(target_lat,target_lon,start_date,end_date,T_files,nans,T_n
         location = distances.where(distances==distances.min(),drop=True) #get location with smallest distance from target
         new_lat = location.latitude.to_numpy() 
         new_lon = location.longitude.to_numpy()
+        if len(new_lat) == 0:
+            print('warning: no land within 1 degree. Possibly at domain edge. skip read')
+            T_ERA = []
         
-        for n, file in enumerate(T_files[first_index:last_index]): #load in the data
-            with xr.open_dataarray(file) as da:
-                T_temp[n] = da.sel(latitude = new_lat,method = 'nearest').sel(longitude = new_lon,method = 'nearest')
-        
-        T_ERA = xr.concat(T_temp,dim = 'valid_time').sel(valid_time = slice(start_date,end_date))
-        print(f'Latitudes: {target_lat} became {new_lat}. Longitudes: {target_lon} became {new_lon}. {location.to_numpy()[0][0]} metres away.')
-        print(T_ERA)
+        else:
+            for n, file in enumerate(T_files[first_index:last_index]): #load in the data
+                with xr.open_dataarray(file) as da:
+                    T_temp[n] = da.sel(latitude = new_lat,method = 'nearest').sel(longitude = new_lon,method = 'nearest')
+            
+            T_ERA = xr.concat(T_temp,dim = 'valid_time').sel(valid_time = slice(start_date,end_date))
+            print(f'Latitudes: {target_lat} became {new_lat}. Longitudes: {target_lon} became {new_lon}. {location.to_numpy()[0][0]} metres away.')
+            print(T_ERA)
     
     else: #if location has no nans dont do the whole distances thing
         
@@ -99,6 +101,24 @@ def make_T_timeseries(target_lat,target_lon,start_date,end_date,T_files,nans,T_n
     return T_ERA
     
 def read_GSDR_file(file_name,name_col):
+    """
+    Convert a txt file from the GSDR dataset into a pandas dataframe with datetime as the index.
+
+    Parameters
+    ----------
+    file_name : string
+        path to GSDR file to read.
+    name_col : string
+        name for the precipitation column.
+
+    Returns
+    -------
+    G : pandas dataframe
+        dataframe of precipitation levels and .
+    data_meta : intense object
+        meta data of station, including lon, lat, start_datetime.
+
+    """
     G = pd.read_csv(file_name, skiprows=21, names=[name_col])
     data_meta = readIntense(file_name, only_metadata=True, opened=False)
 
