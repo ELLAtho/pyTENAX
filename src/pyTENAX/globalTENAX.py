@@ -54,7 +54,10 @@ def make_T_timeseries(target_lat,target_lon,start_date,end_date,T_files,nans,T_n
     check = xr.load_dataarray(T_files[0]).sel(latitude = target_lat,method = 'nearest').sel(longitude = target_lon,method = 'nearest') #check if series is nans
     nan_perc = np.isnan(check).sum().item()/np.size(check) #get percentage of file that is nans (should basically be 0 or 100)
     
-    T_temp = [0]*np.size(T_files[first_index:last_index])
+    
+    ds = xr.open_mfdataset(T_files[first_index:last_index], combine='by_coords', parallel=True)
+    T_data = ds['t2m']
+    
     #if there are nans
     if nan_perc > T_nan_limit:
         
@@ -80,22 +83,13 @@ def make_T_timeseries(target_lat,target_lon,start_date,end_date,T_files,nans,T_n
             T_ERA = []
         
         else:
-            for n, file in enumerate(T_files[first_index:last_index]): #load in the data
-                with xr.open_dataarray(file) as da:
-                    T_temp[n] = da.sel(latitude = new_lat,method = 'nearest').sel(longitude = new_lon,method = 'nearest')
             
-            T_ERA = xr.concat(T_temp,dim = 'valid_time').sel(valid_time = slice(start_date,end_date))
+            T_ERA = T_data.sel(valid_time = slice(start_date,end_date)).sel(latitude = new_lat,method = 'nearest').sel(longitude = new_lon,method = 'nearest')
             print(f'Latitudes: {target_lat} became {new_lat}. Longitudes: {target_lon} became {new_lon}. {location.to_numpy()[0][0]} metres away.')
             print(T_ERA)
     
     else: #if location has no nans dont do the whole distances thing
-        
-        for n, file in enumerate(T_files[first_index:last_index]):
-            with xr.open_dataarray(file) as da:
-                T_temp[n] = da.sel(latitude = target_lat,method = 'nearest').sel(longitude = target_lon,method = 'nearest')
-        
-   
-        T_ERA = xr.concat(T_temp,dim = 'valid_time').sel(valid_time = slice(start_date,end_date))  #combine multiple time files
+        T_ERA = T_data.sel(valid_time = slice(start_date,end_date)).sel(latitude = target_lat,method = 'nearest').sel(longitude = target_lon,method = 'nearest')
         
         
     return T_ERA

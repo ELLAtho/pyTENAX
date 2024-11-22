@@ -31,10 +31,11 @@ import time
 from geopy.distance import geodesic
 
 
-drive = 'D'  #specify name of external drive
+drive = 'F'  #specify name of external drive
 
-country = 'Japan'
-code_str = 'JP_' #string from beginning of file names
+country = 'Belgium'
+ERA_country = 'Germany'
+code_str = 'BE_' #string from beginning of file names
 name_col = 'ppt'
 temp_name_col = "t2m"
 min_yrs = 0 #get temperature data for records > 0 years
@@ -50,7 +51,7 @@ info.enddate = pd.to_datetime(info.enddate)
 info = info[info['cleaned_years']>=min_yrs] #filter out short data
 
 #READ IN ERA5 DATA
-T_files = sorted(glob.glob(drive+':/ERA5_land/'+country+'*/*')) #make list of era5 files
+T_files = sorted(glob.glob(drive+':/ERA5_land/'+ERA_country+'*/*')) #make list of era5 files
 saved_files = glob.glob(drive+':/'+country+'_temp/*') #files already saved
 nan_files = []
 dist_to_point = []
@@ -59,12 +60,9 @@ dist_to_point = []
 nans = xr.open_dataarray(T_files[0])[0]
 nans = np.invert(np.isnan(nans)).astype(int) #xarray with 0s where there are nans (the ocean)
 
-# #make a function to calculate the distance from location of station to closest era5 gridpoint
-# def calculate_distance(lat1, lon1, lat2, lon2):
-#     return geodesic((lat1, lon1), (lat2, lon2)).meters
 
 start_time = time.time()
-starti = 442
+starti = 0
 for i in np.arange(starti,len(info)): #for each selected station
     save_path = drive+':/'+country+'_temp\\'+code_str+str(info.station[info.index[i]])+'.nc'
     if save_path not in saved_files:
@@ -74,7 +72,7 @@ for i in np.arange(starti,len(info)): #for each selected station
         start_date = info.startdate[info.index[i]]-pd.Timedelta(days=1) #adding an extra day either end to be safe
         end_date = info.enddate[info.index[i]]+pd.Timedelta(days=1) 
         
-        T_ERA = make_timeseries(target_lat,target_lon,start_date,end_date,T_files,nans,T_nan_limit)
+        T_ERA = make_T_timeseries(target_lat,target_lon,start_date,end_date,T_files,nans,T_nan_limit)
         
     
         T_ERA.to_netcdf(drive+':/'+country+'_temp/'+code_str+str(info.station[info.index[i]])+'.nc') #save file with same name format as GSDR

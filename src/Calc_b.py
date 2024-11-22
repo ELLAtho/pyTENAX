@@ -31,17 +31,29 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
+from matplotlib.colors import LinearSegmentedColormap
+import matplotlib.patches as patches
 
 
 drive = 'F'
 
-country = 'Japan'
-code_str = 'JP_'
-minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+# country = 'Japan'
+# ERA_country = 'Japan'
+# code_str = 'JP_'
+# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+# name_len = 5
+
+
+country = 'Belgium'
+ERA_country = 'Germany' #country where the era files are
+code_str = 'BE_'
+name_len = 8 #how long the numbers are at teh end of the files
 
 # country = 'Germany' 
+# ERA_country = 'Germany'
 # code_str = 'DE_'
 # minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
+# name_len = 5
 
 name_col = 'ppt'
 temp_name_col = "t2m"
@@ -49,7 +61,7 @@ min_yrs = 10
 
 #READ IN META INFO FOR COUNTRY
 info = pd.read_csv(drive+':/metadata/'+country+'_fulldata.csv')
-info.station = info['station'].apply(lambda x: f'{int(x):05}') #need to edit this according to file
+info.station = info['station'].apply(lambda x: f'{int(x):0{name_len}}') #need to edit this according to file
 info.startdate = pd.to_datetime(info.startdate)
 info.enddate = pd.to_datetime(info.enddate)
 
@@ -79,7 +91,7 @@ saved_files = glob.glob(drive + ':/outputs/'+country+'/*')
 if df_savename not in saved_files: #read in files and create t time series and do TENAX if it hasnt been done already
     print('TENAX not done yet on '+country+'. making data.')
     
-    T_files = sorted(glob.glob(drive+':/ERA5_land/'+country+'*/*')) #make list of era5 files
+    T_files = sorted(glob.glob(drive+':/ERA5_land/'+ERA_country+'*/*')) #make list of era5 files
     saved_files = glob.glob(drive+':/'+country+'_temp/*') #files already saved
     
     g_phats = [0]*len(files_sel)
@@ -127,6 +139,10 @@ if df_savename not in saved_files: #read in files and create t time series and d
         #TENAX 
         if len(T_ERA) == 0: # dont do tenax if no T data saved
             print('skip')
+            F_phats[i] = np.array([np.nan,np.nan,np.nan,np.nan])
+            g_phats[i] = np.array([np.nan,np.nan])
+            ns[i] = pd.Series(np.nan)
+            thr[i] = np.nan
         else:
             data = G 
             data = S.remove_incomplete_years(data, name_col)
@@ -176,7 +192,7 @@ if df_savename not in saved_files: #read in files and create t time series and d
             
             
             
-            time_taken = (time.time()-start_time[i-50])/(51)
+            time_taken = (time.time()-start_time[i-9])/10
             time_left = (len(files_sel)-i)*time_taken/60
             print(f"{i}/{len(files_sel)}. Approx time left: {time_left:.0f} mins") #this is only correct after 50 loops
         
@@ -200,9 +216,25 @@ else:
 b_zero = df_parameters.b[df_parameters.b==0].count()
 total = df_parameters.b.count()
 perc_sig = 100*(1-b_zero/total)
-print(f'Percent of stations with significant b: {perc_sig}')
+print(f'Percent of stations with significant b: {perc_sig:.0f}%')
+
+
+non_calc = df_parameters.longitude[df_parameters.thr==0].count()
+print(f'Number of stations without ERA data: {non_calc} out of {len(df_parameters)} stations')
+
 
 #PLOTS
+lon_lims = [np.trunc(np.min(df_parameters.longitude/5))*5,np.ceil(np.max(df_parameters.longitude/5))*5]
+lat_lims = [np.trunc(np.min(df_parameters.latitude/5))*5,np.ceil(np.max(df_parameters.latitude/5))*5]
+
+s=3
+
+#MAKE COLORMAP
+# seismic = plt.cm.seismic
+# colors = seismic(np.linspace(0,1,256))
+# colors[256//2] = [.5,.5,.5,1]
+# cust_seis = LinearSegmentedColormap.from_list('cust_seis',colors)
+
 
 
 fig = plt.figure(figsize=(10, 10))
@@ -215,13 +247,36 @@ ax1.add_feature(cfeature.BORDERS, linestyle=':')
 
 # Choosing cmap
 norm = mcolors.TwoSlopeNorm(vmin=df_parameters.b.min(), vcenter=0, vmax=-1*df_parameters.b.min())
+
+for lon, lat in zip(df_parameters.longitude[df_parameters.thr == 0], 
+                    df_parameters.latitude[df_parameters.thr == 0]):
+    square = patches.Rectangle(
+        (lon - 0.5, lat - 0.5),  # Bottom-left corner of the square
+        1,  # Width (1 degree)
+        1,  # Height (1 degree)
+        color='r',
+        alpha = 0.2,
+        label="no ERA data within 1 deg" if 'no ERA data within 1 deg' not in ax1.get_legend_handles_labels()[1] else ""
+    )
+    ax1.add_patch(square)
 sc = ax1.scatter(
-    df_parameters.longitude,
-    df_parameters.latitude,
-    c=df_parameters.b,
-    cmap='coolwarm',  
+    df_parameters.longitude[df_parameters.b==0],
+    df_parameters.latitude[df_parameters.b==0],
+    s = s,
+    color = 'darkgrey',  
+)
+
+sc = ax1.scatter(
+    df_parameters.longitude[df_parameters.b!=0],
+    df_parameters.latitude[df_parameters.b!=0],
+    c=df_parameters.b[df_parameters.b!=0],
+    s = s,
+    cmap='seismic',  
     norm=norm
 )
+
+
+
 
 # Add a colorbar at the bottom
 cb = plt.colorbar(sc, orientation='horizontal', pad=0.05)
@@ -229,12 +284,82 @@ cb.set_label('b', fontsize=14)
 cb.ax.tick_params(labelsize=12)
 
 # Set x and y ticks
-ax1.set_xticks([5, 10, 15], crs=proj)
-ax1.set_yticks([50, 55], crs=proj)
+ax1.set_xticks(np.arange(lon_lims[0],lon_lims[1],5), crs=proj)
+ax1.set_yticks(np.arange(lat_lims[0],lat_lims[1],5), crs=proj)
 ax1.tick_params(labelsize=12)  
 
 plt.title(f'GSDR: {country}. b at {TENAX_use.alpha[0]} sig level', fontsize=16)
-
-# Display the plot
+plt.legend()
 plt.show()
 
+#THIS SHOWS THE LOCATION OF THE STATION, NOT THE ERA DATA
+
+#Average temps
+fig = plt.figure(figsize=(10, 10))
+proj = ccrs.PlateCarree()
+ax1 = fig.add_subplot(1, 1, 1, projection=proj)
+
+# Add map features
+ax1.coastlines()
+ax1.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc = ax1.scatter(
+    df_parameters.longitude,
+    df_parameters.latitude,
+    c=df_parameters.mu,
+    s = s,
+    cmap='Reds',  
+)
+
+
+
+
+# Add a colorbar at the bottom
+cb = plt.colorbar(sc, orientation='horizontal', pad=0.05)
+cb.set_label('μ (°C)', fontsize=14)  
+cb.ax.tick_params(labelsize=12)
+
+# Set x and y ticks
+ax1.set_xticks(np.arange(lon_lims[0],lon_lims[1],5), crs=proj)
+ax1.set_yticks(np.arange(lat_lims[0],lat_lims[1],5), crs=proj)
+ax1.tick_params(labelsize=12)  
+
+plt.title(f'GSDR: {country}. μ', fontsize=16)
+plt.show()
+
+
+#scale param
+fig = plt.figure(figsize=(10, 10))
+proj = ccrs.PlateCarree()
+ax1 = fig.add_subplot(1, 1, 1, projection=proj)
+
+# Add map features
+ax1.coastlines()
+ax1.add_feature(cfeature.BORDERS, linestyle=':')
+
+norm = mcolors.TwoSlopeNorm(vmin=0,vcenter = (df_parameters["lambda"].max()/2) , vmax=df_parameters["lambda"].max())
+sc = ax1.scatter(
+    df_parameters.longitude,
+    df_parameters.latitude,
+    c=df_parameters["lambda"],
+    s = s,
+    cmap='YlGnBu',  
+    norm=norm
+)
+
+
+
+
+# Add a colorbar at the bottom
+cb = plt.colorbar(sc, orientation='horizontal', pad=0.05)
+cb.set_label('λ (mm/hr)', fontsize=14)  
+cb.ax.tick_params(labelsize=12)
+
+# Set x and y ticks
+ax1.set_xticks(np.arange(lon_lims[0],lon_lims[1],5), crs=proj)
+ax1.set_yticks(np.arange(lat_lims[0],lat_lims[1],5), crs=proj)
+ax1.tick_params(labelsize=12)  
+
+plt.title(f'GSDR: {country}. λ', fontsize=16)
+plt.show()

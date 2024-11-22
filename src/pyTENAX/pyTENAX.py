@@ -809,7 +809,7 @@ def gen_norm_loglik(x, par, beta):
     n = len(pdf[pdf==0])
 
     if n>5:
-        print("warning: "+n+" zero values")
+        print(f"warning: {n}/{len(pdf)} zero values")
         
     pdf[pdf==0] = 1e-10 #stops issue if zero generated
 

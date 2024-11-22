@@ -24,6 +24,7 @@ import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import matplotlib.colors as mcolors
 
+drive='F' #name of drive
 countries = ['ISD','Belgium','Finland','Germany','Ireland','Japan','Norway','Portugal','UK','US']
 
 # latslons
@@ -40,7 +41,7 @@ info = []
 
 
 for c in countries:
-    dd = pd.read_csv('D:/metadata/'+c+'_fulldata.csv')
+    dd = pd.read_csv(drive+':/metadata/'+c+'_fulldata.csv')
     info.append(dd)
     
 info_full = pd.concat(info,axis=0)    
@@ -113,8 +114,8 @@ ax1.scatter(info_20.longitude,info_20.latitude, color = 'orange',label = '10-19'
 ax1.scatter(info_30.longitude,info_30.latitude, color = 'gold',label = '20-29')
 ax1.scatter(info_30.longitude,info_30.latitude, color = 'green',label = '30+')
 plt.legend()
-plt.xlim(-10,45)
-plt.ylim(20,75)
+plt.xlim(-10,50)
+plt.ylim(20,80)
 
 plt.show()
 
@@ -124,9 +125,12 @@ fig = plt.figure(figsize=(10, 10))
 proj = ccrs.PlateCarree()
 ax1 = fig.add_subplot(1, 1, 1, projection=proj)
 ax1.coastlines()
-sc = plt.scatter(info_full['longitude'],info_full['latitude'],s=1.5,c=info_full['cleaned_years'],transform=ccrs.PlateCarree())
+ax1.scatter(info_10.longitude,info_10.latitude, color = 'red',label = '<10')
+ax1.scatter(info_20.longitude,info_20.latitude, color = 'orange',label = '10-19')
+ax1.scatter(info_30.longitude,info_30.latitude, color = 'gold',label = '20-29')
+ax1.scatter(info_30.longitude,info_30.latitude, color = 'green',label = '30+')
 plt.xlim(110,150)
-plt.ylim(-10,48)
+plt.ylim(-20,48)
 plt.show()
 
 
@@ -135,7 +139,10 @@ fig = plt.figure(figsize=(10, 10))
 proj = ccrs.PlateCarree()
 ax1 = fig.add_subplot(1, 1, 1, projection=proj)
 ax1.coastlines()
-sc = plt.scatter(info_full['longitude'],info_full['latitude'],s=1.5,c=info_full['cleaned_years'],transform=ccrs.PlateCarree())
+ax1.scatter(info_10.longitude,info_10.latitude, color = 'red',label = '<10')
+ax1.scatter(info_20.longitude,info_20.latitude, color = 'orange',label = '10-19')
+ax1.scatter(info_30.longitude,info_30.latitude, color = 'gold',label = '20-29')
+ax1.scatter(info_30.longitude,info_30.latitude, color = 'green',label = '30+')
 plt.xlim(130,170)
 plt.ylim(-10,30)
 plt.show()
@@ -147,20 +154,14 @@ fig = plt.figure(figsize=(10, 10))
 proj = ccrs.PlateCarree()
 ax1 = fig.add_subplot(1, 1, 1, projection=proj)
 ax1.coastlines()
-sc = plt.scatter(info_full['longitude'],info_full['latitude'],s=1.5,c=info_full['cleaned_years'],transform=ccrs.PlateCarree())
-plt.xlim(-140,-50)
-plt.ylim(20,75)
+ax1.scatter(info_10.longitude,info_10.latitude, color = 'red',label = '<10')
+ax1.scatter(info_20.longitude,info_20.latitude, color = 'orange',label = '10-19')
+ax1.scatter(info_30.longitude,info_30.latitude, color = 'gold',label = '20-29')
+ax1.scatter(info_30.longitude,info_30.latitude, color = 'green',label = '30+')
+plt.xlim(-180,-50)
+plt.ylim(0,75)
 plt.show()
 
-
-fig = plt.figure(figsize=(10, 10))
-proj = ccrs.PlateCarree()
-ax1 = fig.add_subplot(1, 1, 1, projection=proj)
-ax1.coastlines()
-sc = plt.scatter(info_full['longitude'],info_full['latitude'],s=1.5,c=info_full['cleaned_years'],transform=ccrs.PlateCarree())
-ax1.set_xticks(np.arange(-180,190,20), crs=proj)
-ax1.set_yticks(np.arange(-90,100,20), crs=proj)
-plt.show()
 
 
 ISD_10 = info[0][info[0].cleaned_years>+10]
@@ -172,19 +173,24 @@ ax1 = fig.add_subplot(1, 1, 1, projection=proj)
 ax1.coastlines()
 
 ax1.scatter(ISD_10.longitude,ISD_10.latitude,s=1.5, color = 'red')
-
+plt.title('ISD stations with more than 10 years data')
 plt.show()
+
 
 ###grid
 
 countries = ['ISD','Belgium','Finland','Germany','Ireland','Japan','Norway','Portugal','UK','US']
-G_loc = np.array([47,3,55,15])
-US_main_loc = np.array([24, -125, 56, -66])
-UK_loc = np.array([49.2, -8.0, 60.8, 1.8])
-J_loc = np.array([24, 122.9, 45.6, 145.8])
-P_loc = np.array([36.9,-9.5,42.1,8.9])
+G_loc = np.array([47,3,55,15]) #DOWNLOADED
+US_main_loc = np.array([24, -125, 56, -66]) #downloading
+UK_loc = np.array([49.2, -8.0, 60.8, 1.8]) #DOWNLOADED
+J_loc = np.array([24, 122.9, 45.6, 145.8]) #DOWNLOADED
+P_loc = np.array([36.9,-9.5,42.1,-5])
+N_loc = np.array([55,4.7,79.1,31.2])
+H_loc = np.array([18.8,-160,22.3,-154.8])
+PR_loc = np.array([17.6,-67.3,18.5,-64.7])
+Al_loc = np.array([54.9,-171.9,71.4,-131.4])
 
-
+#EUROPE
 fig = plt.figure(figsize=(10, 10))
 proj = ccrs.PlateCarree()
 ax1 = fig.add_subplot(1, 1, 1, projection=proj)
@@ -206,29 +212,97 @@ ax1.plot([UK_loc[1], UK_loc[3]],[UK_loc[0], UK_loc[0]],  'b', linewidth=2, trans
 ax1.plot([UK_loc[3], UK_loc[1]],[UK_loc[2], UK_loc[2]],  'b', linewidth=2, transform=ccrs.PlateCarree(),label = 'UK')
 
 
-ax1.plot([P_loc[1], P_loc[1]],[P_loc[0], P_loc[2]],  'b', linewidth=2, transform=ccrs.PlateCarree())
-ax1.plot([P_loc[3], P_loc[3]],[P_loc[2], P_loc[0]],  'b', linewidth=2, transform=ccrs.PlateCarree())
+ax1.plot([P_loc[1], P_loc[1]],[P_loc[0], P_loc[2]],  'g', linewidth=2, transform=ccrs.PlateCarree())
+ax1.plot([P_loc[3], P_loc[3]],[P_loc[2], P_loc[0]],  'g', linewidth=2, transform=ccrs.PlateCarree())
 
-ax1.plot([P_loc[1], P_loc[3]],[P_loc[0], P_loc[0]],  'b', linewidth=2, transform=ccrs.PlateCarree())
-ax1.plot([P_loc[3], P_loc[1]],[P_loc[2], P_loc[2]],  'b', linewidth=2, transform=ccrs.PlateCarree(),label = 'UK')
+ax1.plot([P_loc[1], P_loc[3]],[P_loc[0], P_loc[0]],  'g', linewidth=2, transform=ccrs.PlateCarree())
+ax1.plot([P_loc[3], P_loc[1]],[P_loc[2], P_loc[2]],  'g', linewidth=2, transform=ccrs.PlateCarree(),label = 'Portugal')
+
+
+ax1.plot([N_loc[1], N_loc[1]],[N_loc[0], N_loc[2]],  'c', linewidth=2, transform=ccrs.PlateCarree())
+ax1.plot([N_loc[3], N_loc[3]],[N_loc[2], N_loc[0]],  'c', linewidth=2, transform=ccrs.PlateCarree())
+
+ax1.plot([N_loc[1], N_loc[3]],[N_loc[0], N_loc[0]],  'c', linewidth=2, transform=ccrs.PlateCarree())
+ax1.plot([N_loc[3], N_loc[1]],[N_loc[2], N_loc[2]],  'c', linewidth=2, transform=ccrs.PlateCarree(),label = 'Norway and Finland')
 
 n=0
 while n<len(countries):
     plt.scatter(info[n]['longitude'],info[n]['latitude'],label = countries[n],transform=ccrs.PlateCarree())
     n=n+1
 plt.legend()
-plt.xlim(-10,45)
-plt.ylim(20,75)
+plt.xlim(-10,50)
+plt.ylim(20,80)
 
 plt.show()
 
 
+#ASIA
+fig = plt.figure(figsize=(10, 10))
+proj = ccrs.PlateCarree()
+ax1 = fig.add_subplot(1, 1, 1, projection=proj)
+ax1.coastlines()
+ax1.add_feature(cfeature.BORDERS, linestyle=':')
 
-#minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
-#country = 'Japan'
 
-#minlat,minlon,maxlat,maxlon = 49.2, -8.0, 60.8, 1.8
+ax1.plot([J_loc[1], J_loc[1]],[J_loc[0], J_loc[2]],  'r', linewidth=2, transform=ccrs.PlateCarree())
+ax1.plot([J_loc[3], J_loc[3]],[J_loc[2], J_loc[0]],  'r', linewidth=2, transform=ccrs.PlateCarree())
+
+ax1.plot([J_loc[1], J_loc[3]],[J_loc[0], J_loc[0]],  'r', linewidth=2, transform=ccrs.PlateCarree())
+ax1.plot([J_loc[3], J_loc[1]],[J_loc[2], J_loc[2]],  'r', linewidth=2, transform=ccrs.PlateCarree(),label = 'Japan')
+
+n=0
+while n<len(countries):
+    plt.scatter(info[n]['longitude'],info[n]['latitude'],label = countries[n],transform=ccrs.PlateCarree())
+    n=n+1
+    
+plt.legend()
+plt.xlim(90,180)
+plt.ylim(0,60)
+plt.show()
 
 
 
 
+#US
+fig = plt.figure(figsize=(10, 10))
+proj = ccrs.PlateCarree()
+ax1 = fig.add_subplot(1, 1, 1, projection=proj)
+ax1.coastlines()
+ax1.add_feature(cfeature.BORDERS, linestyle=':')
+
+ax1.plot([US_main_loc[1], US_main_loc[1]],[US_main_loc[0], US_main_loc[2]],  'r', linewidth=2, transform=ccrs.PlateCarree())
+ax1.plot([US_main_loc[3], US_main_loc[3]],[US_main_loc[2], US_main_loc[0]],  'r', linewidth=2, transform=ccrs.PlateCarree())
+
+ax1.plot([US_main_loc[1], US_main_loc[3]],[US_main_loc[0], US_main_loc[0]],  'r', linewidth=2, transform=ccrs.PlateCarree())
+ax1.plot([US_main_loc[3], US_main_loc[1]],[US_main_loc[2], US_main_loc[2]],  'r', linewidth=2, transform=ccrs.PlateCarree(),label = 'mainland')
+
+
+ax1.plot([H_loc[1], H_loc[1]],[H_loc[0], H_loc[2]],  'b', linewidth=2, transform=ccrs.PlateCarree())
+ax1.plot([H_loc[3], H_loc[3]],[H_loc[2], H_loc[0]],  'b', linewidth=2, transform=ccrs.PlateCarree())
+
+ax1.plot([H_loc[1], H_loc[3]],[H_loc[0], H_loc[0]],  'b', linewidth=2, transform=ccrs.PlateCarree())
+ax1.plot([H_loc[3], H_loc[1]],[H_loc[2], H_loc[2]],  'b', linewidth=2, transform=ccrs.PlateCarree(),label = 'Hawaii')
+
+
+ax1.plot([PR_loc[1], PR_loc[1]],[PR_loc[0], PR_loc[2]],  'g', linewidth=2, transform=ccrs.PlateCarree())
+ax1.plot([PR_loc[3], PR_loc[3]],[PR_loc[2], PR_loc[0]],  'g', linewidth=2, transform=ccrs.PlateCarree())
+
+ax1.plot([PR_loc[1], PR_loc[3]],[PR_loc[0], PR_loc[0]],  'g', linewidth=2, transform=ccrs.PlateCarree())
+ax1.plot([PR_loc[3], PR_loc[1]],[PR_loc[2], PR_loc[2]],  'g', linewidth=2, transform=ccrs.PlateCarree(),label = 'Puerto Rico')
+
+ax1.plot([Al_loc[1], Al_loc[1]],[Al_loc[0], Al_loc[2]],  'c', linewidth=2, transform=ccrs.PlateCarree())
+ax1.plot([Al_loc[3], Al_loc[3]],[Al_loc[2], Al_loc[0]],  'c', linewidth=2, transform=ccrs.PlateCarree())
+
+ax1.plot([Al_loc[1], Al_loc[3]],[Al_loc[0], Al_loc[0]],  'c', linewidth=2, transform=ccrs.PlateCarree())
+ax1.plot([Al_loc[3], Al_loc[1]],[Al_loc[2], Al_loc[2]],  'c', linewidth=2, transform=ccrs.PlateCarree(),label = 'Alaska')
+
+
+
+for n in [0,9]:
+    plt.scatter(info[n]['longitude'],info[n]['latitude'],s=2,label = countries[n],transform=ccrs.PlateCarree())
+    n=n+1
+    
+plt.legend()
+plt.xlim(-180,-50)
+plt.ylim(0,75)
+plt.show()
