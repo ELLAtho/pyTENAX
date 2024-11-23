@@ -35,7 +35,7 @@ from matplotlib.colors import LinearSegmentedColormap
 import matplotlib.patches as patches
 
 
-drive = 'F'
+drive = 'D'
 
 # country = 'Japan'
 # ERA_country = 'Japan'
@@ -47,7 +47,7 @@ drive = 'F'
 country = 'Belgium'
 ERA_country = 'Germany' #country where the era files are
 code_str = 'BE_'
-name_len = 8 #how long the numbers are at teh end of the files
+name_len = 8 #how long the numbers are at the end of the files
 
 # country = 'Germany' 
 # ERA_country = 'Germany'
@@ -55,7 +55,7 @@ name_len = 8 #how long the numbers are at teh end of the files
 # minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
 # name_len = 5
 
-name_col = 'ppt'
+name_col = 'ppt' 
 temp_name_col = "t2m"
 min_yrs = 10 
 
@@ -99,7 +99,7 @@ if df_savename not in saved_files: #read in files and create t time series and d
     thr = [0]*len(files_sel)
     ns = [0]*len(files_sel)
     
-    nans = xr.open_dataarray(T_files[0])[0]
+    nans = xr.open_dataarray(T_files[0])[0] 
     nans = np.invert(np.isnan(nans)).astype(int)
     
     saved_counter = 0
@@ -284,8 +284,8 @@ cb.set_label('b', fontsize=14)
 cb.ax.tick_params(labelsize=12)
 
 # Set x and y ticks
-ax1.set_xticks(np.arange(lon_lims[0],lon_lims[1],5), crs=proj)
-ax1.set_yticks(np.arange(lat_lims[0],lat_lims[1],5), crs=proj)
+ax1.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,5), crs=proj)
+ax1.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,5), crs=proj)
 ax1.tick_params(labelsize=12)  
 
 plt.title(f'GSDR: {country}. b at {TENAX_use.alpha[0]} sig level', fontsize=16)

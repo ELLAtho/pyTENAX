@@ -51,46 +51,60 @@ def make_T_timeseries(target_lat,target_lon,start_date,end_date,T_files,nans,T_n
     
     first_index = next((i for i, s in enumerate(T_files) if start_year in s), None) #location of first file that has start year so can read fewer files in
     last_index = next((len(T_files) - 1 - i for i, s in enumerate(reversed(T_files)) if end_year in s), None) #same for end year
-    check = xr.load_dataarray(T_files[0]).sel(latitude = target_lat,method = 'nearest').sel(longitude = target_lon,method = 'nearest') #check if series is nans
+    
+    
+    check = xr.open_dataarray(T_files[first_index]).sel(latitude = target_lat,method = 'nearest').sel(longitude = target_lon,method = 'nearest').sel(valid_time = start_date) #check if series is nans
     nan_perc = np.isnan(check).sum().item()/np.size(check) #get percentage of file that is nans (should basically be 0 or 100)
     
-    
-    ds = xr.open_mfdataset(T_files[first_index:last_index], combine='by_coords', parallel=True)
-    T_data = ds['t2m']
+    T_temp = [0]*np.size(T_files[first_index:last_index])
     
     #if there are nans
     if nan_perc > T_nan_limit:
         
         nans_sm = nans.sel(latitude = slice(target_lat+0.5,target_lat-0.5),
                            longitude = slice(target_lon-0.5,target_lon+0.5)) #select smaller map for speed
-        
-        distances = nans_sm*xr.apply_ufunc(
-            calculate_distance,
-            xr.full_like(nans_sm.latitude, target_lat),  # Broadcast the target latitude
-            xr.full_like(nans_sm.longitude, target_lon),  # Broadcast the target longitude
-            nans_sm.latitude,
-            nans_sm.longitude,
-            vectorize=True,  
-            output_dtypes=[float],  
-        ) #calculate the distance from target to closest non nan
-        
-        distances = distances.where(distances !=0, np.nan) #change 0s from mask into nans
-        location = distances.where(distances==distances.min(),drop=True) #get location with smallest distance from target
-        new_lat = location.latitude.to_numpy() 
-        new_lon = location.longitude.to_numpy()
-        if len(new_lat) == 0:
-            print('warning: no land within 1 degree. Possibly at domain edge. skip read')
+        if len(nans_sm)==0:
+            print('Warning: location outside data. skip read') #NEED TO ADD THIS TO THE ELSE BIT TOO
             T_ERA = []
-        
+            #TODO: add similar to if no nans
         else:
-            
-            T_ERA = T_data.sel(valid_time = slice(start_date,end_date)).sel(latitude = new_lat,method = 'nearest').sel(longitude = new_lon,method = 'nearest')
-            print(f'Latitudes: {target_lat} became {new_lat}. Longitudes: {target_lon} became {new_lon}. {location.to_numpy()[0][0]} metres away.')
-            print(T_ERA)
-    
-    else: #if location has no nans dont do the whole distances thing
-        T_ERA = T_data.sel(valid_time = slice(start_date,end_date)).sel(latitude = target_lat,method = 'nearest').sel(longitude = target_lon,method = 'nearest')
         
+            distances = nans_sm*xr.apply_ufunc(
+                calculate_distance,
+                xr.full_like(nans_sm.latitude, target_lat),  # Broadcast the target latitude
+                xr.full_like(nans_sm.longitude, target_lon),  # Broadcast the target longitude
+                nans_sm.latitude,
+                nans_sm.longitude,
+                vectorize=True,  
+                output_dtypes=[float],  
+            ) #calculate the distance from target to closest non nan
+            
+            distances = distances.where(distances !=0, np.nan) #change 0s from mask into nans
+            location = distances.where(distances==distances.min(),drop=True) #get location with smallest distance from target
+            new_lat = location.latitude.to_numpy() 
+            new_lon = location.longitude.to_numpy()
+            
+            if len(new_lat) == 0:
+                print('warning: no land within 1 degree. Possibly at domain edge. skip read')
+                T_ERA = []
+        
+            else:
+                for n, file in enumerate(T_files[first_index:last_index]): #load in the data
+                    with xr.open_dataarray(file) as da:
+                        T_temp[n] = da.sel(latitude = new_lat,method = 'nearest').sel(longitude = new_lon,method = 'nearest')
+                    
+                T_ERA = xr.concat(T_temp,dim = 'valid_time').sel(valid_time = slice(start_date,end_date))
+                print(f'Latitudes: {target_lat} became {new_lat}. Longitudes: {target_lon} became {new_lon}. {location.to_numpy()[0][0]} metres away.')
+                
+                print(T_ERA)
+        
+    else: #if location has no nans dont do the whole distances thing
+        for n, file in enumerate(T_files[first_index:last_index]):
+            with xr.open_dataarray(file) as da:
+                T_temp[n] = da.sel(latitude = target_lat,method = 'nearest').sel(longitude = target_lon,method = 'nearest')
+        
+   
+        T_ERA = xr.concat(T_temp,dim = 'valid_time').sel(valid_time = slice(start_date,end_date))  #combine multiple time files
         
     return T_ERA
     

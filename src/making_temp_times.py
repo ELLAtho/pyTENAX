@@ -31,11 +31,12 @@ import time
 from geopy.distance import geodesic
 
 
-drive = 'F'  #specify name of external drive
+drive = 'D'  #specify name of external drive
 
 country = 'Belgium'
 ERA_country = 'Germany'
 code_str = 'BE_' #string from beginning of file names
+name_len = 8 #how long the numbers are at the end of the files
 name_col = 'ppt'
 temp_name_col = "t2m"
 min_yrs = 0 #get temperature data for records > 0 years
@@ -44,7 +45,7 @@ T_nan_limit = 0.1 #limit for amount of nans that can be present in time series 0
 
 #READ IN META INFO FOR COUNTRY
 info = pd.read_csv(drive+':/metadata/'+country+'_fulldata.csv')
-info.station = info['station'].apply(lambda x: f'{int(x):05}') #need to edit this according to file
+info.station = info['station'].apply(lambda x: f'{int(x):0{name_len}}') #need to edit this according to file
 info.startdate = pd.to_datetime(info.startdate)
 info.enddate = pd.to_datetime(info.enddate)
 
