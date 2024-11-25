@@ -35,7 +35,7 @@ from matplotlib.colors import LinearSegmentedColormap
 import matplotlib.patches as patches
 
 
-drive = 'D'
+drive = 'F'
 
 # country = 'Japan'
 # ERA_country = 'Japan'
@@ -44,16 +44,16 @@ drive = 'D'
 # name_len = 5
 
 
-country = 'Belgium'
-ERA_country = 'Germany' #country where the era files are
-code_str = 'BE_'
-name_len = 8 #how long the numbers are at the end of the files
+# country = 'Belgium'
+# ERA_country = 'Germany' #country where the era files are
+# code_str = 'BE_'
+# name_len = 8 #how long the numbers are at the end of the files
 
-# country = 'Germany' 
-# ERA_country = 'Germany'
-# code_str = 'DE_'
-# minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
-# name_len = 5
+country = 'Germany' 
+ERA_country = 'Germany'
+code_str = 'DE_'
+minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
+name_len = 5
 
 name_col = 'ppt' 
 temp_name_col = "t2m"
@@ -224,8 +224,8 @@ print(f'Number of stations without ERA data: {non_calc} out of {len(df_parameter
 
 
 #PLOTS
-lon_lims = [np.trunc(np.min(df_parameters.longitude/5))*5,np.ceil(np.max(df_parameters.longitude/5))*5]
-lat_lims = [np.trunc(np.min(df_parameters.latitude/5))*5,np.ceil(np.max(df_parameters.latitude/5))*5]
+lon_lims = [np.trunc(np.min(df_parameters.longitude/2.5))*2.5,np.ceil(np.max(df_parameters.longitude/2.5))*2.5]
+lat_lims = [np.trunc(np.min(df_parameters.latitude/2.5))*2.5,np.ceil(np.max(df_parameters.latitude/2.5))*2.5]
 
 s=3
 
@@ -284,8 +284,8 @@ cb.set_label('b', fontsize=14)
 cb.ax.tick_params(labelsize=12)
 
 # Set x and y ticks
-ax1.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,5), crs=proj)
-ax1.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,5), crs=proj)
+ax1.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+ax1.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
 ax1.tick_params(labelsize=12)  
 
 plt.title(f'GSDR: {country}. b at {TENAX_use.alpha[0]} sig level', fontsize=16)
@@ -321,8 +321,8 @@ cb.set_label('μ (°C)', fontsize=14)
 cb.ax.tick_params(labelsize=12)
 
 # Set x and y ticks
-ax1.set_xticks(np.arange(lon_lims[0],lon_lims[1],5), crs=proj)
-ax1.set_yticks(np.arange(lat_lims[0],lat_lims[1],5), crs=proj)
+ax1.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+ax1.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
 ax1.tick_params(labelsize=12)  
 
 plt.title(f'GSDR: {country}. μ', fontsize=16)
@@ -357,8 +357,8 @@ cb.set_label('λ (mm/hr)', fontsize=14)
 cb.ax.tick_params(labelsize=12)
 
 # Set x and y ticks
-ax1.set_xticks(np.arange(lon_lims[0],lon_lims[1],5), crs=proj)
-ax1.set_yticks(np.arange(lat_lims[0],lat_lims[1],5), crs=proj)
+ax1.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+ax1.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
 ax1.tick_params(labelsize=12)  
 
 plt.title(f'GSDR: {country}. λ', fontsize=16)

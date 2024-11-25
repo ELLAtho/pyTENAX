@@ -189,6 +189,7 @@ N_loc = np.array([55,4.7,79.1,31.2])
 H_loc = np.array([18.8,-160,22.3,-154.8])
 PR_loc = np.array([17.6,-67.3,18.5,-64.7])
 Al_loc = np.array([54.9,-171.9,71.4,-131.4])
+I_loc = np.array([35,6,49,20])
 
 #EUROPE
 fig = plt.figure(figsize=(10, 10))
@@ -224,6 +225,13 @@ ax1.plot([N_loc[3], N_loc[3]],[N_loc[2], N_loc[0]],  'c', linewidth=2, transform
 
 ax1.plot([N_loc[1], N_loc[3]],[N_loc[0], N_loc[0]],  'c', linewidth=2, transform=ccrs.PlateCarree())
 ax1.plot([N_loc[3], N_loc[1]],[N_loc[2], N_loc[2]],  'c', linewidth=2, transform=ccrs.PlateCarree(),label = 'Norway and Finland')
+
+ax1.plot([I_loc[1], I_loc[1]],[I_loc[0], I_loc[2]],  'tab:orange', linewidth=2, transform=ccrs.PlateCarree())
+ax1.plot([I_loc[3], I_loc[3]],[I_loc[2], I_loc[0]],  'tab:orange', linewidth=2, transform=ccrs.PlateCarree())
+
+
+ax1.plot([I_loc[1], I_loc[3]],[I_loc[0], I_loc[0]],  'tab:orange', linewidth=2, transform=ccrs.PlateCarree())
+ax1.plot([I_loc[3], I_loc[1]],[I_loc[2], I_loc[2]],  'tab:orange', linewidth=2, transform=ccrs.PlateCarree(),label = 'Italy')
 
 n=0
 while n<len(countries):
