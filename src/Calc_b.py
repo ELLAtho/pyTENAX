@@ -35,13 +35,15 @@ from matplotlib.colors import LinearSegmentedColormap
 import matplotlib.patches as patches
 
 
-drive = 'F'
+drive = 'D'
 
-# country = 'Japan'
-# ERA_country = 'Japan'
-# code_str = 'JP_'
-# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
-# name_len = 5
+country = 'Japan'
+ERA_country = 'Japan'
+code_str = 'JP_'
+minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+name_len = 5
+min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+
 
 
 # country = 'Belgium'
@@ -49,11 +51,19 @@ drive = 'F'
 # code_str = 'BE_'
 # name_len = 8 #how long the numbers are at the end of the files
 
-country = 'Germany' 
-ERA_country = 'Germany'
-code_str = 'DE_'
-minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
-name_len = 5
+
+# country = 'Germany' 
+# ERA_country = 'Germany'
+# code_str = 'DE_'
+# minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
+# name_len = 5
+
+# country = 'UK' 
+# ERA_country = 'UK'
+# code_str = 'UK_'
+# name_len = 0
+# min_startdate = dt.datetime(1981,1,1) #this is for if havent read all ERA5 data yet
+
 
 name_col = 'ppt' 
 temp_name_col = "t2m"
@@ -61,7 +71,11 @@ min_yrs = 10
 
 #READ IN META INFO FOR COUNTRY
 info = pd.read_csv(drive+':/metadata/'+country+'_fulldata.csv')
-info.station = info['station'].apply(lambda x: f'{int(x):0{name_len}}') #need to edit this according to file
+if name_len!=0:
+    info.station = info['station'].apply(lambda x: f'{int(x):0{name_len}}') #need to edit this according to file
+else:
+    pass
+
 info.startdate = pd.to_datetime(info.startdate)
 info.enddate = pd.to_datetime(info.enddate)
 
@@ -69,6 +83,8 @@ info.enddate = pd.to_datetime(info.enddate)
 
 
 val_info = info[info['cleaned_years']>=min_yrs] #filter out stations that are less than min
+val_info = val_info[val_info['startdate']>=min_startdate]
+
 
 files = glob.glob(drive+':/'+country+'/*') #list of files in country folder
 files_sel = [files[i] for i in val_info.index]
@@ -80,6 +96,7 @@ S = TENAX(
         left_censoring = [0, 0.90],
         alpha = 0.05,
         min_ev_dur = 60,
+        niter_smev = 1000, 
     )
 
 
@@ -202,7 +219,7 @@ if df_savename not in saved_files: #read in files and create t time series and d
     df_parameters = pd.DataFrame({'station':val_info.station,'latitude':val_info.latitude,'longitude':val_info.longitude,'mu':np.array(g_phats)[:,0],'sigma':np.array(g_phats)[:,1],'kappa':np.array(F_phats)[:,0],'b':np.array(F_phats)[:,1],'lambda':np.array(F_phats)[:,2],'a':np.array(F_phats)[:,3],'thr':np.array(thr),'n_events_per_yr':np.array(ns)[:,0]})
     df_parameters.to_csv(df_savename) #save calculated parameters
     
-    TENAX_use = pd.DataFrame({'alpha':[S.alpha],'beta':[S.beta],'left_censoring':[S.left_censoring[1]],'event_duration':[60]})
+    TENAX_use = pd.DataFrame({'alpha':[S.alpha],'beta':[S.beta],'left_censoring':[S.left_censoring[1]],'event_duration':[60],'n_monte_carlo':[S.n_monte_carlo],'niter_smev':[S.niter_smev]})
     TENAX_use.to_csv(drive + ':/outputs/'+country+'/TENAX_parameters.csv') #save calculated parameters
 
 
@@ -213,14 +230,112 @@ else:
 
 ########################
 
+#RUN WITH FREE b
+S.alpha = 0
+df_parameters_neg = df_parameters[df_parameters.b==0]
+
+length_neg = len(df_parameters_neg.b)
+
+
+F_phats2 = [0]*length_neg
+start_time = [0]*length_neg
+
+save_path_neg = drive + ':/outputs/'+country+'\\parameters_neg.csv'
+
+if save_path_neg not in saved_files:
+    print('making the extra bs')
+    for i in np.arange(0,length_neg):
+        start_time[i] = time.time()
+        read_path = drive + ':/'+country+'_temp\\'+code_str + str(df_parameters_neg.station[df_parameters_neg.index[i]]) + '.nc'
+        read_path_ppt = drive + ':/'+country+'\\'+code_str + str(df_parameters_neg.station[df_parameters_neg.index[i]]) + '.txt'
+        T_ERA = xr.load_dataarray(read_path)
+        
+        G,data_meta = read_GSDR_file(read_path_ppt,name_col)
+        
+        data = G 
+        data = S.remove_incomplete_years(data, name_col)
+        t_data = (T_ERA.squeeze()-273.15).to_dataframe()
+        print(f'{data_meta.latitude},{data_meta.longitude}')
+        print(t_data[0:5])
+        df_arr = np.array(data[name_col])
+        df_dates = np.array(data.index)
+        
+        #extract indexes of ordinary events
+        #these are time-wise indexes =>returns list of np arrays with np.timeindex
+        idx_ordinary=S.get_ordinary_events(data=df_arr,dates=df_dates, name_col=name_col,  check_gaps=False)
+            
+        
+        #get ordinary events by removing too short events
+        #returns boolean array, dates of OE in TO, FROM format, and count of OE in each years
+        arr_vals,arr_dates,n_ordinary_per_year=S.remove_short(idx_ordinary)
+        
+        #assign ordinary events values by given durations, values are in depth per duration, NOT in intensity mm/h
+        dict_ordinary, dict_AMS = S.get_ordinary_events_values(data=df_arr,dates=df_dates, arr_dates_oe=arr_dates)
+        
+        
+        
+        df_arr_t_data = np.array(t_data[temp_name_col])
+        df_dates_t_data = np.array(t_data.index)
+        
+        dict_ordinary, _ , n_ordinary_per_year = S.associate_vars(dict_ordinary, df_arr_t_data, df_dates_t_data)
+        
+        
+        
+        # Your data (P, T arrays) and threshold thr=3.8
+        P = dict_ordinary["60"]["ordinary"].to_numpy() 
+        T = dict_ordinary["60"]["T"].to_numpy()  
+        
+        
+        # Number of threshold 
+        thr = dict_ordinary["60"]["ordinary"].quantile(S.left_censoring[1])
+        
+        
+        #TENAX MODEL HERE
+        #magnitude model
+        F_phats2[i], loglik, _, _ = S.magnitude_model(P, T, thr)
+        #temperature model
+          
+        
+        
+        
+        time_taken = (time.time()-start_time[i-9])/10
+        time_left = (length_neg-i)*time_taken/60
+        print(F_phats2[i])
+        print(f"{i}/{length_neg}. Approx time left: {time_left:.0f} mins") #this is only correct after 50 loops
+    
+    
+    print('finished making b again')
+    
+    
+    df_parameters_neg['kappa2']= np.array(F_phats2)[:,0]
+    df_parameters_neg['b2'] = np.array(F_phats2)[:,1]
+    df_parameters_neg['lambda2'] = np.array(F_phats2)[:,2]
+    df_parameters_neg['a2'] = np.array(F_phats2)[:,3]
+    
+    
+    df_parameters_neg.to_csv(save_path_neg)
+else:
+    print('bs already made. loading')
+    df_parameters_neg = pd.read_csv(save_path_neg)
+
+
+##########################################################################
+
 b_zero = df_parameters.b[df_parameters.b==0].count()
 total = df_parameters.b.count()
 perc_sig = 100*(1-b_zero/total)
 print(f'Percent of stations with significant b: {perc_sig:.0f}%')
 
 
-non_calc = df_parameters.longitude[df_parameters.thr==0].count()
+non_calc = df_parameters['b'].isna().sum()
 print(f'Number of stations without ERA data: {non_calc} out of {len(df_parameters)} stations')
+
+
+new_df = df_parameters[['latitude','longitude','b']].copy()
+mask = new_df['b'] == 0
+
+new_df.loc[mask, 'b'] = df_parameters_neg['b2'].to_numpy()
+
 
 
 #PLOTS
@@ -228,15 +343,8 @@ lon_lims = [np.trunc(np.min(df_parameters.longitude/2.5))*2.5,np.ceil(np.max(df_
 lat_lims = [np.trunc(np.min(df_parameters.latitude/2.5))*2.5,np.ceil(np.max(df_parameters.latitude/2.5))*2.5]
 
 s=3
-
-#MAKE COLORMAP
-# seismic = plt.cm.seismic
-# colors = seismic(np.linspace(0,1,256))
-# colors[256//2] = [.5,.5,.5,1]
-# cust_seis = LinearSegmentedColormap.from_list('cust_seis',colors)
-
-
-
+####################################################
+#plot at 5% sig
 fig = plt.figure(figsize=(10, 10))
 proj = ccrs.PlateCarree()
 ax1 = fig.add_subplot(1, 1, 1, projection=proj)
@@ -275,6 +383,44 @@ sc = ax1.scatter(
     norm=norm
 )
 
+# Add a colorbar at the bottom
+cb = plt.colorbar(sc, orientation='horizontal', pad=0.05)
+cb.set_label('b', fontsize=14)  
+cb.ax.tick_params(labelsize=12)
+
+# Set x and y ticks
+ax1.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+ax1.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
+ax1.tick_params(labelsize=12)  
+
+plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+
+plt.title(f'GSDR: {country}. b at {TENAX_use.alpha[0]} sig level', fontsize=16)
+plt.legend()
+plt.show()
+
+############################################
+## PLOT ALL b 2
+fig = plt.figure(figsize=(10, 10))
+proj = ccrs.PlateCarree()
+ax1 = fig.add_subplot(1, 1, 1, projection=proj)
+
+# Add map features
+ax1.coastlines()
+ax1.add_feature(cfeature.BORDERS, linestyle=':')
+
+# Choosing cmap
+norm = mcolors.TwoSlopeNorm(vmin=df_parameters.b.min(), vcenter=0, vmax=-1*df_parameters.b.min())
+
+sc = ax1.scatter( #plot the negligable at 5% lvl points
+    new_df.longitude,
+    new_df.latitude,
+    c = new_df.b,
+    s = s,
+    cmap = 'seismic',
+    norm = norm
+)
 
 
 
@@ -288,12 +434,15 @@ ax1.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
 ax1.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
 ax1.tick_params(labelsize=12)  
 
-plt.title(f'GSDR: {country}. b at {TENAX_use.alpha[0]} sig level', fontsize=16)
-plt.legend()
-plt.show()
+plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
 
+
+plt.title(f'GSDR: {country}. b at 0 sig level', fontsize=16)
+plt.show()
 #THIS SHOWS THE LOCATION OF THE STATION, NOT THE ERA DATA
 
+###############################################################
 #Average temps
 fig = plt.figure(figsize=(10, 10))
 proj = ccrs.PlateCarree()
@@ -325,10 +474,15 @@ ax1.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
 ax1.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
 ax1.tick_params(labelsize=12)  
 
+plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+
+
 plt.title(f'GSDR: {country}. μ', fontsize=16)
 plt.show()
 
 
+###############################################################
 #scale param
 fig = plt.figure(figsize=(10, 10))
 proj = ccrs.PlateCarree()
@@ -361,5 +515,32 @@ ax1.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
 ax1.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
 ax1.tick_params(labelsize=12)  
 
+plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+
+
 plt.title(f'GSDR: {country}. λ', fontsize=16)
 plt.show()
+
+#######################################################
+plt.scatter(df_parameters.mu,new_df.b,alpha = val_info.cleaned_years/np.max(val_info.cleaned_years))
+plt.xlabel('mu')
+plt.ylabel('b')
+plt.show()
+##############################################################
+plt.scatter(df_parameters['lambda'],new_df.b,alpha = val_info.cleaned_years/np.max(val_info.cleaned_years))
+plt.xlabel('lambda')
+plt.ylabel('b')
+plt.show()
+##################################################
+plt.scatter(df_parameters['kappa'],new_df.b,alpha = val_info.cleaned_years/np.max(val_info.cleaned_years))
+plt.xlabel('kappa')
+plt.ylabel('b')
+plt.show()
+
+
+
+
+
+
+

@@ -53,10 +53,10 @@ def make_T_timeseries(target_lat,target_lon,start_date,end_date,T_files,nans,T_n
     last_index = next((len(T_files) - 1 - i for i, s in enumerate(reversed(T_files)) if end_year in s), None) #same for end year
     
     
-    check = xr.open_dataarray(T_files[first_index]).sel(latitude = target_lat,method = 'nearest').sel(longitude = target_lon,method = 'nearest').sel(valid_time = start_date) #check if series is nans
+    check = xr.open_dataarray(T_files[first_index]).sel(latitude = target_lat,method = 'nearest').sel(longitude = target_lon,method = 'nearest').sel(valid_time = slice(dt.datetime(start_date.year,1,1),dt.datetime(start_date.year,1,1)+pd.Timedelta(days=1))) #check if series is nans
     nan_perc = np.isnan(check).sum().item()/np.size(check) #get percentage of file that is nans (should basically be 0 or 100)
     
-    T_temp = [0]*np.size(T_files[first_index:last_index])
+    T_ERA = [0]*np.size(T_files[first_index:last_index])
     
     #if there are nans
     if nan_perc > T_nan_limit:
@@ -91,9 +91,9 @@ def make_T_timeseries(target_lat,target_lon,start_date,end_date,T_files,nans,T_n
             else:
                 for n, file in enumerate(T_files[first_index:last_index]): #load in the data
                     with xr.open_dataarray(file) as da:
-                        T_temp[n] = da.sel(latitude = new_lat,method = 'nearest').sel(longitude = new_lon,method = 'nearest')
+                        T_ERA[n] = da.sel(latitude = new_lat,method = 'nearest').sel(longitude = new_lon,method = 'nearest')
                     
-                T_ERA = xr.concat(T_temp,dim = 'valid_time').sel(valid_time = slice(start_date,end_date))
+                T_ERA = xr.concat(T_ERA,dim = 'valid_time').sel(valid_time = slice(start_date,end_date))
                 print(f'Latitudes: {target_lat} became {new_lat}. Longitudes: {target_lon} became {new_lon}. {location.to_numpy()[0][0]} metres away.')
                 
                 print(T_ERA)
@@ -101,10 +101,10 @@ def make_T_timeseries(target_lat,target_lon,start_date,end_date,T_files,nans,T_n
     else: #if location has no nans dont do the whole distances thing
         for n, file in enumerate(T_files[first_index:last_index]):
             with xr.open_dataarray(file) as da:
-                T_temp[n] = da.sel(latitude = target_lat,method = 'nearest').sel(longitude = target_lon,method = 'nearest')
+                T_ERA[n] = da.sel(latitude = target_lat,method = 'nearest').sel(longitude = target_lon,method = 'nearest')
         
    
-        T_ERA = xr.concat(T_temp,dim = 'valid_time').sel(valid_time = slice(start_date,end_date))  #combine multiple time files
+        T_ERA = xr.concat(T_ERA,dim = 'valid_time').sel(valid_time = slice(start_date,end_date))  #combine multiple time files
         
     return T_ERA
     

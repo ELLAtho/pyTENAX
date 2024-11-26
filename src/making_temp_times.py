@@ -33,23 +33,27 @@ from geopy.distance import geodesic
 
 drive = 'D'  #specify name of external drive
 
-country = 'Belgium'
-ERA_country = 'Germany'
-code_str = 'BE_' #string from beginning of file names
+country = 'UK'
+ERA_country = 'UK'
+code_str = 'UK_' #string from beginning of file names
 name_len = 8 #how long the numbers are at the end of the files
 name_col = 'ppt'
 temp_name_col = "t2m"
 min_yrs = 0 #get temperature data for records > 0 years
 T_nan_limit = 0.1 #limit for amount of nans that can be present in time series 0.3 = 30%. there will basically be 0 or 100% so it isn't really a big deal
+min_startdate = dt.datetime(1981,1,1) #this is for if havent read all ERA5 data yet
+
 
 
 #READ IN META INFO FOR COUNTRY
 info = pd.read_csv(drive+':/metadata/'+country+'_fulldata.csv')
-info.station = info['station'].apply(lambda x: f'{int(x):0{name_len}}') #need to edit this according to file
+#info.station = info['station'].apply(lambda x: f'{int(x):0{name_len}}') #need to edit this according to file
 info.startdate = pd.to_datetime(info.startdate)
 info.enddate = pd.to_datetime(info.enddate)
 
 info = info[info['cleaned_years']>=min_yrs] #filter out short data
+info = info[info['startdate']>=min_startdate] #filter out short data
+
 
 #READ IN ERA5 DATA
 T_files = sorted(glob.glob(drive+':/ERA5_land/'+ERA_country+'*/*')) #make list of era5 files
@@ -82,7 +86,7 @@ for i in np.arange(starti,len(info)): #for each selected station
         print(f"File {save_path} already exists. Skipping save.")
 
     
-    if i % 50 == 0: #print update every 50 files
+    if i % 10 == 0: #print update every 50 files
         print(f'{i}/{len(info)}')
         print(drive+':/'+country+'_temp/'+code_str+str(info.station[info.index[i]])+'.nc')
         time_taken = (time.time()-start_time)/(i-starti)

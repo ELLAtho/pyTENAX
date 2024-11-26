@@ -24,7 +24,7 @@ import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import matplotlib.colors as mcolors
 
-drive='F' #name of drive
+drive='D' #name of drive
 countries = ['ISD','Belgium','Finland','Germany','Ireland','Japan','Norway','Portugal','UK','US']
 
 # latslons
@@ -129,8 +129,8 @@ ax1.scatter(info_10.longitude,info_10.latitude, color = 'red',label = '<10')
 ax1.scatter(info_20.longitude,info_20.latitude, color = 'orange',label = '10-19')
 ax1.scatter(info_30.longitude,info_30.latitude, color = 'gold',label = '20-29')
 ax1.scatter(info_30.longitude,info_30.latitude, color = 'green',label = '30+')
-plt.xlim(110,150)
-plt.ylim(-20,48)
+plt.xlim(90,180)
+plt.ylim(0,60)
 plt.show()
 
 
