@@ -35,14 +35,14 @@ from matplotlib.colors import LinearSegmentedColormap
 import matplotlib.patches as patches
 
 
-drive = 'D'
+drive = 'F'
 
-country = 'Japan'
-ERA_country = 'Japan'
-code_str = 'JP_'
-minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
-name_len = 5
-min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+# country = 'Japan'
+# ERA_country = 'Japan'
+# code_str = 'JP_'
+# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+# name_len = 5
+# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 
 
 
@@ -58,11 +58,11 @@ min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data 
 # minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
 # name_len = 5
 
-# country = 'UK' 
-# ERA_country = 'UK'
-# code_str = 'UK_'
-# name_len = 0
-# min_startdate = dt.datetime(1981,1,1) #this is for if havent read all ERA5 data yet
+country = 'UK' 
+ERA_country = 'UK'
+code_str = 'UK_'
+name_len = 0
+min_startdate = dt.datetime(1981,1,1) #this is for if havent read all ERA5 data yet
 
 
 name_col = 'ppt' 
@@ -211,7 +211,7 @@ if df_savename not in saved_files: #read in files and create t time series and d
             
             time_taken = (time.time()-start_time[i-9])/10
             time_left = (len(files_sel)-i)*time_taken/60
-            print(f"{i}/{len(files_sel)}. Approx time left: {time_left:.0f} mins") #this is only correct after 50 loops
+            print(f"{i}/{len(files_sel)}. Current average time to complete one {time_taken:.0f}s. Approx time left: {time_left:.0f} mins") #this is only correct after 50 loops
         
     
     T_temp = []
@@ -219,7 +219,7 @@ if df_savename not in saved_files: #read in files and create t time series and d
     df_parameters = pd.DataFrame({'station':val_info.station,'latitude':val_info.latitude,'longitude':val_info.longitude,'mu':np.array(g_phats)[:,0],'sigma':np.array(g_phats)[:,1],'kappa':np.array(F_phats)[:,0],'b':np.array(F_phats)[:,1],'lambda':np.array(F_phats)[:,2],'a':np.array(F_phats)[:,3],'thr':np.array(thr),'n_events_per_yr':np.array(ns)[:,0]})
     df_parameters.to_csv(df_savename) #save calculated parameters
     
-    TENAX_use = pd.DataFrame({'alpha':[S.alpha],'beta':[S.beta],'left_censoring':[S.left_censoring[1]],'event_duration':[60],'n_monte_carlo':[S.n_monte_carlo],'niter_smev':[S.niter_smev]})
+    TENAX_use = pd.DataFrame({'alpha':[S.alpha],'beta':[S.beta],'left_censoring':[S.left_censoring[1]],'event_duration':[60],'n_monte_carlo':[S.n_monte_carlo],'niter_smev':[S.niter_smev],'min_startdate':min_startdate,'min_years':min_yrs})
     TENAX_use.to_csv(drive + ':/outputs/'+country+'/TENAX_parameters.csv') #save calculated parameters
 
 
