@@ -33,9 +33,11 @@ import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 from matplotlib.colors import LinearSegmentedColormap
 import matplotlib.patches as patches
+from scipy.stats import kendalltau, pearsonr, spearmanr
 
 
-drive = 'F'
+
+drive = 'D'
 
 # country = 'Japan'
 # ERA_country = 'Japan'
@@ -50,19 +52,23 @@ drive = 'F'
 # ERA_country = 'Germany' #country where the era files are
 # code_str = 'BE_'
 # name_len = 8 #how long the numbers are at the end of the files
+# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 
 
-# country = 'Germany' 
-# ERA_country = 'Germany'
-# code_str = 'DE_'
-# minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
-# name_len = 5
 
-country = 'UK' 
-ERA_country = 'UK'
-code_str = 'UK_'
-name_len = 0
-min_startdate = dt.datetime(1981,1,1) #this is for if havent read all ERA5 data yet
+country = 'Germany' 
+ERA_country = 'Germany'
+code_str = 'DE_'
+minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
+name_len = 5
+min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+
+
+# country = 'UK' 
+# ERA_country = 'UK'
+# code_str = 'UK_'
+# name_len = 0
+# min_startdate = dt.datetime(1981,1,1) #this is for if havent read all ERA5 data yet
 
 
 name_col = 'ppt' 
@@ -232,10 +238,13 @@ else:
 
 #RUN WITH FREE b
 S.alpha = 0
-df_parameters_neg = df_parameters[df_parameters.b==0]
+df_parameters_neg = df_parameters[df_parameters.b==0].copy()
 
 length_neg = len(df_parameters_neg.b)
-
+if name_len!=0:
+    df_parameters_neg.station = df_parameters_neg['station'].apply(lambda x: f'{int(x):0{name_len}}') #need to edit this according to file
+else:
+    pass
 
 F_phats2 = [0]*length_neg
 start_time = [0]*length_neg
@@ -523,23 +532,60 @@ plt.title(f'GSDR: {country}. λ', fontsize=16)
 plt.show()
 
 #######################################################
-plt.scatter(df_parameters.mu,new_df.b,alpha = val_info.cleaned_years/np.max(val_info.cleaned_years))
-plt.xlabel('mu')
-plt.ylabel('b')
-plt.show()
-##############################################################
-plt.scatter(df_parameters['lambda'],new_df.b,alpha = val_info.cleaned_years/np.max(val_info.cleaned_years))
-plt.xlabel('lambda')
-plt.ylabel('b')
-plt.show()
+
+def kendall_pval(x,y):
+    return kendalltau(x,y)[1]
+
+def pearsonr_pval(x,y):
+    return pearsonr(x,y)[1]
+
+def spearmanr_pval(x,y):
+    return spearmanr(x,y)[1]
+
+correlation_variables = df_parameters[df_parameters.columns[-8:-1]].copy()
+correlation_variables['thr'] = correlation_variables['thr'].replace(0, np.nan)
+
+correlations = correlation_variables.corr() #r values correlations between all the parameters but b is zero if non significant
+P_vals = correlation_variables.corr(method=pearsonr_pval) #p values for sig test
+
+correlations_b = {}
+P_vals_b = {}
+for col1 in correlation_variables.columns: #correlations and p values for the new non-zero b
+    corr_value = correlation_variables[col1].corr(new_df.b)
+    correlations_b[(col1, 'b')] = corr_value
+    P_vals_b[(col1, 'b')] = correlation_variables[col1].corr(new_df.b,method=pearsonr_pval)
+    
+
+#############################################################################
+varis = ['mu','sigma','kappa', 'lambda', 'a', 'thr']
+for name in varis:
+
+    coeffs=np.polyfit(correlation_variables[name].dropna(),new_df.b.dropna(),1)
+    delt = (np.max(correlation_variables[name])-np.min(correlation_variables[name]))/10
+    x = np.arange(np.min(correlation_variables[name]),np.max(correlation_variables[name])+delt,delt)
+    y = coeffs[0]*x+coeffs[1]
+    
+    
+    plt.scatter(correlation_variables[name],new_df.b,alpha = val_info.cleaned_years/np.max(val_info.cleaned_years))
+    plt.plot(x,y,color = 'r',label = f'y={coeffs[0]:.3f}x+{coeffs[1]:.3f}')
+    plt.xlabel(name)
+    plt.ylabel('b')
+    r_val = correlations_b[(name, "b")]
+    p_val = P_vals_b[(name, "b")]
+    plt.text(np.min(df_parameters[name]),np.min(new_df.b),f'r = {r_val:.3f}\n p = {p_val:.5f}')
+    plt.legend()
+    plt.show()
 ##################################################
-plt.scatter(df_parameters['kappa'],new_df.b,alpha = val_info.cleaned_years/np.max(val_info.cleaned_years))
-plt.xlabel('kappa')
-plt.ylabel('b')
+
+
+
+#BOXPLOT
+
+plt.boxplot(new_df.b.copy().dropna(),vert=False)
+plt.xlabel('b')
+plt.yticks([1],[f'{country}'])
+plt.title(f'{country}')
 plt.show()
-
-
-
 
 
 

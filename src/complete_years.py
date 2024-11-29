@@ -32,7 +32,7 @@ S = TENAX(
         left_censoring = [0, 0.90],
         tolerance=0.1,
     )
-
+#TODO: make this so it creates pandas immediately with stations as strings and checks if file already made
 
 country = 'Germany' #folder name that contains country data
 name_col = "ppt"
@@ -73,8 +73,8 @@ while i<np.size(files):
     i=i+1
     
 print('time to do quick: '+str(time.time()-start_time))
-np.save('D:/'+country+'_dates.npy',dates)
-np.save('D:/'+country+'_latslons.npy',latslons)
+np.save('D:/metadata/'+country+'_dates.npy',dates)
+np.save('D:/metadata/'+country+'_latslons.npy',latslons)
  
 print('latitudes: '+str(np.min(latslons[0]))+':'+str(np.max(latslons[0])))
 print('longitudes: '+str(np.min(latslons[1]))+':'+str(np.max(latslons[1])))
@@ -119,7 +119,7 @@ while i<np.size(files):
   
     
 print('time to loop through '+country,str(time.time()-start_time))
-np.save('D:/'+country+'_data.npy',info)
+np.save('D:/metadata/'+country+'_data.npy',info)
 
 
 
