@@ -37,14 +37,14 @@ from scipy.stats import kendalltau, pearsonr, spearmanr
 
 
 
-drive = 'D'
+drive = 'F'
 
-# country = 'Japan'
-# ERA_country = 'Japan'
-# code_str = 'JP_'
-# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
-# name_len = 5
-# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+country = 'Japan'
+ERA_country = 'Japan'
+code_str = 'JP_'
+minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+name_len = 5
+min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 
 
 
@@ -56,12 +56,20 @@ drive = 'D'
 
 
 
-country = 'Germany' 
-ERA_country = 'Germany'
-code_str = 'DE_'
-minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
-name_len = 5
-min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+# country = 'Germany' 
+# ERA_country = 'Germany'
+# code_str = 'DE_'
+# minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
+# name_len = 5
+# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+
+
+# country = 'US' #TODO: may need to redefine for e.g. hawaii, folder name and save name?
+# ERA_country = 'US'
+# code_str = 'US_'
+# minlat,minlon,maxlat,maxlon = 24, -125, 56, -66 #mainland US
+# name_len = 5
+# min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
 
 
 # country = 'UK' 
@@ -90,6 +98,10 @@ info.enddate = pd.to_datetime(info.enddate)
 
 val_info = info[info['cleaned_years']>=min_yrs] #filter out stations that are less than min
 val_info = val_info[val_info['startdate']>=min_startdate]
+val_info = val_info[val_info['latitude']>=minlat] #filter station locations to within ERA bounds
+val_info = val_info[val_info['latitude']<=maxlat]
+val_info = val_info[val_info['longitude']>=minlon]
+val_info = val_info[val_info['longitude']<=maxlon]
 
 
 files = glob.glob(drive+':/'+country+'/*') #list of files in country folder
@@ -130,7 +142,7 @@ if df_savename not in saved_files: #read in files and create t time series and d
     start_time = [0]*len(files_sel)
     
     for i in np.arange(0, len(files_sel)):
-        start_time[i] = time.time()
+        start_time[i] = time.time() 
         #read in ppt data
         G,data_meta = read_GSDR_file(files_sel[i],name_col)
         

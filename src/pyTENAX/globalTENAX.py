@@ -94,6 +94,18 @@ def make_T_timeseries(target_lat,target_lon,start_date,end_date,T_files,nans,T_n
                         T_ERA[n] = da.sel(latitude = new_lat,method = 'nearest').sel(longitude = new_lon,method = 'nearest')
                     
                 T_ERA = xr.concat(T_ERA,dim = 'valid_time').sel(valid_time = slice(start_date,end_date))
+                
+                #if concatting has added an extra dimension, take the mean to remove nans then put latitude value back in 
+                if len(np.shape(T_ERA)) == 3:
+                    if np.shape(T_ERA)[1] == 2: #have only seen this once and it happened with lat, should check other dims too
+                        print('aaaaaah! extra dimension weirdly')
+                        T_ERA = T_ERA.mean(dim='latitude').expand_dims({"latitude": T_ERA.latitude[0].to_numpy()})
+                    else:
+                        pass
+                else:
+                    pass
+                
+                
                 print(f'Latitudes: {target_lat} became {new_lat}. Longitudes: {target_lon} became {new_lon}. {location.to_numpy()[0][0]} metres away.')
                 
                 print(T_ERA)
@@ -105,6 +117,15 @@ def make_T_timeseries(target_lat,target_lon,start_date,end_date,T_files,nans,T_n
         
    
         T_ERA = xr.concat(T_ERA,dim = 'valid_time').sel(valid_time = slice(start_date,end_date))  #combine multiple time files
+        if len(np.shape(T_ERA)) == 3:
+            if np.shape(T_ERA)[1] == 2: #have only seen this once and it happened with lat, should check other dims too
+                print('aaaaaah! extra dimension weirdly')
+                T_ERA = T_ERA.mean(dim='latitude').expand_dims({"latitude": T_ERA.latitude[0].to_numpy()})
+            else:
+                pass
+        else:
+            pass
+        
         
     return T_ERA
     
