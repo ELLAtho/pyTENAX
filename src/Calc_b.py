@@ -39,12 +39,12 @@ from scipy.stats import kendalltau, pearsonr, spearmanr
 
 drive = 'F'
 
-country = 'Japan'
-ERA_country = 'Japan'
-code_str = 'JP_'
-minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
-name_len = 5
-min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+# country = 'Japan'
+# ERA_country = 'Japan'
+# code_str = 'JP_'
+# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+# name_len = 5
+# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 
 
 
@@ -56,19 +56,19 @@ min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data 
 
 
 
-# country = 'Germany' 
-# ERA_country = 'Germany'
-# code_str = 'DE_'
-# minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
-# name_len = 5
-# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+country = 'Germany' 
+ERA_country = 'Germany'
+code_str = 'DE_'
+minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
+name_len = 5
+min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 
 
 # country = 'US' #TODO: may need to redefine for e.g. hawaii, folder name and save name?
 # ERA_country = 'US'
 # code_str = 'US_'
 # minlat,minlon,maxlat,maxlon = 24, -125, 56, -66 #mainland US
-# name_len = 5
+# name_len = 6
 # min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
 
 
@@ -84,11 +84,14 @@ temp_name_col = "t2m"
 min_yrs = 10 
 
 #READ IN META INFO FOR COUNTRY
-info = pd.read_csv(drive+':/metadata/'+country+'_fulldata.csv')
-if name_len!=0:
-    info.station = info['station'].apply(lambda x: f'{int(x):0{name_len}}') #need to edit this according to file
-else:
-    pass
+info = pd.read_csv(drive+':/metadata/'+country+'_fulldata.csv', dtype={'station': str})
+
+
+# shouldn't need this anymore as changed files
+# if name_len!=0:
+#     info.station = info['station'].apply(lambda x: f'{int(x):0{name_len}}') #need to edit this according to file
+# else:
+#     pass
 
 info.startdate = pd.to_datetime(info.startdate)
 info.enddate = pd.to_datetime(info.enddate)
@@ -98,10 +101,11 @@ info.enddate = pd.to_datetime(info.enddate)
 
 val_info = info[info['cleaned_years']>=min_yrs] #filter out stations that are less than min
 val_info = val_info[val_info['startdate']>=min_startdate]
-val_info = val_info[val_info['latitude']>=minlat] #filter station locations to within ERA bounds
-val_info = val_info[val_info['latitude']<=maxlat]
-val_info = val_info[val_info['longitude']>=minlon]
-val_info = val_info[val_info['longitude']<=maxlon]
+
+# val_info = val_info[val_info['latitude']>=minlat] #filter station locations to within ERA bounds
+# val_info = val_info[val_info['latitude']<=maxlat]
+# val_info = val_info[val_info['longitude']>=minlon]
+# val_info = val_info[val_info['longitude']<=maxlon]
 
 
 files = glob.glob(drive+':/'+country+'/*') #list of files in country folder

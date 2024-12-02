@@ -24,7 +24,7 @@ import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import matplotlib.colors as mcolors
 
-drive='D' #name of drive
+drive='F' #name of drive
 countries = ['ISD','Belgium','Finland','Germany','Ireland','Japan','Norway','Portugal','UK','US']
 
 # latslons
@@ -185,7 +185,7 @@ US_main_loc = np.array([24, -125, 56, -66]) #downloading
 UK_loc = np.array([49.2, -8.0, 60.8, 1.8]) #DOWNLOADED
 J_loc = np.array([24, 122.9, 45.6, 145.8]) #DOWNLOADED
 P_loc = np.array([36.9,-9.5,42.1,-5])
-N_loc = np.array([55,4.7,79.1,31.2])
+N_loc = np.array([55,4.7,71.8,31.2])
 H_loc = np.array([18.8,-160,22.3,-154.8])
 PR_loc = np.array([17.6,-67.3,18.5,-64.7])
 Al_loc = np.array([54.9,-171.9,71.4,-131.4])

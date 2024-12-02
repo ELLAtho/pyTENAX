@@ -31,28 +31,45 @@ import time
 from geopy.distance import geodesic
 
 
-drive = 'D'  #specify name of external drive
+drive = 'F'  #specify name of external drive
 
-country = 'UK'
-ERA_country = 'UK'
-code_str = 'UK_' #string from beginning of file names
-name_len = 8 #how long the numbers are at the end of the files
+country = 'US' #TODO: may need to redefine for e.g. hawaii, folder name and save name?
+ERA_country = 'US'
+code_str = 'US_'
+minlat,minlon,maxlat,maxlon = 24, -125, 56, -66 #mainland US
+name_len = 6
+min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+
+
+
+# country = 'UK'
+# ERA_country = 'UK'
+# code_str = 'UK_' #string from beginning of file names
+# name_len = 8 #how long the numbers are at the end of the files
+# min_startdate = dt.datetime(1981,1,1) #this is for if havent read all ERA5 data yet
+
+
+
 name_col = 'ppt'
 temp_name_col = "t2m"
-min_yrs = 0 #get temperature data for records > 0 years
 T_nan_limit = 0.1 #limit for amount of nans that can be present in time series 0.3 = 30%. there will basically be 0 or 100% so it isn't really a big deal
-min_startdate = dt.datetime(1981,1,1) #this is for if havent read all ERA5 data yet
-
+min_yrs = 0 #get temperature data for records > 0 years
 
 
 #READ IN META INFO FOR COUNTRY
 info = pd.read_csv(drive+':/metadata/'+country+'_fulldata.csv')
-#info.station = info['station'].apply(lambda x: f'{int(x):0{name_len}}') #need to edit this according to file
+# info.station = info['station'].apply(lambda x: f'{int(x):0{name_len}}') #have changes metadata files so hopefully no longer necessary
 info.startdate = pd.to_datetime(info.startdate)
 info.enddate = pd.to_datetime(info.enddate)
 
 info = info[info['cleaned_years']>=min_yrs] #filter out short data
 info = info[info['startdate']>=min_startdate] #filter out short data
+
+info = info[info['latitude']>=minlat] #filter station locations to within ERA bounds
+info = info[info['latitude']<=maxlat]
+info = info[info['longitude']>=minlon]
+info = info[info['longitude']<=maxlon]
+
 
 
 #READ IN ERA5 DATA
@@ -66,11 +83,15 @@ nans = xr.open_dataarray(T_files[0])[0]
 nans = np.invert(np.isnan(nans)).astype(int) #xarray with 0s where there are nans (the ocean)
 
 
-start_time = time.time()
-starti = 0
-for i in np.arange(starti,len(info)): #for each selected station
+
+
+start_time = [0]*len(info)
+
+for i in np.arange(0,len(info)): #for each selected station
+    start_time[i] = time.time()
     save_path = drive+':/'+country+'_temp\\'+code_str+str(info.station[info.index[i]])+'.nc'
     if save_path not in saved_files:
+        print(f'file {save_path} not made yet')
         
         target_lat = info.latitude[info.index[i]] #define targets
         target_lon = info.longitude[info.index[i]]
@@ -81,19 +102,16 @@ for i in np.arange(starti,len(info)): #for each selected station
         
     
         T_ERA.to_netcdf(drive+':/'+country+'_temp/'+code_str+str(info.station[info.index[i]])+'.nc') #save file with same name format as GSDR
-    
+        
+        time_taken = (time.time()-start_time[i-9])/10
+        time_left = (len(info)-i)*time_taken/60
+        print(f"{i}/{len(info)}. Current average time to complete one {time_taken:.0f}s. Approx time left: {time_left:.0f} mins") #this is only correct after 10 loops
+
     else:
         print(f"File {save_path} already exists. Skipping save.")
 
     
-    if i % 10 == 0: #print update every 50 files
-        print(f'{i}/{len(info)}')
-        print(drive+':/'+country+'_temp/'+code_str+str(info.station[info.index[i]])+'.nc')
-        time_taken = (time.time()-start_time)/(i-starti)
-        time_left = (len(info)-i)*time_taken/60
-        print(f"Approx time left: {time_left:.4f} mins")
-    else:
-        pass
+    
 
 print('Data reading finished.')
 

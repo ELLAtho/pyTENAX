@@ -52,7 +52,18 @@ def make_T_timeseries(target_lat,target_lon,start_date,end_date,T_files,nans,T_n
     first_index = next((i for i, s in enumerate(T_files) if start_year in s), None) #location of first file that has start year so can read fewer files in
     last_index = next((len(T_files) - 1 - i for i, s in enumerate(reversed(T_files)) if end_year in s), None) #same for end year
     
-    
+    if first_index == None: #if you're right at the start of the T files, dont read in day before
+        
+        start_date = start_date+pd.Timedelta(days=1)
+        start_year = str(start_date.year)
+        end_year = str(end_date.year)
+        
+        first_index = next((i for i, s in enumerate(T_files) if start_year in s), None) #location of first file that has start year so can read fewer files in
+        last_index = next((len(T_files) - 1 - i for i, s in enumerate(reversed(T_files)) if end_year in s), None) #same for end year
+        print('moved a day forwards')
+    else:
+        pass
+        
     check = xr.open_dataarray(T_files[first_index]).sel(latitude = target_lat,method = 'nearest').sel(longitude = target_lon,method = 'nearest').sel(valid_time = slice(dt.datetime(start_date.year,1,1),dt.datetime(start_date.year,1,1)+pd.Timedelta(days=1))) #check if series is nans
     nan_perc = np.isnan(check).sum().item()/np.size(check) #get percentage of file that is nans (should basically be 0 or 100)
     
@@ -99,7 +110,7 @@ def make_T_timeseries(target_lat,target_lon,start_date,end_date,T_files,nans,T_n
                 if len(np.shape(T_ERA)) == 3:
                     if np.shape(T_ERA)[1] == 2: #have only seen this once and it happened with lat, should check other dims too
                         print('aaaaaah! extra dimension weirdly')
-                        T_ERA = T_ERA.mean(dim='latitude').expand_dims({"latitude": T_ERA.latitude[0].to_numpy()})
+                        T_ERA = T_ERA.mean(dim='latitude').expand_dims({"latitude": [T_ERA.latitude[0].to_numpy()]})
                     else:
                         pass
                 else:
