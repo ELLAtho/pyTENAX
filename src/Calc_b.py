@@ -3,6 +3,8 @@
 Created on Tue Nov 19 10:14:46 2024
 
 @author: ellar
+
+runs trhough precipitation files, makes time series if not created already, calculates TENAX parameters if not already calculated and saved
 """
 
 from os.path import dirname, join

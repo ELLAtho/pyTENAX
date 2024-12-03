@@ -2,6 +2,7 @@
 """
 Created on Mon Nov  4 12:59:50 2024
 
+to look at b and temperature values, and select stations for visual analysis of fits
 @author: ellar
 """
 

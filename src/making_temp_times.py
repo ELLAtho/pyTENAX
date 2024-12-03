@@ -31,7 +31,7 @@ import time
 from geopy.distance import geodesic
 
 
-drive = 'F'  #specify name of external drive
+drive = 'D'  #specify name of external drive
 
 country = 'US' #TODO: may need to redefine for e.g. hawaii, folder name and save name?
 ERA_country = 'US'
@@ -57,7 +57,7 @@ min_yrs = 0 #get temperature data for records > 0 years
 
 
 #READ IN META INFO FOR COUNTRY
-info = pd.read_csv(drive+':/metadata/'+country+'_fulldata.csv')
+info = pd.read_csv(drive+':/metadata/'+country+'_fulldata.csv', dtype={'station': str})
 # info.station = info['station'].apply(lambda x: f'{int(x):0{name_len}}') #have changes metadata files so hopefully no longer necessary
 info.startdate = pd.to_datetime(info.startdate)
 info.enddate = pd.to_datetime(info.enddate)
