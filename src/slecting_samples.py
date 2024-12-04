@@ -36,7 +36,7 @@ import matplotlib.patches as patches
 from scipy.stats import kendalltau, pearsonr, spearmanr
 
 
-drive = 'D'
+drive = 'F'
 countries = ['Belgium','Germany','Japan','UK'] #'ISD','Finland','US','Norway','Portugal','Ireland'
 
 min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
@@ -284,11 +284,13 @@ for n in np.arange(1,len(countries)):
 
 germany_comb = df_parameters_lst[1]
 germany_comb['cleaned_years'] = full_infos[1]['cleaned_years']
+germany_comb.station = germany_comb['station'].apply(lambda x: f'{int(x):0{5}}')
+
 
 
 japan_comb = df_parameters_lst[2]
 japan_comb['cleaned_years'] = full_infos[2]['cleaned_years']
-
+japan_comb.station = japan_comb['station'].apply(lambda x: f'{int(x):0{5}}')
 
 UK_comb = df_parameters_lst[3]
 UK_comb['cleaned_years'] = full_infos[3]['cleaned_years']
@@ -359,6 +361,10 @@ for n in np.arange(0,9):
     plt.show()
 
 
+
+####################################################################################
+# SELECT SAMPLES
+
 germany_pos_sel = germany_pos
 germany_0_sel = germany_0[4:8]
 germany_neg_sel = germany_neg[1:3]
@@ -368,6 +374,197 @@ japan_0_sel = japan_0.iloc[[4] + [200]+[270]+[-4]]
 japan_neg_sel = japan_neg.iloc[[4] + [195]]
 
 UK_pos_sel = UK_pos.iloc[list(range(1, 3))]
-UK_0_sel = UK_0.iloc[list(range(0, 4))]
-UK_neg_sel = UK_neg.iloc[[4] + [6]]
+UK_0_sel = UK_0.iloc[[2] + [15] + [20] + [21]]
+UK_neg_sel = UK_neg.iloc[[0] + [2]]
+
+
+
+###################################################################################
+# PLOT SAMPLE LOCATIONS
+lon_lims = [np.trunc(np.min(val_info_new[0].longitude/2.5))*2.5,np.ceil(np.max(val_info_new[0].longitude/2.5))*2.5]
+lat_lims = [np.trunc(np.min(val_info_new[0].latitude/2.5))*2.5,np.ceil(np.max(val_info_new[0].latitude/2.5))*2.5]
+
+fig = plt.figure(figsize=(10, 10))
+proj = ccrs.PlateCarree()
+ax1 = fig.add_subplot(1, 1, 1, projection=proj)
+
+# Add map features
+ax1.coastlines()
+ax1.add_feature(cfeature.BORDERS, linestyle=':')
+
+plt.scatter(germany_pos_sel.longitude,germany_pos_sel.latitude,color = 'r',label = 'positive')
+plt.scatter(germany_0_sel.longitude,germany_0_sel.latitude,color = 'g',label = '0')
+plt.scatter(germany_neg_sel.longitude,germany_neg_sel.latitude,color = 'b',label = 'negative')
+
+# Set x and y ticks
+ax1.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+ax1.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
+ax1.tick_params(labelsize=12)  
+
+plt.legend()
+plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+
+
+plt.title(titles[n], fontsize=16)
+plt.show()
+
+
+lon_lims = [np.trunc(np.min(val_info_new[1].longitude/2.5))*2.5,np.ceil(np.max(val_info_new[1].longitude/2.5))*2.5]
+lat_lims = [np.trunc(np.min(val_info_new[1].latitude/2.5))*2.5,np.ceil(np.max(val_info_new[1].latitude/2.5))*2.5]
+
+fig = plt.figure(figsize=(10, 10))
+proj = ccrs.PlateCarree()
+ax1 = fig.add_subplot(1, 1, 1, projection=proj)
+
+# Add map features
+ax1.coastlines()
+ax1.add_feature(cfeature.BORDERS, linestyle=':')
+
+plt.scatter(japan_pos_sel.longitude,japan_pos_sel.latitude,color = 'r',label = 'positive')
+plt.scatter(japan_0_sel.longitude,japan_0_sel.latitude,color = 'g',label = '0')
+plt.scatter(japan_neg_sel.longitude,japan_neg_sel.latitude,color = 'b',label = 'negative')
+
+# Set x and y ticks
+ax1.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+ax1.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
+ax1.tick_params(labelsize=12)  
+
+plt.legend()
+plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+
+
+plt.title(titles[n], fontsize=16)
+plt.show()
+
+
+
+lon_lims = [np.trunc(np.min(val_info_new[2].longitude/2.5))*2.5,np.ceil(np.max(val_info_new[2].longitude/2.5))*2.5]
+lat_lims = [np.trunc(np.min(val_info_new[2].latitude/2.5))*2.5,np.ceil(np.max(val_info_new[2].latitude/2.5))*2.5]
+
+fig = plt.figure(figsize=(10, 10))
+proj = ccrs.PlateCarree()
+ax1 = fig.add_subplot(1, 1, 1, projection=proj)
+
+# Add map features
+ax1.coastlines()
+ax1.add_feature(cfeature.BORDERS, linestyle=':')
+
+plt.scatter(UK_pos_sel.longitude,UK_pos_sel.latitude,color = 'r',label = 'positive')
+plt.scatter(UK_0_sel.longitude,UK_0_sel.latitude,color = 'g',label = '0')
+plt.scatter(UK_neg_sel.longitude,UK_neg_sel.latitude,color = 'b',label = 'negative')
+
+# Set x and y ticks
+ax1.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+ax1.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
+ax1.tick_params(labelsize=12)  
+
+plt.legend()
+plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+
+
+plt.title(titles[n], fontsize=16)
+plt.show()
+
+###################################################################################
+# TENAX TIME
+name_col = 'ppt' 
+temp_name_col = "t2m"
+
+
+code_str = ['DE_']*8+['JP_']*8+['UK_']*8
+countrys = ['Germany']*8+['Japan']*8+['UK']*8
+
+S = TENAX(
+        return_period = [1.1,1.2,1.5,2,5,10,20,50,100, 200],
+        durations = [60, 180, 360, 720, 1440],
+        left_censoring = [0, 0.90],
+        alpha = 0.05,
+        min_ev_dur = 60,
+        niter_smev = 1000, 
+    )
+
+
+mashed_selects = pd.concat([germany_pos_sel,germany_0_sel,germany_neg_sel,
+                          japan_pos_sel,japan_0_sel,japan_neg_sel,
+                          UK_pos_sel,UK_0_sel,UK_neg_sel])
+
+for n in np.arange(0,len(mashed_selects)):
+        
+    first_file_code = mashed_selects.station.iloc[n]
+    file_name = drive + ':/'+countrys[n]+'/'+code_str[n]+first_file_code+'.txt'
+    save_path = drive + ':/'+countrys[n]+'_temp\\'+code_str[n] + first_file_code + '.nc'
+    
+    g_phat = [mashed_selects.mu.iloc[n],mashed_selects.sigma.iloc[n]]
+    F_phat = [mashed_selects.kappa.iloc[n],mashed_selects.b.iloc[n],mashed_selects['lambda'].iloc[n],mashed_selects.a.iloc[n]]
+    thr = mashed_selects.thr.iloc[n]
+    
+    G,data_meta = read_GSDR_file(file_name,name_col)
+    
+    T_ERA = xr.load_dataarray(save_path)
+    
+    data = G 
+    data = S.remove_incomplete_years(data, name_col)
+    t_data = (T_ERA.squeeze()-273.15).to_dataframe()
+    df_arr = np.array(data[name_col])
+    df_dates = np.array(data.index)
+    
+    #extract indexes of ordinary events
+    #these are time-wise indexes =>returns list of np arrays with np.timeindex
+    idx_ordinary=S.get_ordinary_events(data=df_arr,dates=df_dates, name_col=name_col,  check_gaps=False)
+        
+    
+    #get ordinary events by removing too short events
+    #returns boolean array, dates of OE in TO, FROM format, and count of OE in each years
+    arr_vals,arr_dates,n_ordinary_per_year=S.remove_short(idx_ordinary)
+    
+    #assign ordinary events values by given durations, values are in depth per duration, NOT in intensity mm/h
+    dict_ordinary, dict_AMS = S.get_ordinary_events_values(data=df_arr,dates=df_dates, arr_dates_oe=arr_dates)
+    
+    df_arr_t_data = np.array(t_data[temp_name_col])
+    df_dates_t_data = np.array(t_data.index)
+    
+    dict_ordinary, _ , n_ordinary_per_year = S.associate_vars(dict_ordinary, df_arr_t_data, df_dates_t_data)
+
+    
+    # Your data (P, T arrays) and threshold thr=3.8
+    P = dict_ordinary["60"]["ordinary"].to_numpy() 
+    T = dict_ordinary["60"]["T"].to_numpy()  
+    
+    eT = np.arange(np.min(T),np.max(T)+4,1) # define T values to calculate distributions. +4 to go beyond graph end
+    
+    qs = [.85,.95,.99,.999]
+    TNX_FIG_magn_model(P,T,F_phat,thr,eT,qs)
+    plt.ylabel('60-minute precipitation (mm)')
+    plt.title(f'{countrys[n]}. ({mashed_selects.latitude.iloc[n]:.1f},{mashed_selects.longitude.iloc[n]:.1f}) \n κ_0 = {F_phat[0]:.3f}, b = {F_phat[1]:.3f}, λ_0 = {F_phat[2]:.3f}, a = {F_phat[3]:.3f}')
+    plt.show()
+    
+    
+    TNX_FIG_temp_model(T, g_phat,4,eT,xlimits = [np.min(T)-3,np.max(T)+3],ylimits = [0,2.5/(np.max(T)-np.min(T))])
+    plt.title(f'{countrys[n]}. ({mashed_selects.latitude.iloc[n]:.1f},{mashed_selects.longitude.iloc[n]:.1f}) \n μ = {g_phat[0]:.1f}, σ = {g_phat[1]:.1f}')
+    plt.show()
+    
+    
+    Ts = np.arange(np.min(T) - S.temp_delta, np.max(T) + S.temp_delta, S.temp_res_monte_carlo)
+    iTs = np.arange(-2.5,37.5,1.5) #idk why we need a different T range here 
+    S.n_monte_carlo = np.size(P)*S.niter_smev
+    _, T_mc, P_mc = S.model_inversion(F_phat, g_phat, n, Ts,gen_P_mc = True,gen_RL=False) 
+    
+    
+    scaling_rate_W, scaling_rate_q = TNX_FIG_scaling(P,T,P_mc,T_mc,F_phat,S.niter_smev,eT,iTs)
+    plt.title(f'{countrys[n]}. ({mashed_selects.latitude.iloc[n]:.1f},{mashed_selects.longitude.iloc[n]:.1f}) \n κ_0 = {F_phat[0]:.3f}, b = {F_phat[1]:.3f}, λ_0 = {F_phat[2]:.3f}, a = {F_phat[3]:.3f}')
+    plt.ylabel('60-minute precipitation (mm)')
+    plt.show()
+
+
+
+#TODO suppress that maximum iterations warning
+#TODO summer/winter
+
+
+
+
+
 

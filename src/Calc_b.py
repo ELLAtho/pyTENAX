@@ -52,14 +52,16 @@ drive = 'F'
 
 # country = 'Belgium'
 # ERA_country = 'Germany' #country where the era files are
+# country_save = 'Belgium2'
 # code_str = 'BE_'
 # name_len = 8 #how long the numbers are at the end of the files
-# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+# min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
 
 
 
 country = 'Germany' 
 ERA_country = 'Germany'
+country_save = 'Germany'
 code_str = 'DE_'
 minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
 name_len = 5
@@ -68,6 +70,7 @@ min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data 
 
 # country = 'US' #TODO: may need to redefine for e.g. hawaii, folder name and save name?
 # ERA_country = 'US'
+# country_save = 'US'
 # code_str = 'US_'
 # minlat,minlon,maxlat,maxlon = 24, -125, 56, -66 #mainland US
 # name_len = 6
@@ -76,6 +79,7 @@ min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data 
 
 # country = 'UK' 
 # ERA_country = 'UK'
+# country_save = 'UK'
 # code_str = 'UK_'
 # name_len = 0
 # min_startdate = dt.datetime(1981,1,1) #this is for if havent read all ERA5 data yet
@@ -126,14 +130,14 @@ S = TENAX(
 
 #make empty lists to read into
 
-df_savename = drive + ':/outputs/'+country+'\\parameters.csv'
-saved_files = glob.glob(drive + ':/outputs/'+country+'/*')
+df_savename = drive + ':/outputs/'+country_save+'\\parameters.csv'
+saved_output_files = glob.glob(drive + ':/outputs/'+country_save+'/*')
 
-if df_savename not in saved_files: #read in files and create t time series and do TENAX if it hasnt been done already
+if df_savename not in saved_output_files: #read in files and create t time series and do TENAX if it hasnt been done already
     print('TENAX not done yet on '+country+'. making data.')
     
     T_files = sorted(glob.glob(drive+':/ERA5_land/'+ERA_country+'*/*')) #make list of era5 files
-    saved_files = glob.glob(drive+':/'+country+'_temp/*') #files already saved
+    saved_files = glob.glob(drive+':/'+country+'_temp/*') #temp files already saved
     
     g_phats = [0]*len(files_sel)
     F_phats = [0]*len(files_sel)
@@ -244,13 +248,13 @@ if df_savename not in saved_files: #read in files and create t time series and d
     df_parameters.to_csv(df_savename) #save calculated parameters
     
     TENAX_use = pd.DataFrame({'alpha':[S.alpha],'beta':[S.beta],'left_censoring':[S.left_censoring[1]],'event_duration':[60],'n_monte_carlo':[S.n_monte_carlo],'niter_smev':[S.niter_smev],'min_startdate':min_startdate,'min_years':min_yrs})
-    TENAX_use.to_csv(drive + ':/outputs/'+country+'/TENAX_parameters.csv') #save calculated parameters
+    TENAX_use.to_csv(drive + ':/outputs/'+country_save+'/TENAX_parameters.csv') #save calculated parameters
 
 
 else:
     print('TENAX already done! reading in data')
     df_parameters = pd.read_csv(df_savename) 
-    TENAX_use = pd.read_csv(drive + ':/outputs/'+country+'/TENAX_parameters.csv') #save calculated parameters
+    TENAX_use = pd.read_csv(drive + ':/outputs/'+country_save+'/TENAX_parameters.csv') #save calculated parameters
 
 ########################
 
@@ -267,9 +271,9 @@ else:
 F_phats2 = [0]*length_neg
 start_time = [0]*length_neg
 
-save_path_neg = drive + ':/outputs/'+country+'\\parameters_neg.csv'
+save_path_neg = drive + ':/outputs/'+country_save+'\\parameters_neg.csv'
 
-if save_path_neg not in saved_files:
+if save_path_neg not in saved_output_files:
     print('making the extra bs')
     for i in np.arange(0,length_neg):
         start_time[i] = time.time()
