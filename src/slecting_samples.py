@@ -35,8 +35,14 @@ from matplotlib.colors import LinearSegmentedColormap
 import matplotlib.patches as patches
 from scipy.stats import kendalltau, pearsonr, spearmanr
 
+import warnings
+from statsmodels.tools.sm_exceptions import IterationLimitWarning
 
-drive = 'D'
+# Suppress IterationLimitWarning
+warnings.simplefilter("ignore", IterationLimitWarning)
+
+
+drive = 'F'
 countries = ['Belgium','Germany','Japan','UK'] #'ISD','Finland','US','Norway','Portugal','Ireland'
 
 min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
@@ -405,8 +411,6 @@ plt.legend()
 plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
 plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
 
-
-plt.title(titles[n], fontsize=16)
 plt.show()
 
 
@@ -434,8 +438,6 @@ plt.legend()
 plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
 plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
 
-
-plt.title(titles[n], fontsize=16)
 plt.show()
 
 
@@ -465,7 +467,6 @@ plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
 plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
 
 
-plt.title(titles[n], fontsize=16)
 plt.show()
 
 ###################################################################################
@@ -482,6 +483,15 @@ S = TENAX(
         durations = [60, 180, 360, 720, 1440],
         left_censoring = [0, 0.90],
         alpha = 0.05,
+        min_ev_dur = 60,
+        niter_smev = 1000, 
+    )
+
+S2 = TENAX(
+        return_period = [1.1,1.2,1.5,2,5,10,20,50,100, 200],
+        durations = [60, 180, 360, 720, 1440],
+        left_censoring = [0, 0.90],
+        alpha = 1,
         min_ev_dur = 60,
         niter_smev = 1000, 
     )
@@ -533,6 +543,7 @@ for n in np.arange(0,len(mashed_selects)):
     P = dict_ordinary["60"]["ordinary"].to_numpy() 
     T = dict_ordinary["60"]["T"].to_numpy()  
     
+    ##############################################################################
     eT = np.arange(np.min(T),np.max(T)+4,1) # define T values to calculate distributions. +4 to go beyond graph end
     
     qs = [.85,.95,.99,.999]
@@ -541,7 +552,26 @@ for n in np.arange(0,len(mashed_selects)):
     plt.title(f'{countrys[n]}. ({mashed_selects.latitude.iloc[n]:.1f},{mashed_selects.longitude.iloc[n]:.1f}) \n κ_0 = {F_phat[0]:.3f}, b = {F_phat[1]:.3f}, λ_0 = {F_phat[2]:.3f}, a = {F_phat[3]:.3f}')
     plt.show()
     
+    #recalculate for non zero bs forcing to zero
+    if F_phat[1] != 0:
+        F_phat2, __, _, _ = S2.magnitude_model(P, T, thr)
+        TNX_FIG_magn_model(P,T,F_phat,thr,eT,qs,xlimits = [np.min(T)-3,np.max(T)+3])
+        
+        #plot new
+        percentile_lines = inverse_magnitude_model(F_phat2,eT,qs)
+        n=0
+        
+        plt.plot(eT,percentile_lines[n],'--b',alpha = 0.6, label = "Magnitude model, b=0")
+        n=1
+        while n<np.size(qs):
+            plt.plot(eT,percentile_lines[n],'--b',alpha = 0.6) 
+            n=n+1    
+        
+        plt.ylabel('60-minute precipitation (mm)')
+        plt.title(f'{countrys[n]}. ({mashed_selects.latitude.iloc[n]:.1f},{mashed_selects.longitude.iloc[n]:.1f}) \n κ_0 = {F_phat[0]:.3f}, b = {F_phat[1]:.3f}, λ_0 = {F_phat[2]:.3f}, a = {F_phat[3]:.3f}')
+        plt.show()
     
+    ##############################################################################
     TNX_FIG_temp_model(T, g_phat,4,eT,xlimits = [np.min(T)-3,np.max(T)+3],ylimits = [0,2.5/(np.max(T)-np.min(T))])
     plt.title(f'{countrys[n]}. ({mashed_selects.latitude.iloc[n]:.1f},{mashed_selects.longitude.iloc[n]:.1f}) \n μ = {g_phat[0]:.1f}, σ = {g_phat[1]:.1f}')
     plt.show()
@@ -580,9 +610,9 @@ for n in np.arange(0,len(mashed_selects)):
     #fig 3
 
 
-    TNX_FIG_temp_model(T=T_summer, g_phat=g_phat_summer,beta=2,eT=eT,obscol='r',valcol='r',obslabel = None,vallabel = 'Summer',xlimits = [-15,30],ylimits = [0,0.1])
-    TNX_FIG_temp_model(T=T_winter, g_phat=g_phat_winter,beta=2,eT=eT,obscol='b',valcol='b',obslabel = None,vallabel = 'Winter',xlimits = [-15,30],ylimits = [0,0.1])
-    TNX_FIG_temp_model(T=T, g_phat=g_phat,beta=4,eT=eT,obscol='k',valcol='k',obslabel = None,vallabel = 'Annual',xlimits = [-15,30],ylimits = [0,0.1])
+    TNX_FIG_temp_model(T=T_summer, g_phat=g_phat_summer,beta=2,eT=eT,obscol='r',valcol='r',obslabel = None,vallabel = 'Summer')
+    TNX_FIG_temp_model(T=T_winter, g_phat=g_phat_winter,beta=2,eT=eT,obscol='b',valcol='b',obslabel = None,vallabel = 'Winter')
+    TNX_FIG_temp_model(T=T, g_phat=g_phat,beta=4,eT=eT,obscol='k',valcol='k',obslabel = None,vallabel = 'Annual',xlimits = [np.min(T)-3,np.max(T)+3],ylimits = [0,4/(np.max(T)-np.min(T))])
     plt.plot(eT,combined_pdf,'m',label = 'Combined summer and winter')
     plt.legend()
     plt.title(f'{countrys[n]}. ({mashed_selects.latitude.iloc[n]:.1f},{mashed_selects.longitude.iloc[n]:.1f}) \n μ_s = {g_phat_summer[0]:.1f}, σ_s = {g_phat_summer[1]:.1f},μ_w = {g_phat_winter[0]:.1f}, σ_w = {g_phat_winter[1]:.1f}')
@@ -590,9 +620,6 @@ for n in np.arange(0,len(mashed_selects)):
 
 
 
-
-#TODO suppress that maximum iterations warning
-#TODO summer/winter
 
 
 

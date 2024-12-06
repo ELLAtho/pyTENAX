@@ -43,6 +43,7 @@ drive = 'F'
 
 # country = 'Japan'
 # ERA_country = 'Japan'
+# country_save = 'Japan'
 # code_str = 'JP_'
 # minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
 # name_len = 5
@@ -59,13 +60,32 @@ drive = 'F'
 
 
 
+# country = 'Germany' 
+# ERA_country = 'Germany'
+# country_save = 'Germany'
+# code_str = 'DE_'
+# minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
+# name_len = 5
+# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+# censor_thr = 0.9
+
 country = 'Germany' 
 ERA_country = 'Germany'
-country_save = 'Germany'
+country_save = 'Germany2'
 code_str = 'DE_'
 minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
 name_len = 5
 min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+censor_thr = 0.7
+
+
+# country = 'Portugal' 
+# ERA_country = 'Portugal'
+# country_save = 'Portugal'
+# code_str = 'PT_'
+# minlat,minlon,maxlat,maxlon = 36.9,-9.5,42.1, -5
+# name_len = 0
+# min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
 
 
 # country = 'US' #TODO: may need to redefine for e.g. hawaii, folder name and save name?
@@ -108,10 +128,10 @@ info.enddate = pd.to_datetime(info.enddate)
 val_info = info[info['cleaned_years']>=min_yrs] #filter out stations that are less than min
 val_info = val_info[val_info['startdate']>=min_startdate]
 
-# val_info = val_info[val_info['latitude']>=minlat] #filter station locations to within ERA bounds
-# val_info = val_info[val_info['latitude']<=maxlat]
-# val_info = val_info[val_info['longitude']>=minlon]
-# val_info = val_info[val_info['longitude']<=maxlon]
+val_info = val_info[val_info['latitude']>=minlat] #filter station locations to within ERA bounds
+val_info = val_info[val_info['latitude']<=maxlat]
+val_info = val_info[val_info['longitude']>=minlon]
+val_info = val_info[val_info['longitude']<=maxlon]
 
 
 files = glob.glob(drive+':/'+country+'/*') #list of files in country folder
@@ -121,7 +141,7 @@ files_sel = [files[i] for i in val_info.index]
 S = TENAX(
         return_period = [1.1,1.2,1.5,2,5,10,20,50,100, 200],
         durations = [60, 180, 360, 720, 1440],
-        left_censoring = [0, 0.90],
+        left_censoring = [0, censor_thr],
         alpha = 0.05,
         min_ev_dur = 60,
         niter_smev = 1000, 
@@ -134,7 +154,7 @@ df_savename = drive + ':/outputs/'+country_save+'\\parameters.csv'
 saved_output_files = glob.glob(drive + ':/outputs/'+country_save+'/*')
 
 if df_savename not in saved_output_files: #read in files and create t time series and do TENAX if it hasnt been done already
-    print('TENAX not done yet on '+country+'. making data.')
+    print('TENAX not done yet on '+country_save+'. making data.')
     
     T_files = sorted(glob.glob(drive+':/ERA5_land/'+ERA_country+'*/*')) #make list of era5 files
     saved_files = glob.glob(drive+':/'+country+'_temp/*') #temp files already saved
@@ -370,8 +390,8 @@ new_df.loc[mask, 'b'] = df_parameters_neg['b2'].to_numpy()
 
 
 #PLOTS
-lon_lims = [np.trunc(np.min(df_parameters.longitude/2.5))*2.5,np.ceil(np.max(df_parameters.longitude/2.5))*2.5]
-lat_lims = [np.trunc(np.min(df_parameters.latitude/2.5))*2.5,np.ceil(np.max(df_parameters.latitude/2.5))*2.5]
+lon_lims = [truncate_neg(np.min(df_parameters.longitude),2.5),np.ceil(np.max(df_parameters.longitude/2.5))*2.5]
+lat_lims = [truncate_neg(np.min(df_parameters.latitude),2.5),np.ceil(np.max(df_parameters.latitude/2.5))*2.5]
 
 s=3
 ####################################################
@@ -603,9 +623,9 @@ for name in varis:
 
 #BOXPLOT
 
-plt.boxplot(new_df.b.copy().dropna(),vert=False)
+plt.boxplot([new_df.b.copy().dropna(),df_parameters.b.copy().dropna()],vert=False)
 plt.xlabel('b')
-plt.yticks([1],[f'{country}'])
+plt.yticks([1,2],[f'{country}',f'{country}. b forced to zero if not sig'])
 plt.title(f'{country}')
 plt.show()
 

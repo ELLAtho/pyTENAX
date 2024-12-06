@@ -177,6 +177,27 @@ def read_GSDR_file(file_name,name_col):
 
 
 
+#stupid version of truncating
+def truncate_neg(num,factor):
+    """
+    
+
+    Parameters
+    ----------
+    num : TYPE
+        DESCRIPTION.
+
+    Returns
+    -------
+    TYPE
+        DESCRIPTION.
+
+    """
+    
+    if num >= 0:
+        return int(num * factor) / factor  # Truncate positive number
+    else:
+        return int(num * factor - 1) / factor  # Truncate negative number to be more negative
 
 
 
