@@ -36,7 +36,7 @@ import matplotlib.patches as patches
 from scipy.stats import kendalltau, pearsonr, spearmanr
 
 
-drive = 'F'
+drive = 'D'
 countries = ['Belgium','Germany','Japan','UK'] #'ISD','Finland','US','Norway','Portugal','Ireland'
 
 min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
@@ -536,7 +536,7 @@ for n in np.arange(0,len(mashed_selects)):
     eT = np.arange(np.min(T),np.max(T)+4,1) # define T values to calculate distributions. +4 to go beyond graph end
     
     qs = [.85,.95,.99,.999]
-    TNX_FIG_magn_model(P,T,F_phat,thr,eT,qs)
+    TNX_FIG_magn_model(P,T,F_phat,thr,eT,qs,xlimits = [np.min(T)-3,np.max(T)+3])
     plt.ylabel('60-minute precipitation (mm)')
     plt.title(f'{countrys[n]}. ({mashed_selects.latitude.iloc[n]:.1f},{mashed_selects.longitude.iloc[n]:.1f}) \n κ_0 = {F_phat[0]:.3f}, b = {F_phat[1]:.3f}, λ_0 = {F_phat[2]:.3f}, a = {F_phat[3]:.3f}')
     plt.show()
@@ -553,10 +553,41 @@ for n in np.arange(0,len(mashed_selects)):
     _, T_mc, P_mc = S.model_inversion(F_phat, g_phat, n, Ts,gen_P_mc = True,gen_RL=False) 
     
     
-    scaling_rate_W, scaling_rate_q = TNX_FIG_scaling(P,T,P_mc,T_mc,F_phat,S.niter_smev,eT,iTs)
+    scaling_rate_W, scaling_rate_q = TNX_FIG_scaling(P,T,P_mc,T_mc,F_phat,S.niter_smev,eT,iTs,xlimits = [np.min(T)-3,np.max(T)+3])
     plt.title(f'{countrys[n]}. ({mashed_selects.latitude.iloc[n]:.1f},{mashed_selects.longitude.iloc[n]:.1f}) \n κ_0 = {F_phat[0]:.3f}, b = {F_phat[1]:.3f}, λ_0 = {F_phat[2]:.3f}, a = {F_phat[3]:.3f}')
     plt.ylabel('60-minute precipitation (mm)')
     plt.show()
+    
+    
+    season_separations = [5, 10]
+    months = dict_ordinary["60"]["oe_time"].dt.month
+    winter_inds = months.index[(months>season_separations[1]) | (months<season_separations[0])]
+    summer_inds = months.index[(months<season_separations[1]+1)&(months>season_separations[0]-1)]
+    T_winter = T[winter_inds]
+    T_summer = T[summer_inds]
+
+
+    g_phat_winter = S.temperature_model(T_winter,beta = 2)
+    g_phat_summer = S.temperature_model(T_summer,beta = 2)
+
+
+    winter_pdf = gen_norm_pdf(eT, g_phat_winter[0], g_phat_winter[1], 2)
+    summer_pdf = gen_norm_pdf(eT, g_phat_summer[0], g_phat_summer[1], 2)
+
+    combined_pdf = (winter_pdf*np.size(T_winter)+summer_pdf*np.size(T_summer))/(np.size(T_winter)+np.size(T_summer))
+
+
+    #fig 3
+
+
+    TNX_FIG_temp_model(T=T_summer, g_phat=g_phat_summer,beta=2,eT=eT,obscol='r',valcol='r',obslabel = None,vallabel = 'Summer',xlimits = [-15,30],ylimits = [0,0.1])
+    TNX_FIG_temp_model(T=T_winter, g_phat=g_phat_winter,beta=2,eT=eT,obscol='b',valcol='b',obslabel = None,vallabel = 'Winter',xlimits = [-15,30],ylimits = [0,0.1])
+    TNX_FIG_temp_model(T=T, g_phat=g_phat,beta=4,eT=eT,obscol='k',valcol='k',obslabel = None,vallabel = 'Annual',xlimits = [-15,30],ylimits = [0,0.1])
+    plt.plot(eT,combined_pdf,'m',label = 'Combined summer and winter')
+    plt.legend()
+    plt.title(f'{countrys[n]}. ({mashed_selects.latitude.iloc[n]:.1f},{mashed_selects.longitude.iloc[n]:.1f}) \n μ_s = {g_phat_summer[0]:.1f}, σ_s = {g_phat_summer[1]:.1f},μ_w = {g_phat_winter[0]:.1f}, σ_w = {g_phat_winter[1]:.1f}')
+    plt.show()
+
 
 
 

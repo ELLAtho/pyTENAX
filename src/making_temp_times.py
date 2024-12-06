@@ -31,7 +31,7 @@ import time
 from geopy.distance import geodesic
 
 
-drive = 'F'  #specify name of external drive
+drive = 'D'  #specify name of external drive
 
 country = 'US' #TODO: may need to redefine for e.g. hawaii, folder name and save name?
 ERA_country = 'US'
@@ -47,9 +47,9 @@ min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data 
 # code_str = 'UK_' #string from beginning of file names
 # name_len = 8 #how long the numbers are at the end of the files
 # min_startdate = dt.datetime(1981,1,1) #this is for if havent read all ERA5 data yet
+ 
 
-
-
+ 
 name_col = 'ppt'
 temp_name_col = "t2m"
 T_nan_limit = 0.1 #limit for amount of nans that can be present in time series 0.3 = 30%. there will basically be 0 or 100% so it isn't really a big deal
