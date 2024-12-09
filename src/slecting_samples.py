@@ -42,7 +42,7 @@ from statsmodels.tools.sm_exceptions import IterationLimitWarning
 warnings.simplefilter("ignore", IterationLimitWarning)
 
 
-drive = 'F'
+drive = 'D'
 countries = ['Belgium','Germany','Japan','UK'] #'ISD','Finland','US','Norway','Portugal','Ireland'
 
 min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
