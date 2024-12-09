@@ -39,7 +39,7 @@ from scipy.stats import kendalltau, pearsonr, spearmanr
 
 
 
-drive = 'D'
+drive = 'F'
 
 # country = 'Japan'
 # ERA_country = 'Japan'
@@ -457,7 +457,7 @@ ax1.tick_params(labelsize=12)
 plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
 plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
 
-plt.title(f'GSDR: {country}. b at {TENAX_use.alpha[0]} sig level', fontsize=16)
+plt.title(f'GSDR: {ERA_country}. b at {TENAX_use.alpha[0]} sig level', fontsize=16)
 plt.legend()
 plt.show()
 
@@ -499,7 +499,7 @@ plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
 plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
 
 
-plt.title(f'GSDR: {country}. b at 0 sig level', fontsize=16)
+plt.title(f'GSDR: {ERA_country}. b at 0 sig level', fontsize=16)
 plt.show()
 #THIS SHOWS THE LOCATION OF THE STATION, NOT THE ERA DATA
 
@@ -539,7 +539,7 @@ plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
 plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
 
 
-plt.title(f'GSDR: {country}. μ', fontsize=16)
+plt.title(f'GSDR: {ERA_country}. μ', fontsize=16)
 plt.show()
 
 
@@ -580,7 +580,7 @@ plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
 plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
 
 
-plt.title(f'GSDR: {country}. λ', fontsize=16)
+plt.title(f'GSDR: {ERA_country}. λ', fontsize=16)
 plt.show()
 
 #######################################################
@@ -635,8 +635,8 @@ for name in varis:
 
 plt.boxplot([new_df.b.copy().dropna(),df_parameters.b.copy().dropna()],vert=False)
 plt.xlabel('b')
-plt.yticks([1,2],[f'{country}',f'{country}. b forced to zero if not sig'])
-plt.title(f'{country}')
+plt.yticks([1,2],['b allowed to be non sig','b forced to zero if not sig'])
+plt.title(f'{ERA_country}')
 plt.show()
 
 

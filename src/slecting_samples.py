@@ -42,7 +42,7 @@ from statsmodels.tools.sm_exceptions import IterationLimitWarning
 warnings.simplefilter("ignore", IterationLimitWarning)
 
 
-drive = 'D'
+drive = 'F'
 countries = ['Belgium','Germany','Japan','UK'] #'ISD','Finland','US','Norway','Portugal','Ireland'
 
 min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
@@ -559,13 +559,13 @@ for n in np.arange(0,len(mashed_selects)):
         
         #plot new
         percentile_lines = inverse_magnitude_model(F_phat2,eT,qs)
-        n=0
+        i=0
         
         plt.plot(eT,percentile_lines[n],'--b',alpha = 0.6, label = "Magnitude model, b=0")
-        n=1
+        i=1
         while n<np.size(qs):
             plt.plot(eT,percentile_lines[n],'--b',alpha = 0.6) 
-            n=n+1    
+            i=i+1    
         
         plt.ylabel('60-minute precipitation (mm)')
         plt.title(f'{countrys[n]}. ({mashed_selects.latitude.iloc[n]:.1f},{mashed_selects.longitude.iloc[n]:.1f}) \n κ_0 = {F_phat[0]:.3f}, b = {F_phat[1]:.3f}, λ_0 = {F_phat[2]:.3f}, a = {F_phat[3]:.3f}')
