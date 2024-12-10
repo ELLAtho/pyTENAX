@@ -25,8 +25,8 @@ import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import matplotlib.colors as mcolors
 
-drive='F' #name of drive
-countries = ['ISD','Belgium','Finland','Germany','Ireland','Japan','Norway','Portugal','UK','US']
+drive='D' #name of drive
+countries = ['ISD','Belgium','Finland','Germany','Ireland','Japan','Norway','Portugal','UK','US','Israel']
 
 # latslons
 # n=0
@@ -180,7 +180,7 @@ plt.show()
 
 ###grid
 
-countries = ['ISD','Belgium','Finland','Germany','Ireland','Japan','Norway','Portugal','UK','US']
+
 G_loc = np.array([47,3,55,15]) #DOWNLOADED
 US_main_loc = np.array([24, -125, 56, -66]) #downloading
 UK_loc = np.array([49.2, -8.0, 60.8, 1.8]) #DOWNLOADED
@@ -191,6 +191,7 @@ H_loc = np.array([18.8,-160,22.3,-154.8])
 PR_loc = np.array([17.6,-67.3,18.5,-64.7])
 Al_loc = np.array([54.9,-171.9,71.4,-131.4])
 I_loc = np.array([35,6,49,20])
+Is_loc = np.array([27, 34, 34, 36])
 
 #EUROPE
 fig = plt.figure(figsize=(10, 10))
@@ -314,4 +315,28 @@ for n in [0,9]:
 plt.legend()
 plt.xlim(-180,-50)
 plt.ylim(0,75)
+plt.show()
+
+
+#Middle east
+fig = plt.figure(figsize=(10, 10))
+proj = ccrs.PlateCarree()
+ax1 = fig.add_subplot(1, 1, 1, projection=proj)
+ax1.coastlines()
+ax1.add_feature(cfeature.BORDERS, linestyle=':')
+
+ax1.plot([Is_loc[1], Is_loc[1]],[Is_loc[0], Is_loc[2]],  'r', linewidth=2, transform=ccrs.PlateCarree())
+ax1.plot([Is_loc[3], Is_loc[3]],[Is_loc[2], Is_loc[0]],  'r', linewidth=2, transform=ccrs.PlateCarree())
+
+ax1.plot([Is_loc[1], Is_loc[3]],[Is_loc[0], Is_loc[0]],  'r', linewidth=2, transform=ccrs.PlateCarree())
+ax1.plot([Is_loc[3], Is_loc[1]],[Is_loc[2], Is_loc[2]],  'r', linewidth=2, transform=ccrs.PlateCarree(),label = 'mainland')
+
+
+for n in [0,10]:
+    plt.scatter(info[n]['longitude'],info[n]['latitude'],s=5,label = countries[n],transform=ccrs.PlateCarree())
+    n=n+1
+    
+plt.legend()
+plt.xlim(20,40)
+plt.ylim(20,40)
 plt.show()

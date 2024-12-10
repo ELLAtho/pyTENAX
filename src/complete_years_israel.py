@@ -26,7 +26,7 @@ import datetime as dt
 import matplotlib.pyplot as plt
 import scipy.io
 
-drive = 'F'
+drive = 'D'
 
 S = TENAX(
         return_period = [2,5,10,20,50,100, 200],
@@ -40,7 +40,7 @@ country = 'Israel' #folder name that contains country data
 name_col = "ppt"
 year_size_limit = 3 # won't bother getting clean years if file smaller than this times percent missing
 
-mat = scipy.io.loadmat('F:/gaugeData_10min')
+mat = scipy.io.loadmat('D:/gaugeData_10min')
 
 def matlab_to_datetime(matlab_datenum):
     # MATLAB's reference date: January 0, 0000
@@ -71,6 +71,7 @@ start_time = time.time()
 clean = np.zeros(np.shape(mat['R'])[1])
 
 i=0 
+
 for i in np.arange(0,np.shape(mat['R'])[1]): 
 
     G =  pd.DataFrame({'ppt':[mat['R'][0,i][2][n][0] for n in np.arange(0,len(mat['R'][0,i][2]))]})
@@ -103,16 +104,16 @@ info.cleaned_years = clean
 print('time to loop through '+country,str(time.time()-start_time))
 
 
-plt.hist(info[3])
+plt.hist(info.cleaned_years)
 plt.title('Number of complete years '+country)
 plt.show()
 
-yrs_above_10 =  info[3][info[3]>10]
-yrs_above_20 =  info[3][info[3]>20]
+yrs_above_10 =  info.cleaned_years[info.cleaned_years>10]
+yrs_above_20 =  info.cleaned_years[info.cleaned_years>20]
 
 print('files longer than 20 years: '+str(np.size(yrs_above_20)))
 print('files longer than 10 years: '+str(np.size(yrs_above_10)))
-print('total files: '+str(np.size(info[3])))
+print('total files: '+str(np.size(info.cleaned_years)))
 
 
 # num_above_10 = np.size(info[3][info[3]>10])
