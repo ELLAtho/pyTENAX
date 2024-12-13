@@ -53,6 +53,12 @@ info_20 = info_full[(info_full.cleaned_years<20)&(info_full.cleaned_years>=10)]
 info_30 = info_full[(info_full.cleaned_years<30)&(info_full.cleaned_years>=20)]
 info_30up = info_full[(info_full.cleaned_years>=30)]
 
+
+info_10_full = info_full[info_full.total_years<10]
+info_20_full = info_full[(info_full.total_years<20)&(info_full.total_years>=10)]
+info_30_full = info_full[(info_full.total_years<30)&(info_full.total_years>=20)]
+info_30up_full = info_full[(info_full.total_years>=30)]
+
 #stupid version of truncating
 def truncate_to_one_decimal(num):
     if num >= 0:
@@ -101,8 +107,23 @@ ax1.scatter(info_20.longitude,info_20.latitude,s=1.5, color = 'orange',label = '
 ax1.scatter(info_30.longitude,info_30.latitude,s=1.5, color = 'gold',label = '20-29')
 ax1.scatter(info_30.longitude,info_30.latitude,s=1.5, color = 'green',label = '30+')
 plt.legend()
+plt.title('cleaned years')
 plt.show()
 
+
+#BY YEARS
+fig = plt.figure(figsize=(10, 10))
+proj = ccrs.PlateCarree()
+ax1 = fig.add_subplot(1, 1, 1, projection=proj)
+ax1.coastlines()
+
+ax1.scatter(info_10_full.longitude,info_10_full.latitude,s=1.5, color = 'red',label = '<10')
+ax1.scatter(info_20_full.longitude,info_20_full.latitude,s=1.5, color = 'orange',label = '10-19')
+ax1.scatter(info_30_full.longitude,info_30_full.latitude,s=1.5, color = 'gold',label = '20-29')
+ax1.scatter(info_30_full.longitude,info_30_full.latitude,s=1.5, color = 'green',label = '30+')
+plt.legend()
+plt.title('non cleaned years')
+plt.show()
 
 #EUROPE
 fig = plt.figure(figsize=(10, 10))
@@ -118,6 +139,21 @@ plt.legend()
 plt.xlim(-10,50)
 plt.ylim(20,80)
 
+plt.show()
+
+fig = plt.figure(figsize=(10, 10))
+proj = ccrs.PlateCarree()
+ax1 = fig.add_subplot(1, 1, 1, projection=proj)
+ax1.coastlines()
+
+ax1.scatter(info_10_full.longitude,info_10_full.latitude,color = 'red',label = '<10')
+ax1.scatter(info_20_full.longitude,info_20_full.latitude,color = 'orange',label = '10-19')
+ax1.scatter(info_30_full.longitude,info_30_full.latitude,color = 'gold',label = '20-29')
+ax1.scatter(info_30_full.longitude,info_30_full.latitude,color = 'green',label = '30+')
+plt.legend()
+plt.xlim(-10,50)
+plt.ylim(20,80)
+plt.title('non cleaned years')
 plt.show()
 
 

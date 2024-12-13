@@ -42,7 +42,7 @@ from statsmodels.tools.sm_exceptions import IterationLimitWarning
 warnings.simplefilter("ignore", IterationLimitWarning)
 
 
-drive = 'F'
+drive = 'D'
 countries = ['Belgium','Germany','Japan','UK'] #'ISD','Finland','US','Norway','Portugal','Ireland'
 
 min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
@@ -523,12 +523,35 @@ for n in np.arange(0,len(mashed_selects)):
     
     #extract indexes of ordinary events
     #these are time-wise indexes =>returns list of np arrays with np.timeindex
-    idx_ordinary=S.get_ordinary_events(data=df_arr,dates=df_dates, name_col=name_col,  check_gaps=False)
-        
     
-    #get ordinary events by removing too short events
-    #returns boolean array, dates of OE in TO, FROM format, and count of OE in each years
+    S.separation = 6
+    idx_ordinary6=S.get_ordinary_events(data=df_arr,dates=df_dates, name_col=name_col,  check_gaps=False)
+    arr_vals6,arr_dates6,n_ordinary_per_year6=S.remove_short(idx_ordinary6)
+    
+    S.separation = 24
+    idx_ordinary=S.get_ordinary_events(data=df_arr,dates=df_dates, name_col=name_col,  check_gaps=False)
     arr_vals,arr_dates,n_ordinary_per_year=S.remove_short(idx_ordinary)
+    
+    plt.plot(n_ordinary_per_year6, label = '6 hour separation')
+    plt.plot(n_ordinary_per_year, label = '24 hour separation')
+    plt.legend()
+    plt.title(f'Ordinary events per year {countrys[n]}. ({mashed_selects.latitude.iloc[n]:.1f},{mashed_selects.longitude.iloc[n]:.1f})')
+    plt.show()
+    
+    
+    plt.plot(data)
+    plt.scatter(arr_dates[:,0],arr_vals,color = 'r')
+    plt.scatter(arr_dates[:,1],arr_vals,color = 'g')
+    plt.title(f'24 hr separation {countrys[n]}. ({mashed_selects.latitude.iloc[n]:.1f},{mashed_selects.longitude.iloc[n]:.1f})')
+    plt.xlim(dt.datetime(n_ordinary_per_year.index[5],7,1),dt.datetime(n_ordinary_per_year.index[5],8,1))
+    plt.show()
+    
+    plt.plot(data)
+    plt.scatter(arr_dates6[:,0],arr_vals6,color = 'r')
+    plt.scatter(arr_dates6[:,1],arr_vals6,color = 'g')
+    plt.title(f'6 hr separation {countrys[n]}. ({mashed_selects.latitude.iloc[n]:.1f},{mashed_selects.longitude.iloc[n]:.1f})')
+    plt.xlim(dt.datetime(n_ordinary_per_year6.index[5],7,1),dt.datetime(n_ordinary_per_year6.index[5],8,1))
+    plt.show()
     
     #assign ordinary events values by given durations, values are in depth per duration, NOT in intensity mm/h
     dict_ordinary, dict_AMS = S.get_ordinary_events_values(data=df_arr,dates=df_dates, arr_dates_oe=arr_dates)
@@ -542,6 +565,9 @@ for n in np.arange(0,len(mashed_selects)):
     # Your data (P, T arrays) and threshold thr=3.8
     P = dict_ordinary["60"]["ordinary"].to_numpy() 
     T = dict_ordinary["60"]["T"].to_numpy()  
+    
+    
+    ns = n_ordinary_per_year.sum() / len(n_ordinary_per_year) 
     
     ##############################################################################
     eT = np.arange(np.min(T),np.max(T)+4,1) # define T values to calculate distributions. +4 to go beyond graph end
@@ -561,10 +587,10 @@ for n in np.arange(0,len(mashed_selects)):
         percentile_lines = inverse_magnitude_model(F_phat2,eT,qs)
         i=0
         
-        plt.plot(eT,percentile_lines[n],'--b',alpha = 0.6, label = "Magnitude model, b=0")
+        plt.plot(eT,percentile_lines[i],'--b',alpha = 0.6, label = "Magnitude model, b=0")
         i=1
-        while n<np.size(qs):
-            plt.plot(eT,percentile_lines[n],'--b',alpha = 0.6) 
+        while i<np.size(qs):
+            plt.plot(eT,percentile_lines[i],'--b',alpha = 0.6) 
             i=i+1    
         
         plt.ylabel('60-minute precipitation (mm)')
@@ -576,11 +602,15 @@ for n in np.arange(0,len(mashed_selects)):
     plt.title(f'{countrys[n]}. ({mashed_selects.latitude.iloc[n]:.1f},{mashed_selects.longitude.iloc[n]:.1f}) \n μ = {g_phat[0]:.1f}, σ = {g_phat[1]:.1f}')
     plt.show()
     
+    TNX_FIG_temp_model(T, g_phat,6,eT,xlimits = [np.min(T)-3,np.max(T)+3],ylimits = [0,2.5/(np.max(T)-np.min(T))])
+    plt.title(f'{countrys[n]} Beta = 6. ({mashed_selects.latitude.iloc[n]:.1f},{mashed_selects.longitude.iloc[n]:.1f}) \n μ = {g_phat[0]:.1f}, σ = {g_phat[1]:.1f}')
+    plt.show()
+     
     
     Ts = np.arange(np.min(T) - S.temp_delta, np.max(T) + S.temp_delta, S.temp_res_monte_carlo)
     iTs = np.arange(-2.5,37.5,1.5) #idk why we need a different T range here 
     S.n_monte_carlo = np.size(P)*S.niter_smev
-    _, T_mc, P_mc = S.model_inversion(F_phat, g_phat, n, Ts,gen_P_mc = True,gen_RL=False) 
+    _, T_mc, P_mc = S.model_inversion(F_phat, g_phat, ns, Ts,gen_P_mc = True,gen_RL=False) 
     
     
     scaling_rate_W, scaling_rate_q = TNX_FIG_scaling(P,T,P_mc,T_mc,F_phat,S.niter_smev,eT,iTs,xlimits = [np.min(T)-3,np.max(T)+3])
@@ -619,7 +649,80 @@ for n in np.arange(0,len(mashed_selects)):
     plt.show()
 
 
+    #fig 4 
+    S.n_monte_carlo = 20000 # set number of MC for getting RL
+    RL, _, P_check = S.model_inversion(F_phat, g_phat, ns, Ts) 
+    AMS = dict_AMS['60'] # yet the annual maxima
+    TNX_FIG_valid(AMS,S.return_period,RL,ylimits = [0,np.max(AMS.AMS)+10])
+    plt.title(f'{countrys[n]}. ({mashed_selects.latitude.iloc[i]:.1f},{mashed_selects.longitude.iloc[i]:.1f})')
+    plt.ylabel('60-minute precipitation (mm)')
+    plt.show()
 
+    
+    
+    #TENAX MODEL VALIDATION
+    yrs = dict_ordinary["60"]["oe_time"].dt.year
+    yrs_unique = np.unique(yrs)
+    midway = yrs_unique[int(np.ceil(np.size(yrs_unique)/2))-1] # -1 to adjust indexing because this returns a sort of length
+
+    #DEFINE FIRST PERIOD
+    P1 = P[yrs<=midway]
+    T1 = T[yrs<=midway]
+    AMS1 = AMS[AMS['year']<=midway]
+    n_ordinary_per_year1 = n_ordinary_per_year[n_ordinary_per_year.index<=midway]
+    n1 = n_ordinary_per_year1.sum() / len(n_ordinary_per_year1)
+
+    #DEFINE SECOND PERIOD
+    P2 = P[yrs>midway]
+    T2 = T[yrs>midway]
+    AMS2 = AMS[AMS['year']>midway]
+    n_ordinary_per_year2 = n_ordinary_per_year[n_ordinary_per_year.index>midway]
+    n2 = n_ordinary_per_year2.sum() / len(n_ordinary_per_year2)
+
+
+    g_phat1 = S.temperature_model(T1)
+    g_phat2 = S.temperature_model(T2)
+
+
+    F_phat1, loglik1, _, _ = S.magnitude_model(P1, T1, thr)
+    RL1, _, _ = S.model_inversion(F_phat1, g_phat1, n1, Ts)
+       
+
+    F_phat2, loglik2, _, _ = S.magnitude_model(P2, T2, thr)
+    RL2, _, _ = S.model_inversion(F_phat2, g_phat2, n2, Ts)   
+
+    if F_phat[1]==0: #check if b parameter is 0 (shape=shape_0*b
+        dof=3
+        alpha1=1; # b parameter is not significantly different from 0; 3 degrees of freedom for the LR test
+    else: 
+        dof=4
+        alpha1=0  # b parameter is significantly different from 0; 4 degrees of freedom for the LR test
+
+
+
+
+    
+    #modelling second model based on first magnitude and changes in mean/std
+    mu_delta = np.mean(T2)-np.mean(T1)
+    sigma_factor = np.std(T2)/np.std(T1)
+
+    g_phat2_predict = [g_phat1[0]+mu_delta, g_phat1[1]*sigma_factor]
+    RL2_predict, _,_ = S.model_inversion(F_phat1,g_phat2_predict,n2,Ts)
+
+
+    #fig 7a
+
+    TNX_FIG_temp_model(T=T1, g_phat=g_phat1,beta=4,eT=eT,obscol='b',valcol='b',obslabel = None,vallabel = 'Temperature model '+str(yrs_unique[0])+'-'+str(midway))
+    TNX_FIG_temp_model(T=T2, g_phat=g_phat2_predict,beta=4,eT=eT,obscol='r',valcol='r',obslabel = None,vallabel = 'Temperature model '+str(midway+1)+'-'+str(yrs_unique[-1]),xlimits = [np.min(T)-3,np.max(T)+3],ylimits = [0,5/(np.max(T)-np.min(T))]) # model based on temp ave and std changes
+    plt.title(f'{countrys[n]}. ({mashed_selects.latitude.iloc[i]:.1f},{mashed_selects.longitude.iloc[i]:.1f})')
+    plt.show() #this is slightly different in code and paper I think.. using predicted T vs fitted T
+
+    #fig 7b
+
+    TNX_FIG_valid(AMS1,S.return_period,RL1,TENAXcol='b',obscol_shape = 'b+',TENAXlabel = 'The TENAX model '+str(yrs_unique[0])+'-'+str(midway),obslabel='Observed annual maxima '+str(yrs_unique[0])+'-'+str(midway),ylimits = [0,np.max(AMS.AMS)+10])
+    TNX_FIG_valid(AMS2,S.return_period,RL2_predict,TENAXcol='r',obscol_shape = 'r+',TENAXlabel = 'The predicted TENAX model '+str(midway+1)+'-'+str(yrs_unique[-1]),obslabel='Observed annual maxima '+str(midway+1)+'-'+str(yrs_unique[-1]),ylimits = [0,np.max(AMS.AMS)+10])
+    plt.title(f'{countrys[n]}. ({mashed_selects.latitude.iloc[i]:.1f},{mashed_selects.longitude.iloc[i]:.1f})')
+    plt.show()
 
 
 
