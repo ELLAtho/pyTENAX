@@ -39,7 +39,7 @@ from scipy.stats import kendalltau, pearsonr, spearmanr
 
 
 
-drive = 'F'
+drive = 'D'
 
 # country = 'Japan'
 # ERA_country = 'Japan'
@@ -59,15 +59,23 @@ drive = 'F'
 # min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
 
 
-country = 'US' 
-ERA_country = 'Hawaii'
-country_save = 'Hawaii'
-code_str = 'US_'
-minlat,minlon,maxlat,maxlon = 18.8,-160,22.3,-154.8  #Hawaii
-name_len = 6
-min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-censor_thr = 0.9
+# country = 'US' 
+# ERA_country = 'Hawaii'
+# country_save = 'Hawaii'
+# code_str = 'US_'
+# minlat,minlon,maxlat,maxlon = 18.8,-160,22.3,-154.8  #Hawaii
+# name_len = 6
+# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+# censor_thr = 0.9
 
+country = 'US' 
+ERA_country = 'US'
+country_save = 'US_main'
+code_str = 'US_'
+minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  #Hawaii
+name_len = 6
+min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+censor_thr = 0.9
 
 
 # country = 'Germany' 
@@ -97,14 +105,6 @@ censor_thr = 0.9
 # name_len = 0
 # min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
 
-
-# country = 'US' #TODO: may need to redefine for e.g. hawaii, folder name and save name?
-# ERA_country = 'US'
-# country_save = 'US'
-# code_str = 'US_'
-# minlat,minlon,maxlat,maxlon = 24, -125, 56, -66 #mainland US
-# name_len = 6
-# min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
 
 
 # country = 'UK' 

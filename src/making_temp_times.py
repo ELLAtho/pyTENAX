@@ -31,7 +31,7 @@ import time
 from geopy.distance import geodesic
 
 
-drive = 'D'  #specify name of external drive
+drive = 'D'  #specify name of external drive 
 
 country = 'US' #TODO: may need to redefine for e.g. hawaii, folder name and save name?
 ERA_country = 'US'

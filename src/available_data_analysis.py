@@ -53,6 +53,11 @@ info_20 = info_full[(info_full.cleaned_years<20)&(info_full.cleaned_years>=10)]
 info_30 = info_full[(info_full.cleaned_years<30)&(info_full.cleaned_years>=20)]
 info_30up = info_full[(info_full.cleaned_years>=30)]
 
+info_10_70 = info_full[info_full.cleaned_years_70<10]
+info_20_70 = info_full[(info_full.cleaned_years_70<20)&(info_full.cleaned_years_70>=10)]
+info_30_70 = info_full[(info_full.cleaned_years_70<30)&(info_full.cleaned_years_70>=20)]
+info_30up_70 = info_full[(info_full.cleaned_years_70>=30)]
+
 
 info_10_full = info_full[info_full.total_years<10]
 info_20_full = info_full[(info_full.total_years<20)&(info_full.total_years>=10)]
@@ -105,10 +110,25 @@ ax1.coastlines()
 ax1.scatter(info_10.longitude,info_10.latitude,s=1.5, color = 'red',label = '<10')
 ax1.scatter(info_20.longitude,info_20.latitude,s=1.5, color = 'orange',label = '10-19')
 ax1.scatter(info_30.longitude,info_30.latitude,s=1.5, color = 'gold',label = '20-29')
-ax1.scatter(info_30.longitude,info_30.latitude,s=1.5, color = 'green',label = '30+')
+ax1.scatter(info_30up.longitude,info_30up.latitude,s=1.5, color = 'green',label = '30+')
 plt.legend()
-plt.title('cleaned years')
+plt.title('cleaned years at 90%')
 plt.show()
+
+#70%
+fig = plt.figure(figsize=(10, 10))
+proj = ccrs.PlateCarree()
+ax1 = fig.add_subplot(1, 1, 1, projection=proj)
+ax1.coastlines()
+
+ax1.scatter(info_10_70.longitude,info_10_70.latitude,s=1.5, color = 'red',label = '<10')
+ax1.scatter(info_20_70.longitude,info_20_70.latitude,s=1.5, color = 'orange',label = '10-19')
+ax1.scatter(info_30_70.longitude,info_30_70.latitude,s=1.5, color = 'gold',label = '20-29')
+ax1.scatter(info_30up_70.longitude,info_30up_70.latitude,s=1.5, color = 'green',label = '30+')
+plt.legend()
+plt.title('cleaned years at 70%')
+plt.show()
+
 
 
 #BY YEARS
@@ -120,7 +140,7 @@ ax1.coastlines()
 ax1.scatter(info_10_full.longitude,info_10_full.latitude,s=1.5, color = 'red',label = '<10')
 ax1.scatter(info_20_full.longitude,info_20_full.latitude,s=1.5, color = 'orange',label = '10-19')
 ax1.scatter(info_30_full.longitude,info_30_full.latitude,s=1.5, color = 'gold',label = '20-29')
-ax1.scatter(info_30_full.longitude,info_30_full.latitude,s=1.5, color = 'green',label = '30+')
+ax1.scatter(info_30up_full.longitude,info_30up_full.latitude,s=1.5, color = 'green',label = '30+')
 plt.legend()
 plt.title('non cleaned years')
 plt.show()
@@ -155,6 +175,57 @@ plt.xlim(-10,50)
 plt.ylim(20,80)
 plt.title('non cleaned years')
 plt.show()
+
+#ASIA
+fig = plt.figure(figsize=(10, 10))
+proj = ccrs.PlateCarree()
+ax1 = fig.add_subplot(1, 1, 1, projection=proj)
+ax1.coastlines()
+
+ax1.scatter(info_10.longitude,info_10.latitude,s=1.5, color = 'red',label = '<10')
+ax1.scatter(info_20.longitude,info_20.latitude,s=1.5, color = 'orange',label = '10-19')
+ax1.scatter(info_30.longitude,info_30.latitude,s=1.5, color = 'gold',label = '20-29')
+ax1.scatter(info_30up.longitude,info_30up.latitude,s=1.5, color = 'green',label = '30+')
+plt.legend()
+plt.xlim(80,120)
+plt.ylim(-20,50)
+plt.title('cleaned years at 90%')
+plt.show()
+
+#70%
+fig = plt.figure(figsize=(10, 10))
+proj = ccrs.PlateCarree()
+ax1 = fig.add_subplot(1, 1, 1, projection=proj)
+ax1.coastlines()
+
+ax1.scatter(info_10_70.longitude,info_10_70.latitude,s=1.5, color = 'red',label = '<10')
+ax1.scatter(info_20_70.longitude,info_20_70.latitude,s=1.5, color = 'orange',label = '10-19')
+ax1.scatter(info_30_70.longitude,info_30_70.latitude,s=1.5, color = 'gold',label = '20-29')
+ax1.scatter(info_30up_70.longitude,info_30up_70.latitude,s=1.5, color = 'green',label = '30+')
+plt.legend()
+plt.xlim(80,120)
+plt.ylim(-20,50)
+plt.title('cleaned years at 70%')
+plt.show()
+
+
+
+#BY YEARS
+fig = plt.figure(figsize=(10, 10))
+proj = ccrs.PlateCarree()
+ax1 = fig.add_subplot(1, 1, 1, projection=proj)
+ax1.coastlines()
+
+ax1.scatter(info_10_full.longitude,info_10_full.latitude,s=1.5, color = 'red',label = '<10')
+ax1.scatter(info_20_full.longitude,info_20_full.latitude,s=1.5, color = 'orange',label = '10-19')
+ax1.scatter(info_30_full.longitude,info_30_full.latitude,s=1.5, color = 'gold',label = '20-29')
+ax1.scatter(info_30up_full.longitude,info_30up_full.latitude,s=1.5, color = 'green',label = '30+')
+plt.legend()
+plt.title('non cleaned years')
+plt.show()
+
+
+
 
 
 #JAPAN
@@ -228,6 +299,7 @@ PR_loc = np.array([17.6,-67.3,18.5,-64.7])
 Al_loc = np.array([54.9,-171.9,71.4,-131.4])
 I_loc = np.array([35,6,49,20])
 Is_loc = np.array([27, 34, 34, 36])
+MalThai_loc = np.array([-11, 92.7, 24, 141])
 
 #EUROPE
 fig = plt.figure(figsize=(10, 10))
@@ -296,6 +368,13 @@ ax1.plot([J_loc[3], J_loc[3]],[J_loc[2], J_loc[0]],  'r', linewidth=2, transform
 ax1.plot([J_loc[1], J_loc[3]],[J_loc[0], J_loc[0]],  'r', linewidth=2, transform=ccrs.PlateCarree())
 ax1.plot([J_loc[3], J_loc[1]],[J_loc[2], J_loc[2]],  'r', linewidth=2, transform=ccrs.PlateCarree(),label = 'Japan')
 
+ax1.plot([MalThai_loc[1], MalThai_loc[1]],[MalThai_loc[0], MalThai_loc[2]],  'b', linewidth=2, transform=ccrs.PlateCarree())
+ax1.plot([MalThai_loc[3], MalThai_loc[3]],[MalThai_loc[2], MalThai_loc[0]],  'b', linewidth=2, transform=ccrs.PlateCarree())
+
+ax1.plot([MalThai_loc[1], MalThai_loc[3]],[MalThai_loc[0], MalThai_loc[0]],  'b', linewidth=2, transform=ccrs.PlateCarree())
+ax1.plot([MalThai_loc[3], MalThai_loc[1]],[MalThai_loc[2], MalThai_loc[2]],  'b', linewidth=2, transform=ccrs.PlateCarree(),label = 'Malaysia/Thailand')
+
+
 n=0
 while n<len(countries):
     plt.scatter(info[n]['longitude'],info[n]['latitude'],label = countries[n],transform=ccrs.PlateCarree())
@@ -303,7 +382,7 @@ while n<len(countries):
     
 plt.legend()
 plt.xlim(90,180)
-plt.ylim(0,60)
+plt.ylim(-30,60)
 plt.show()
 
 

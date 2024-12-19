@@ -33,8 +33,8 @@ country_code = 'US_'
 name_col = "ppt"
 year_size_limit = 3 # won't bother getting clean years if file smaller than this times percent missing
 
-
-#done: germany, belgium, finland, Ireland, Japan, Norway, Portugal, UK
+ 
+#done: germany, belgium, finland, Ireland, Japan, Norway, Portugal, UK, US, ISD
 
 
 S = TENAX(
@@ -93,7 +93,7 @@ for i in np.arange(0,len(files)):
     if metadata.cleaned_years[i] != 0:
         G,data_meta = read_GSDR_file(files[i],name_col)
         print(files[i])
-        print(metadata.station)
+        print(metadata.station[i])
         yrs_gone = S.remove_incomplete_years(G, name_col) #remove incomplete years (below tolerance)
         
         data_clean[i] = np.size(np.unique(yrs_gone.index.year))
@@ -103,4 +103,4 @@ for i in np.arange(0,len(files)):
 
 metadata['cleaned_years_70'] = data_clean
 
-#metadata.to_csv(f'{drive}:/metadata/{country}_fulldata.csv',index = False)
+metadata.to_csv(f'{drive}:/metadata/{country}_fulldata.csv',index = False)
