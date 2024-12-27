@@ -41,8 +41,17 @@ name_col = "ppt"
 year_size_limit = 3 # won't bother getting clean years if file smaller than this times percent missing
 
 files10 = glob.glob(f'{drive}:/Israel/10_min/*')
+data60 = np.zeros(len(files10))
 for n in np.arange(0,len(files10)):
     file = files10[n]
+    data = pd.read_csv(file)
+    data.prec_time= pd.to_datetime(data.prec_time)
+    data60 = data.resample('60min',on = 'prec_time').sum(min_count = 6)
+    save_file = f'{drive}:/Israel/60_min/{file[17:]}'
+    data60.to_csv(save_file)
+    print(file)
+    print(f'{n}: {save_file}')
+    
     
 
 

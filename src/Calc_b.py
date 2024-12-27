@@ -59,6 +59,15 @@ drive = 'D'
 # min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
 
 
+country = 'US' 
+ERA_country = 'Puerto_rico'
+country_save = 'Puerto_rico'
+code_str = 'US_'
+minlat,minlon,maxlat,maxlon = 17.6,-67.3,18.5,-64.7
+name_len = 6
+min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+censor_thr = 0.9
+
 # country = 'US' 
 # ERA_country = 'Hawaii'
 # country_save = 'Hawaii'
@@ -68,14 +77,14 @@ drive = 'D'
 # min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 # censor_thr = 0.9
 
-country = 'US' 
-ERA_country = 'US'
-country_save = 'US_main'
-code_str = 'US_'
-minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  #Hawaii
-name_len = 6
-min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
-censor_thr = 0.9
+# country = 'US' 
+# ERA_country = 'US'
+# country_save = 'US_main'
+# code_str = 'US_'
+# minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  #Hawaii
+# name_len = 6
+# min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+# censor_thr = 0.9
 
 
 # country = 'Germany' 
@@ -415,7 +424,10 @@ ax1.coastlines()
 ax1.add_feature(cfeature.BORDERS, linestyle=':')
 
 # Choosing cmap
-norm = mcolors.TwoSlopeNorm(vmin=df_parameters.b.min(), vcenter=0, vmax=-1*df_parameters.b.min())
+if df_parameters.b.min() == 0:
+    norm = mcolors.TwoSlopeNorm(vmin=-0.06, vcenter=0, vmax=0.06)
+else:
+    norm = mcolors.TwoSlopeNorm(vmin=df_parameters.b.min(), vcenter=0, vmax=-1*df_parameters.b.min())
 
 for lon, lat in zip(df_parameters.longitude[df_parameters.thr == 0], 
                     df_parameters.latitude[df_parameters.thr == 0]):
@@ -472,7 +484,10 @@ ax1.coastlines()
 ax1.add_feature(cfeature.BORDERS, linestyle=':')
 
 # Choosing cmap
-norm = mcolors.TwoSlopeNorm(vmin=df_parameters.b.min(), vcenter=0, vmax=-1*df_parameters.b.min())
+if df_parameters.b.min() == 0:
+    norm = mcolors.TwoSlopeNorm(vmin=-0.06, vcenter=0, vmax=0.06)
+else:
+    norm = mcolors.TwoSlopeNorm(vmin=df_parameters.b.min(), vcenter=0, vmax=-1*df_parameters.b.min())
 
 sc = ax1.scatter( #plot the negligable at 5% lvl points
     new_df.longitude,
