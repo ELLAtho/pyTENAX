@@ -61,18 +61,23 @@ new_df.loc[mask, 'a'] = df_parameters_neg['a2'].to_numpy()
 
 #Fit observed F_hat values to normal distribution
 
-kappa_mu, kappa_sigma = norm.fit(new_df.kappa.copy().dropna())
-b_mu, b_sigma = norm.fit(new_df.b.copy().dropna())
-lambda_mu, lambda_sigma = norm.fit(new_df['lambda'].copy().dropna())
-a_mu, a_sigma = norm.fit(new_df.a.copy().dropna())
+kappa_mu_sigma = norm.fit(new_df.kappa.copy().dropna())
+b_mu_sigma = norm.fit(new_df.b.copy().dropna())
+lambda_mu_sigma = norm.fit(new_df['lambda'].copy().dropna())
+a_mu_sigma = norm.fit(new_df.a.copy().dropna())
 
 
 #now with beta = 4
-kappa_mu_4, kappa_sigma_4 = normal_model(new_df.kappa.copy().dropna(), 4)
-b_mu_4, b_sigma_4 = normal_model(new_df.b.copy().dropna(), 4)
-lambda_mu_4, lambda_sigma_4 = normal_model(new_df['lambda'].copy().dropna(), 4)
-a_mu_4, a_sigma_4 = normal_model(new_df.a.copy().dropna(), 4)
+kappa_mu_sigma_4 = normal_model(new_df.kappa.copy().dropna(), 4)
+b_mu_sigma_4 = normal_model(new_df.b.copy().dropna(), 4)
+lambda_mu_sigma_4 = normal_model(new_df['lambda'].copy().dropna(), 4)
+a_mu_sigma_4 = normal_model(new_df.a.copy().dropna(), 4)
 
+#now with skew
+kappa_skew = normal_model(new_df.kappa.copy().dropna(), method = 'skewnorm')
+b_skew = normal_model(new_df.b.copy().dropna(), method = 'skewnorm')
+lambda_skew = normal_model(new_df['lambda'].copy().dropna(), method = 'skewnorm')
+a__skew = normal_model(new_df.a.copy().dropna(), method = 'skewnorm')
 
 
 
@@ -109,4 +114,13 @@ plt.ylabel('pdf',fontsize=14)
 plt.legend(fontsize=8)
 plt.tick_params(axis='both', which='major', labelsize=14)
 
+plt.show()
+
+
+TNX_FIG_temp_model(new_df.b, b_skew, 2, bins, obscol='r',valcol='b',
+                       obslabel = 'observaed b values',
+                       vallabel = f'skewnorm_fit, mu = {b_skew[0]} \n sigma = {b_skew[1]}, skew = {b_skew[2]}',
+                       xlimits = [-0.08,0.03],
+                       ylimits = [0,30],
+                       method = "skewnorm") 
 plt.show()

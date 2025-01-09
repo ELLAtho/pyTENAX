@@ -13,8 +13,9 @@ from geopy.distance import geodesic
 from pyTENAX.intense import *
 from pyTENAX.pyTENAX import *
 
-from scipy.stats import norm
+from scipy.stats import norm, skewnorm
 from scipy.optimize import minimize
+from scipy.optimize import curve_fit
 
 
 def calculate_distance(lat1, lon1, lat2, lon2):
@@ -204,14 +205,30 @@ def truncate_neg(num,factor):
 
 
 
-def normal_model(data, beta):
+def normal_model(data, beta=2, method = 'norm'):
     
-    mu, sigma = norm.fit(data)
-    init_g = [mu, sigma]
+    if method == 'norm':
+            
+        mu, sigma = norm.fit(data)
+        init_g = [mu, sigma]
+        
+        mu_sigma = minimize(lambda par: -gen_norm_loglik(data, par, beta), init_g, method='Nelder-Mead').x
+    elif method == 'skewnorm':
+        def skewnorm_pdf(x, alpha, loc, scale):
+            return skewnorm.pdf(x, alpha, loc=loc, scale=scale)
+        
+        hist, bin_edges = np.histogram(data, bins=100, density=True)
+        # Bin centers for xdata
+        xdata = (bin_edges[:-1] + bin_edges[1:]) / 2
+        initial_guess = [-3, np.mean(data), np.std(data)]  # Guess for alpha, loc, scale
+        mu_sigma , _ = curve_fit(skewnorm_pdf, xdata, hist, p0=initial_guess, maxfev=10000)
+        mu_sigma = tuple(mu_sigma.reshape(1, -1)[0])
+    else:
+        print('Method unknown')
+        mu_sigma = [0,0]
     
-    mu_sigma = minimize(lambda par: -gen_norm_loglik(data, par, beta), init_g, method='Nelder-Mead').x
     
-    return mu_sigma[0],mu_sigma[1]
+    return mu_sigma
 
 
 
