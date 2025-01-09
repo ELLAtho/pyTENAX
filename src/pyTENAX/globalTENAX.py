@@ -11,7 +11,10 @@ import numpy as np
 import pandas as pd
 from geopy.distance import geodesic
 from pyTENAX.intense import *
+from pyTENAX.pyTENAX import *
 
+from scipy.stats import norm
+from scipy.optimize import minimize
 
 
 def calculate_distance(lat1, lon1, lat2, lon2):
@@ -201,7 +204,14 @@ def truncate_neg(num,factor):
 
 
 
-
+def normal_model(data, beta):
+    
+    mu, sigma = norm.fit(data)
+    init_g = [mu, sigma]
+    
+    mu_sigma = minimize(lambda par: -gen_norm_loglik(data, par, beta), init_g, method='Nelder-Mead').x
+    
+    return mu_sigma[0],mu_sigma[1]
 
 
 
