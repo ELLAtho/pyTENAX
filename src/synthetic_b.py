@@ -88,7 +88,7 @@ hist, bin_edges = np.histogram(new_df.b, bins=bin_edge, density=True)
 plt.plot(bins, hist, '--', color='b',label = 'observed values of b')
 
 # Plot analytical PDF of b (validation)
-plt.plot(bins, gen_norm_pdf(bins, b_mu, b_sigma, 2), '-', color='r', label='fitted b')
+plt.plot(bins, gen_norm_pdf(bins, b_mu_sigma[0], b_mu_sigma[1], 2), '-', color='r', label='fitted b')
 
 # Set plot parameters
 #ax.set_xlim(Tlims)
@@ -103,7 +103,7 @@ plt.show()
 
 plt.plot(bins, hist, '--', color='b',label = 'observed values of b')
 
-plt.plot(bins, gen_norm_pdf(bins, b_mu_4, b_sigma_4, 4), '-', color='r', label='fitted b, beta = 4')
+plt.plot(bins, gen_norm_pdf(bins, b_mu_sigma_4[0], b_mu_sigma_4[1], 4), '-', color='r', label='fitted b, beta = 4')
 
 # Set plot parameters
 #ax.set_xlim(Tlims)
@@ -118,9 +118,9 @@ plt.show()
 
 
 TNX_FIG_temp_model(new_df.b, b_skew, 2, bins, obscol='r',valcol='b',
-                       obslabel = 'observaed b values',
-                       vallabel = f'skewnorm_fit, mu = {b_skew[0]} \n sigma = {b_skew[1]}, skew = {b_skew[2]}',
+                       obslabel = 'observed b values',
+                       vallabel = f'skewnorm fit, loc = {b_skew[1]:.2} \n scale = {b_skew[2]:.2}, skew = {b_skew[0]:.2}',
                        xlimits = [-0.08,0.03],
-                       ylimits = [0,30],
+                       ylimits = [0,30], 
                        method = "skewnorm") 
 plt.show()

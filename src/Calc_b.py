@@ -53,20 +53,20 @@ drive = 'D'
 
 # country = 'Belgium'
 # ERA_country = 'Germany' #country where the era files are
-# country_save = 'Belgium2'
+# country_save = 'Belgium'
 # code_str = 'BE_'
 # name_len = 8 #how long the numbers are at the end of the files
 # min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
 
 
-# country = 'US' 
-# ERA_country = 'Puerto_rico'
-# country_save = 'Puerto_rico'
-# code_str = 'US_'
-# minlat,minlon,maxlat,maxlon = 17.6,-67.3,18.5,-64.7
-# name_len = 6
-# min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
-# censor_thr = 0.9
+country = 'US' 
+ERA_country = 'Puerto_rico'
+country_save = 'Puerto_rico'
+code_str = 'US_'
+minlat,minlon,maxlat,maxlon = 17.6,-67.3,18.5,-64.7
+name_len = 6
+min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+censor_thr = 0.9
 
 # country = 'US' 
 # ERA_country = 'Hawaii'
@@ -81,20 +81,20 @@ drive = 'D'
 # ERA_country = 'US'
 # country_save = 'US_main'
 # code_str = 'US_'
-# minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  #Hawaii
+# minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
 # name_len = 6
 # min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
 # censor_thr = 0.9
 
 
-country = 'Germany' 
-ERA_country = 'Germany'
-country_save = 'Germany'
-code_str = 'DE_'
-minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
-name_len = 5
-min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-censor_thr = 0.9
+# country = 'Germany' 
+# ERA_country = 'Germany'
+# country_save = 'Germany'
+# code_str = 'DE_'
+# minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
+# name_len = 5
+# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+# censor_thr = 0.9
 
 # country = 'Germany' 
 # ERA_country = 'Germany'
@@ -395,6 +395,13 @@ b_zero = df_parameters.b[df_parameters.b==0].count()
 total = df_parameters.b.count()
 perc_sig = 100*(1-b_zero/total)
 print(f'Percent of stations with significant b: {perc_sig:.0f}%')
+
+b_pos = df_parameters.b[df_parameters.b>0].count()
+perc_pos = 100*(b_pos/total)
+b_neg = df_parameters.b[df_parameters.b<0].count()
+perc_neg = 100*(b_neg/total)
+print(f'Percent of stations with significant positive b: {perc_pos:.0f}%')
+print(f'Percent of stations with significant negative b: {perc_neg:.0f}%')
 
 
 non_calc = df_parameters['b'].isna().sum()
