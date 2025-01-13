@@ -619,10 +619,10 @@ class TENAX():
                 
         # Generate P_mc if needed
         if gen_P_mc:
-            start = time.time()
+            #start = time.time()
             P_mc = weibull_min.ppf(np.random.rand(self.n_monte_carlo), c=wbl_phat[:, 1], scale=wbl_phat[:, 0])
-            end = time.time() - start
-            print(f'mc {self.n_monte_carlo}: {end}')
+            #end = time.time() - start
+            #print(f'mc {self.n_monte_carlo}: {end}')
             
         else:
             pass

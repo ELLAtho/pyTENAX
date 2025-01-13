@@ -17,6 +17,7 @@ sys.path.append(RES_DIR)
 sys.path.append('D:')
 import numpy as np
 import pandas as pd
+import time
 
 import datetime as dt
 import matplotlib.pyplot as plt
@@ -41,6 +42,24 @@ name_len = 5
 min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 censor_thr = 0.9
 
+name_col = 'ppt' 
+temp_name_col = "t2m"
+min_yrs = 10 
+
+
+info = pd.read_csv(drive+':/metadata/'+country+'_fulldata.csv', dtype={'station': str})
+info.startdate = pd.to_datetime(info.startdate)
+info.enddate = pd.to_datetime(info.enddate)
+val_info = info[info['cleaned_years']>=min_yrs] #filter out stations that are less than min
+val_info = val_info[val_info['startdate']>=min_startdate]
+
+# val_info = val_info[val_info['latitude']>=minlat] #filter station locations to within ERA bounds
+# val_info = val_info[val_info['latitude']<=maxlat]
+# val_info = val_info[val_info['longitude']>=minlon]
+# val_info = val_info[val_info['longitude']<=maxlon]
+
+
+## READ IN FILES
 save_path_neg = drive + ':/outputs/'+country_save+'\\parameters_neg.csv'
 df_savename = drive + ':/outputs/'+country_save+'\\parameters.csv'
 
@@ -59,6 +78,10 @@ new_df.loc[mask, 'kappa'] = df_parameters_neg['kappa2'].to_numpy()
 new_df.loc[mask, 'lambda'] = df_parameters_neg['lambda2'].to_numpy()
 new_df.loc[mask, 'a'] = df_parameters_neg['a2'].to_numpy()
 
+
+
+# LOOKING AT DISTRIBUTION OF b
+###############################################################################
 #Fit observed F_hat values to normal distribution
 
 kappa_mu_sigma = norm.fit(new_df.kappa.copy().dropna())
@@ -124,3 +147,64 @@ TNX_FIG_temp_model(new_df.b, b_skew, 2, bins, obscol='r',valcol='b',
                        ylimits = [0,30], 
                        method = "skewnorm") 
 plt.show()
+
+
+###############################################################################
+
+# number of stations and average number events
+total_events = df_parameters.n_events_per_yr.to_numpy() * val_info.cleaned_years.to_numpy()
+total_events_mean = np.mean(total_events) #average total events for each station to. do this many monte carl samples
+
+n_stations = np.size(df_parameters.mu) #how many resamples we need to do
+
+S = TENAX(
+        return_period = [2,5,10,20,50,100, 200],  #for some reason it doesnt like calculating RP =<1
+        durations = [60, 180],
+        left_censoring = [0, 0.90],
+        alpha = 0.05,
+        n_monte_carlo = round(total_events_mean),
+        
+    )
+# get mean of mu and sigma for temp model
+mu_mu_sigma = norm.fit(df_parameters.mu.copy().dropna())
+sigma_mu_sigma = norm.fit(df_parameters.sigma.copy().dropna())
+
+
+n = np.mean(df_parameters.n_events_per_yr) #average events per year
+Ts = np.arange(mu_mu_sigma[0]-2*sigma_mu_sigma[0] - S.temp_delta, mu_mu_sigma[0]+2*sigma_mu_sigma[0] + S.temp_delta, S.temp_res_monte_carlo)
+
+#define mean F_phat and g_phat... using the normal distribution
+F_phat = np.array([kappa_mu_sigma[0],b_mu_sigma[0],lambda_mu_sigma[0],a_mu_sigma[0]])
+g_phat = np.array([mu_mu_sigma[0],sigma_mu_sigma[0]])
+
+thr_gen = np.zeros(n_stations)
+F_phat_gen = [0]*n_stations
+g_phat_gen = [0]*n_stations
+start_time = [0]*n_stations
+
+
+# model inversion loop
+
+for i in np.arange(0,n_stations):
+    start_time[i] = time.time()
+    #generate T and P
+    _, T_mc, P_mc = S.model_inversion(F_phat, g_phat, n, Ts, gen_P_mc = True,gen_RL=False) 
+    
+    #recalculate g_phat and F_phat
+    
+    
+    
+    thr_gen[i] = np.quantile(P_mc,S.left_censoring[1])
+    
+    #magnitude model
+    F_phat_gen[i], loglik, _, _ = S.magnitude_model(P_mc, T_mc, thr_gen[i])
+    #temperature model
+    g_phat_gen[i] = S.temperature_model(T_mc)
+    
+    if (i+1)%50 == 0:
+        time_taken = (time.time()-start_time[i-9])/10
+        time_left = (n_stations-i)*time_taken/60
+        print(f"{i}/{n_stations}. Current average time to complete one {time_taken:.0f}s. Approx time left: {time_left:.0f} mins") #this is only correct after 50 loops
+
+    
+    
