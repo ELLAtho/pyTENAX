@@ -48,25 +48,26 @@ drive = 'D'
 # minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
 # name_len = 5
 # min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+# censor_thr = 0.9
 
 
-
-# country = 'Belgium'
-# ERA_country = 'Germany' #country where the era files are
-# country_save = 'Belgium'
-# code_str = 'BE_'
-# name_len = 8 #how long the numbers are at the end of the files
-# min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
-
-
-country = 'US' 
-ERA_country = 'Puerto_rico'
-country_save = 'Puerto_rico'
-code_str = 'US_'
-minlat,minlon,maxlat,maxlon = 17.6,-67.3,18.5,-64.7
-name_len = 6
+country = 'Belgium'
+ERA_country = 'Germany' #country where the era files are
+minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
+country_save = 'Belgium'
+code_str = 'BE_'
+name_len = 8 #how long the numbers are at the end of the files
 min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
-censor_thr = 0.9
+
+
+# country = 'US' 
+# ERA_country = 'Puerto_rico'
+# country_save = 'Puerto_rico'
+# code_str = 'US_'
+# minlat,minlon,maxlat,maxlon = 17.6,-67.3,18.5,-64.7
+# name_len = 6
+# min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+# censor_thr = 0.9
 
 # country = 'US' 
 # ERA_country = 'Hawaii'

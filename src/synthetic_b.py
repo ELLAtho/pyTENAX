@@ -30,6 +30,7 @@ from scipy.stats import norm
 from pyTENAX.intense import *
 from pyTENAX.pyTENAX import *
 from pyTENAX.globalTENAX import *
+import glob
 
 drive='D' #name of drive
 
@@ -57,6 +58,16 @@ val_info = val_info[val_info['startdate']>=min_startdate]
 # val_info = val_info[val_info['latitude']<=maxlat]
 # val_info = val_info[val_info['longitude']>=minlon]
 # val_info = val_info[val_info['longitude']<=maxlon]
+
+
+files = glob.glob(drive+':/'+country+'/*') #list of files in country folder
+files_sel = files[0]
+G,data_meta = read_GSDR_file(files_sel,name_col)
+code = files_sel[-4-5:-4]
+T_path = drive + ':/'+country+'_temp\\'+code_str+code + '.nc'
+T_ERA = xr.load_dataarray(T_path)
+t_data = (T_ERA.squeeze()-273.15).to_dataframe()
+#TODO: make code selection generic
 
 
 ## READ IN FILES
@@ -165,6 +176,29 @@ S = TENAX(
         n_monte_carlo = round(total_events_mean),
         
     )
+
+data = G 
+data = S.remove_incomplete_years(data, name_col)
+df_arr = np.array(data[name_col])
+df_dates = np.array(data.index)
+
+idx_ordinary=S.get_ordinary_events(data=df_arr,dates=df_dates, name_col=name_col,  check_gaps=False)
+    
+
+#get ordinary events by removing too short events
+#returns boolean array, dates of OE in TO, FROM format, and count of OE in each years
+arr_vals,arr_dates,n_ordinary_per_year=S.remove_short(idx_ordinary)
+
+#assign ordinary events values by given durations, values are in depth per duration, NOT in intensity mm/h
+dict_ordinary, dict_AMS = S.get_ordinary_events_values(data=df_arr,dates=df_dates, arr_dates_oe=arr_dates)
+df_arr_t_data = np.array(t_data[temp_name_col])
+df_dates_t_data = np.array(t_data.index)
+dict_ordinary, _ , n_ordinary_per_year = S.associate_vars(dict_ordinary, df_arr_t_data, df_dates_t_data)
+# Your data (P, T arrays) and threshold thr=3.8
+P = dict_ordinary["60"]["ordinary"].to_numpy() 
+T = dict_ordinary["60"]["T"].to_numpy()  
+
+
 # get mean of mu and sigma for temp model
 mu_mu_sigma = norm.fit(df_parameters.mu.copy().dropna())
 sigma_mu_sigma = norm.fit(df_parameters.sigma.copy().dropna())
@@ -177,6 +211,7 @@ Ts = np.arange(mu_mu_sigma[0]-2*sigma_mu_sigma[0] - S.temp_delta, mu_mu_sigma[0]
 F_phat = np.array([kappa_mu_sigma[0],b_mu_sigma[0],lambda_mu_sigma[0],a_mu_sigma[0]])
 g_phat = np.array([mu_mu_sigma[0],sigma_mu_sigma[0]])
 
+# define empty arrays
 thr_gen = np.zeros(n_stations)
 F_phat_gen = [0]*n_stations
 g_phat_gen = [0]*n_stations
@@ -184,27 +219,49 @@ start_time = [0]*n_stations
 
 
 # model inversion loop
+df_gen_savename = drive + ':/outputs/'+country_save+'\\synth_generated_parameters.csv'
+saved_output_files = glob.glob(drive + ':/outputs/'+country_save+'/*')
 
-for i in np.arange(0,n_stations):
-    start_time[i] = time.time()
-    #generate T and P
-    _, T_mc, P_mc = S.model_inversion(F_phat, g_phat, n, Ts, gen_P_mc = True,gen_RL=False) 
+if df_gen_savename not in saved_output_files:
     
-    #recalculate g_phat and F_phat
-    
-    
-    
-    thr_gen[i] = np.quantile(P_mc,S.left_censoring[1])
-    
-    #magnitude model
-    F_phat_gen[i], loglik, _, _ = S.magnitude_model(P_mc, T_mc, thr_gen[i])
-    #temperature model
-    g_phat_gen[i] = S.temperature_model(T_mc)
-    
-    if (i+1)%50 == 0:
-        time_taken = (time.time()-start_time[i-9])/10
-        time_left = (n_stations-i)*time_taken/60
-        print(f"{i}/{n_stations}. Current average time to complete one {time_taken:.0f}s. Approx time left: {time_left:.0f} mins") #this is only correct after 50 loops
+    for i in np.arange(0,n_stations):
+        start_time[i] = time.time()
+        #generate T and P
+        _, T_mc, P_mc = S.model_inversion(F_phat, g_phat, n, Ts, gen_P_mc = True,gen_RL=False) 
+        
+        #recalculate g_phat and F_phat
+        
+        
+        
+        thr_gen[i] = np.quantile(P_mc,S.left_censoring[1])
+        
+        #magnitude model
+        F_phat_gen[i], loglik, _, _ = S.magnitude_model(P_mc, T_mc, thr_gen[i])
+        #temperature model
+        g_phat_gen[i] = S.temperature_model(T_mc)
+        
+        if (i+1)%50 == 0:
+            time_taken = (time.time()-start_time[i-9])/10
+            time_left = (n_stations-i)*time_taken/60
+            print(f"{i}/{n_stations}. Current average time to complete one {time_taken:.0f}s. Approx time left: {time_left:.0f} mins") #this is only correct after 50 loops
+        else:
+            pass
+    df_generated_parameters = pd.DataFrame({'mu':np.array(g_phat_gen)[:,0],'sigma':np.array(g_phat_gen)[:,1],'kappa':np.array(F_phat_gen)[:,0],'b':np.array(F_phat_gen)[:,1],'lambda':np.array(F_phat_gen)[:,2],'a':np.array(F_phat_gen)[:,3],'thr':np.array(thr_gen)})
+    df_generated_parameters.to_csv(df_gen_savename) #save calculated parameters
+
+else:
+    print('file made already')
+    df_generated_parameters = pd.read_csv(df_gen_savename) #save calculated parameters
 
     
-    
+#THINK THIS IS WRONG
+
+
+
+plt.boxplot([new_df.b.copy().dropna(),df_parameters.b.copy().dropna(),df_generated_parameters.b],vert=False)
+plt.xlabel('b')
+plt.yticks([1,2,3],['b allowed to be non sig','b forced to zero if not sig','Monte Carlo generated samples'])
+plt.title(f'{ERA_country}')
+plt.show()
+
+
