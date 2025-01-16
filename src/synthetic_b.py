@@ -53,22 +53,22 @@ drive='D' #name of drive
 # min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 # censor_thr = 0.9
 
-# country = 'UK' 
-# ERA_country = 'UK'
-# country_save = 'UK'
-# code_str = 'UK_'
-# name_len = 0
-# min_startdate = dt.datetime(1981,1,1) #this is for if havent read all ERA5 data yet
+country = 'UK' 
+ERA_country = 'UK'
+country_save = 'UK'
+code_str = 'UK_'
+name_len = 0
+min_startdate = dt.datetime(1981,1,1) #this is for if havent read all ERA5 data yet
 
 
-country = 'US' 
-ERA_country = 'US'
-country_save = 'US_main'
-code_str = 'US_'
-minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
-name_len = 6
-min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
-censor_thr = 0.9
+# country = 'US' 
+# ERA_country = 'US'
+# country_save = 'US_main'
+# code_str = 'US_'
+# minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
+# name_len = 6
+# min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+# censor_thr = 0.9
 
 
 # country = 'Belgium'
@@ -91,10 +91,10 @@ info.enddate = pd.to_datetime(info.enddate)
 val_info = info[info['cleaned_years']>=min_yrs] #filter out stations that are less than min
 val_info = val_info[val_info['startdate']>=min_startdate]
 
-val_info = val_info[val_info['latitude']>=minlat] #filter station locations to within ERA bounds
-val_info = val_info[val_info['latitude']<=maxlat]
-val_info = val_info[val_info['longitude']>=minlon]
-val_info = val_info[val_info['longitude']<=maxlon]
+# val_info = val_info[val_info['latitude']>=minlat] #filter station locations to within ERA bounds
+# val_info = val_info[val_info['latitude']<=maxlat]
+# val_info = val_info[val_info['longitude']>=minlon]
+# val_info = val_info[val_info['longitude']<=maxlon]
 
 
 # files = glob.glob(drive+':/'+country+'/*') #list of files in country folder
@@ -198,68 +198,68 @@ plt.show()
 
 
 ###############################################################################
-
-# number of stations and average number events
-total_events = df_parameters.n_events_per_yr.to_numpy() * val_info.cleaned_years.to_numpy()
-total_events_mean = np.nanmean(total_events) #average total events for each station to. do this many monte carl samples
-
-n_stations = np.size(df_parameters.mu) #how many resamples we need to do
-
-S = TENAX(
-        return_period = [2,5,10,20,50,100, 200],  #for some reason it doesnt like calculating RP =<1
-        durations = [60, 180],
-        left_censoring = [0, 0.90],
-        alpha = 0.0,
-        n_monte_carlo = round(total_events_mean),
-        
-    )
-
-# data = G 
-# data = S.remove_incomplete_years(data, name_col)
-# df_arr = np.array(data[name_col])
-# df_dates = np.array(data.index)
-
-# idx_ordinary=S.get_ordinary_events(data=df_arr,dates=df_dates, name_col=name_col,  check_gaps=False)
-    
-
-# #get ordinary events by removing too short events
-# #returns boolean array, dates of OE in TO, FROM format, and count of OE in each years
-# arr_vals,arr_dates,n_ordinary_per_year=S.remove_short(idx_ordinary)
-
-# #assign ordinary events values by given durations, values are in depth per duration, NOT in intensity mm/h
-# dict_ordinary, dict_AMS = S.get_ordinary_events_values(data=df_arr,dates=df_dates, arr_dates_oe=arr_dates)
-# df_arr_t_data = np.array(t_data[temp_name_col])
-# df_dates_t_data = np.array(t_data.index)
-# dict_ordinary, _ , n_ordinary_per_year = S.associate_vars(dict_ordinary, df_arr_t_data, df_dates_t_data)
-# # Your data (P, T arrays) and threshold thr=3.8
-# P = dict_ordinary["60"]["ordinary"].to_numpy() 
-# T = dict_ordinary["60"]["T"].to_numpy()  
-
-
-# get mean of mu and sigma for temp model
-mu_mu_sigma = norm.fit(df_parameters.mu.copy().dropna())
-sigma_mu_sigma = norm.fit(df_parameters.sigma.copy().dropna())
-
-
-n = np.mean(df_parameters.n_events_per_yr) #average events per year
-Ts = np.arange(mu_mu_sigma[0]-2*sigma_mu_sigma[0] - S.temp_delta, mu_mu_sigma[0]+2*sigma_mu_sigma[0] + S.temp_delta, S.temp_res_monte_carlo)
-
-#define mean F_phat and g_phat... using the normal distribution
-F_phat = np.array([kappa_mu_sigma[0],b_mu_sigma[0],lambda_mu_sigma[0],a_mu_sigma[0]])
-g_phat = np.array([mu_mu_sigma[0],sigma_mu_sigma[0]])
-
-# define empty arrays
-thr_gen = np.zeros(n_stations)
-F_phat_gen = [0]*n_stations
-g_phat_gen = [0]*n_stations
-start_time = [0]*n_stations
-
-
-# model inversion loop
 df_gen_savename = drive + ':/outputs/'+country_save+'\\synth_generated_parameters.csv'
 saved_output_files = glob.glob(drive + ':/outputs/'+country_save+'/*')
 
 if df_gen_savename not in saved_output_files:
+    # number of stations and average number events
+    total_events = df_parameters.n_events_per_yr.to_numpy() * val_info.cleaned_years.to_numpy()
+    total_events_mean = np.nanmean(total_events) #average total events for each station to. do this many monte carl samples
+    
+    n_stations = np.size(df_parameters.mu) #how many resamples we need to do
+    
+    S = TENAX(
+            return_period = [2,5,10,20,50,100, 200],  #for some reason it doesnt like calculating RP =<1
+            durations = [60, 180],
+            left_censoring = [0, 0.90],
+            alpha = 0.0,
+            n_monte_carlo = round(total_events_mean),
+            
+        )
+    
+    # data = G 
+    # data = S.remove_incomplete_years(data, name_col)
+    # df_arr = np.array(data[name_col])
+    # df_dates = np.array(data.index)
+    
+    # idx_ordinary=S.get_ordinary_events(data=df_arr,dates=df_dates, name_col=name_col,  check_gaps=False)
+        
+    
+    # #get ordinary events by removing too short events
+    # #returns boolean array, dates of OE in TO, FROM format, and count of OE in each years
+    # arr_vals,arr_dates,n_ordinary_per_year=S.remove_short(idx_ordinary)
+    
+    # #assign ordinary events values by given durations, values are in depth per duration, NOT in intensity mm/h
+    # dict_ordinary, dict_AMS = S.get_ordinary_events_values(data=df_arr,dates=df_dates, arr_dates_oe=arr_dates)
+    # df_arr_t_data = np.array(t_data[temp_name_col])
+    # df_dates_t_data = np.array(t_data.index)
+    # dict_ordinary, _ , n_ordinary_per_year = S.associate_vars(dict_ordinary, df_arr_t_data, df_dates_t_data)
+    # # Your data (P, T arrays) and threshold thr=3.8
+    # P = dict_ordinary["60"]["ordinary"].to_numpy() 
+    # T = dict_ordinary["60"]["T"].to_numpy()  
+    
+    
+    # get mean of mu and sigma for temp model
+    mu_mu_sigma = norm.fit(df_parameters.mu.copy().dropna())
+    sigma_mu_sigma = norm.fit(df_parameters.sigma.copy().dropna())
+    
+    
+    n = np.mean(df_parameters.n_events_per_yr) #average events per year
+    Ts = np.arange(mu_mu_sigma[0]-2*sigma_mu_sigma[0] - S.temp_delta, mu_mu_sigma[0]+2*sigma_mu_sigma[0] + S.temp_delta, S.temp_res_monte_carlo)
+    
+    #define mean F_phat and g_phat... using the normal distribution
+    F_phat = np.array([kappa_mu_sigma[0],b_mu_sigma[0],lambda_mu_sigma[0],a_mu_sigma[0]])
+    g_phat = np.array([mu_mu_sigma[0],sigma_mu_sigma[0]])
+    
+    # define empty arrays
+    thr_gen = np.zeros(n_stations)
+    F_phat_gen = [0]*n_stations
+    g_phat_gen = [0]*n_stations
+    start_time = [0]*n_stations
+    
+    
+    # model inversion loop
+
     
     for i in np.arange(0,n_stations):
         start_time[i] = time.time()
@@ -302,7 +302,7 @@ print(f'Ratio of generated spread to observed spread in b: {ratio:.2f}%')
 print(f'average observed F_phat: {F_phat}')
 print(f'average generated F_phat: {F_phat_gen_mean}')
 
-plt.boxplot([new_df.b.copy().dropna(),df_parameters.b.copy().dropna(),df_generated_parameters.b],vert=False)
+plt.violinplot([new_df.b.copy().dropna(),df_parameters.b.copy().dropna(),df_generated_parameters.b],vert=False)
 plt.xlabel('b')
 plt.yticks([1,2,3],['b allowed to be non sig','b forced to zero if not sig','Monte Carlo generated samples'])
 plt.title(f'{ERA_country}')
