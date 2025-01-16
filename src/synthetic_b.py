@@ -44,13 +44,30 @@ drive='D' #name of drive
 # censor_thr = 0.9
 
 
-country = 'Japan'
-ERA_country = 'Japan'
-country_save = 'Japan'
-code_str = 'JP_'
-minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
-name_len = 5
-min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+# country = 'Japan'
+# ERA_country = 'Japan'
+# country_save = 'Japan'
+# code_str = 'JP_'
+# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+# name_len = 5
+# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+# censor_thr = 0.9
+
+# country = 'UK' 
+# ERA_country = 'UK'
+# country_save = 'UK'
+# code_str = 'UK_'
+# name_len = 0
+# min_startdate = dt.datetime(1981,1,1) #this is for if havent read all ERA5 data yet
+
+
+country = 'US' 
+ERA_country = 'US'
+country_save = 'US_main'
+code_str = 'US_'
+minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
+name_len = 6
+min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
 censor_thr = 0.9
 
 
@@ -74,10 +91,10 @@ info.enddate = pd.to_datetime(info.enddate)
 val_info = info[info['cleaned_years']>=min_yrs] #filter out stations that are less than min
 val_info = val_info[val_info['startdate']>=min_startdate]
 
-# val_info = val_info[val_info['latitude']>=minlat] #filter station locations to within ERA bounds
-# val_info = val_info[val_info['latitude']<=maxlat]
-# val_info = val_info[val_info['longitude']>=minlon]
-# val_info = val_info[val_info['longitude']<=maxlon]
+val_info = val_info[val_info['latitude']>=minlat] #filter station locations to within ERA bounds
+val_info = val_info[val_info['latitude']<=maxlat]
+val_info = val_info[val_info['longitude']>=minlon]
+val_info = val_info[val_info['longitude']<=maxlon]
 
 
 # files = glob.glob(drive+':/'+country+'/*') #list of files in country folder
@@ -272,9 +289,18 @@ else:
     df_generated_parameters = pd.read_csv(df_gen_savename) #save calculated parameters
 
     
-#THINK THIS IS WRONG
+sd_obs = np.std(new_df.b)
+sd_gen = np.std(df_generated_parameters.b)
 
 
+F_phat_gen_mean = np.array([np.mean(df_generated_parameters.kappa),np.mean(df_generated_parameters.b),np.mean(df_generated_parameters['lambda']),np.mean(df_generated_parameters.a)])
+ratio = 100*sd_gen/sd_obs
+
+
+
+print(f'Ratio of generated spread to observed spread in b: {ratio:.2f}%')
+print(f'average observed F_phat: {F_phat}')
+print(f'average generated F_phat: {F_phat_gen_mean}')
 
 plt.boxplot([new_df.b.copy().dropna(),df_parameters.b.copy().dropna(),df_generated_parameters.b],vert=False)
 plt.xlabel('b')
