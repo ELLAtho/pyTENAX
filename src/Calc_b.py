@@ -51,13 +51,13 @@ drive = 'D'
 # censor_thr = 0.9
 
 
-country = 'Belgium'
-ERA_country = 'Germany' #country where the era files are
-minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
-country_save = 'Belgium'
-code_str = 'BE_'
-name_len = 8 #how long the numbers are at the end of the files
-min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+# country = 'Belgium'
+# ERA_country = 'Germany' #country where the era files are
+# minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
+# country_save = 'Belgium'
+# code_str = 'BE_'
+# name_len = 8 #how long the numbers are at the end of the files
+# min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
 
 
 # country = 'US' 
@@ -117,12 +117,12 @@ min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data 
 
 
 
-# country = 'UK' 
-# ERA_country = 'UK'
-# country_save = 'UK'
-# code_str = 'UK_'
-# name_len = 0
-# min_startdate = dt.datetime(1981,1,1) #this is for if havent read all ERA5 data yet
+country = 'UK' 
+ERA_country = 'UK'
+country_save = 'UK'
+code_str = 'UK_'
+name_len = 0
+min_startdate = dt.datetime(1981,1,1) #this is for if havent read all ERA5 data yet
 
 
 name_col = 'ppt' 
@@ -607,6 +607,87 @@ plt.title(f'GSDR: {ERA_country}. λ', fontsize=16)
 plt.show()
 
 #######################################################
+#scale param
+fig = plt.figure(figsize=(10, 10))
+proj = ccrs.PlateCarree()
+ax1 = fig.add_subplot(1, 1, 1, projection=proj)
+
+# Add map features
+ax1.coastlines()
+ax1.add_feature(cfeature.BORDERS, linestyle=':')
+
+norm = mcolors.TwoSlopeNorm(vmin=0,vcenter = (df_parameters.kappa.max()/2) , vmax=df_parameters.kappa.max())
+sc = ax1.scatter(
+    df_parameters.longitude,
+    df_parameters.latitude,
+    c=df_parameters.kappa,
+    s = s,
+    cmap='YlGnBu',  
+    norm=norm
+)
+
+
+
+
+# Add a colorbar at the bottom
+cb = plt.colorbar(sc, orientation='horizontal', pad=0.05)
+cb.set_label('κ', fontsize=14)  
+cb.ax.tick_params(labelsize=12)
+
+# Set x and y ticks
+ax1.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+ax1.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
+ax1.tick_params(labelsize=12)  
+
+plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+
+
+plt.title(f'GSDR: {ERA_country}. κ', fontsize=16)
+plt.show()
+
+#######################################################
+fig = plt.figure(figsize=(10, 10))
+proj = ccrs.PlateCarree()
+ax1 = fig.add_subplot(1, 1, 1, projection=proj)
+
+# Add map features
+ax1.coastlines()
+ax1.add_feature(cfeature.BORDERS, linestyle=':')
+
+norm = mcolors.TwoSlopeNorm(vmin=-1*df_parameters.a.max(), vcenter=0, vmax=df_parameters.a.max())
+sc = ax1.scatter(
+    df_parameters.longitude,
+    df_parameters.latitude,
+    c=df_parameters.a,
+    s = s,
+    cmap='seismic',  
+    norm=norm
+)
+
+
+
+
+# Add a colorbar at the bottom
+cb = plt.colorbar(sc, orientation='horizontal', pad=0.05)
+cb.set_label('a', fontsize=14)  
+cb.ax.tick_params(labelsize=12)
+
+# Set x and y ticks
+ax1.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+ax1.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
+ax1.tick_params(labelsize=12)  
+
+plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+
+
+plt.title(f'GSDR: {ERA_country}. a', fontsize=16)
+plt.show()
+
+#######################################################
+
+
 
 def kendall_pval(x,y):
     return kendalltau(x,y)[1]
