@@ -196,6 +196,15 @@ TNX_FIG_temp_model(new_df.b, b_skew, 2, bins, obscol='r',valcol='b',
                        method = "skewnorm") 
 plt.show()
 
+# get mean of mu and sigma for temp model
+mu_mu_sigma = norm.fit(df_parameters.mu.copy().dropna())
+sigma_mu_sigma = norm.fit(df_parameters.sigma.copy().dropna())
+
+
+
+#define mean F_phat and g_phat... using the normal distribution
+F_phat = np.array([kappa_mu_sigma[0],b_mu_sigma[0],lambda_mu_sigma[0],a_mu_sigma[0]])
+g_phat = np.array([mu_mu_sigma[0],sigma_mu_sigma[0]])
 
 ###############################################################################
 df_gen_savename = drive + ':/outputs/'+country_save+'\\synth_generated_parameters.csv'
@@ -238,18 +247,10 @@ if df_gen_savename not in saved_output_files:
     # P = dict_ordinary["60"]["ordinary"].to_numpy() 
     # T = dict_ordinary["60"]["T"].to_numpy()  
     
-    
-    # get mean of mu and sigma for temp model
-    mu_mu_sigma = norm.fit(df_parameters.mu.copy().dropna())
-    sigma_mu_sigma = norm.fit(df_parameters.sigma.copy().dropna())
-    
-    
     n = np.mean(df_parameters.n_events_per_yr) #average events per year
     Ts = np.arange(mu_mu_sigma[0]-2*sigma_mu_sigma[0] - S.temp_delta, mu_mu_sigma[0]+2*sigma_mu_sigma[0] + S.temp_delta, S.temp_res_monte_carlo)
+
     
-    #define mean F_phat and g_phat... using the normal distribution
-    F_phat = np.array([kappa_mu_sigma[0],b_mu_sigma[0],lambda_mu_sigma[0],a_mu_sigma[0]])
-    g_phat = np.array([mu_mu_sigma[0],sigma_mu_sigma[0]])
     
     # define empty arrays
     thr_gen = np.zeros(n_stations)
@@ -293,7 +294,13 @@ sd_obs = np.std(new_df.b)
 sd_gen = np.std(df_generated_parameters.b)
 
 
-F_phat_gen_mean = np.array([np.mean(df_generated_parameters.kappa),np.mean(df_generated_parameters.b),np.mean(df_generated_parameters['lambda']),np.mean(df_generated_parameters.a)])
+kappa_mu_sigma_gen = norm.fit(df_generated_parameters.kappa.copy().dropna()) #norm fit to generated ones (this seems to give the same as just calculating the mean with np.mean)
+b_mu_sigma_gen = norm.fit(df_generated_parameters.b.copy().dropna())
+lambda_mu_sigma_gen = norm.fit(df_generated_parameters['lambda'].copy().dropna())
+a_mu_sigma_gen = norm.fit(df_generated_parameters.a.copy().dropna())
+
+
+F_phat_gen_mean = np.array([kappa_mu_sigma_gen[0],b_mu_sigma_gen[0],lambda_mu_sigma_gen[0],a_mu_sigma_gen[0]])
 ratio = 100*sd_gen/sd_obs
 
 
@@ -302,10 +309,38 @@ print(f'Ratio of generated spread to observed spread in b: {ratio:.2f}%')
 print(f'average observed F_phat: {F_phat}')
 print(f'average generated F_phat: {F_phat_gen_mean}')
 
+
+ratio_a = 100*np.std(df_generated_parameters.a)/np.std(new_df.a)
+
+ratio_kappa = 100*np.std(df_generated_parameters.kappa)/np.std(new_df.kappa)
+
+ratio_lambda = 100*np.std(df_generated_parameters['lambda'])/np.std(new_df['lambda'])
+
+print(f'Ratio a: {ratio_a:.2f}% \n kappa: {ratio_kappa:.2f}%\n lambda {ratio_lambda:.2f}% ')
+
+
+
 plt.violinplot([new_df.b.copy().dropna(),df_parameters.b.copy().dropna(),df_generated_parameters.b],vert=False)
 plt.xlabel('b')
-plt.yticks([1,2,3],['b allowed to be non sig','b forced to zero if not sig','Monte Carlo generated samples'])
-plt.title(f'{ERA_country}')
+plt.yticks([1,2,3],['b allowed to be non sig','b forced to zero if not sig',f'Monte Carlo generated samples. \n sd ratio = {ratio:.2f}%'])
+plt.title(f'{ERA_country} b')
 plt.show()
 
+plt.violinplot([new_df.a.copy().dropna(),df_parameters.a.copy().dropna(),df_generated_parameters.a],vert=False)
+plt.xlabel('a')
+plt.yticks([1,2,3],['a allowed to be non sig','a when b forced to zero if non sig',f'Monte Carlo generated samples. \n sd ratio = {ratio_a:.2f}%'])
+plt.title(f'{ERA_country} a')
+plt.show()
+
+plt.violinplot([new_df.kappa.copy().dropna(),df_parameters.kappa.copy().dropna(),df_generated_parameters.kappa],vert=False)
+plt.xlabel('kappa')
+plt.yticks([1,2,3],['kappa allowed to be non sig','kappa when b forced to zero if non sig',f'Monte Carlo generated samples. \n sd ratio = {ratio_kappa:.2f}%'])
+plt.title(f'{ERA_country} kappa_0')
+plt.show()
+
+plt.violinplot([new_df['lambda'].copy().dropna(),df_parameters['lambda'].copy().dropna(),df_generated_parameters['lambda']],vert=False)
+plt.xlabel('lambda')
+plt.yticks([1,2,3],['lambda allowed to be non sig','lambda when b forced to zero if non sig',f'Monte Carlo generated samples. \n sd ratio = {ratio_lambda:.2f}%'])
+plt.title(f'{ERA_country} lambda_0')
+plt.show()
 
