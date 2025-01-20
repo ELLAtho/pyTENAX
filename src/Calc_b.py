@@ -78,14 +78,14 @@ drive = 'D'
 # min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 # censor_thr = 0.9
 
-# country = 'US' 
-# ERA_country = 'US'
-# country_save = 'US_main'
-# code_str = 'US_'
-# minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
-# name_len = 6
-# min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
-# censor_thr = 0.9
+country = 'US' 
+ERA_country = 'US'
+country_save = 'US_main'
+code_str = 'US_'
+minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
+name_len = 6
+min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+censor_thr = 0.9
 
 
 # country = 'Germany' 
@@ -116,13 +116,13 @@ drive = 'D'
 # min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
 
 
-
-country = 'UK' 
-ERA_country = 'UK'
-country_save = 'UK'
-code_str = 'UK_'
-name_len = 0
-min_startdate = dt.datetime(1981,1,1) #this is for if havent read all ERA5 data yet
+# country = 'UK' 
+# ERA_country = 'UK'
+# country_save = 'UK'
+# code_str = 'UK_'
+# name_len = 0
+# min_startdate = dt.datetime(1981,1,1) #this is for if havent read all ERA5 data yet
+# censor_thr = 0.9
 
 
 name_col = 'ppt' 
@@ -148,10 +148,15 @@ info.enddate = pd.to_datetime(info.enddate)
 val_info = info[info['cleaned_years']>=min_yrs] #filter out stations that are less than min
 val_info = val_info[val_info['startdate']>=min_startdate]
 
-val_info = val_info[val_info['latitude']>=minlat] #filter station locations to within ERA bounds
-val_info = val_info[val_info['latitude']<=maxlat]
-val_info = val_info[val_info['longitude']>=minlon]
-val_info = val_info[val_info['longitude']<=maxlon]
+if 'minlat' in locals():
+    
+    val_info = val_info[val_info['latitude']>=minlat] #filter station locations to within ERA bounds
+    val_info = val_info[val_info['latitude']<=maxlat]
+    val_info = val_info[val_info['longitude']>=minlon]
+    val_info = val_info[val_info['longitude']<=maxlon]
+    
+else:
+    pass
 
 
 files = glob.glob(drive+':/'+country+'/*') #list of files in country folder
@@ -622,8 +627,7 @@ sc = ax1.scatter(
     df_parameters.latitude,
     c=df_parameters.kappa,
     s = s,
-    cmap='YlGnBu',  
-    norm=norm
+    cmap='hsv',
 )
 
 
@@ -655,14 +659,12 @@ ax1 = fig.add_subplot(1, 1, 1, projection=proj)
 ax1.coastlines()
 ax1.add_feature(cfeature.BORDERS, linestyle=':')
 
-norm = mcolors.TwoSlopeNorm(vmin=-1*df_parameters.a.max(), vcenter=0, vmax=df_parameters.a.max())
 sc = ax1.scatter(
     df_parameters.longitude,
     df_parameters.latitude,
     c=df_parameters.a,
     s = s,
-    cmap='seismic',  
-    norm=norm
+    cmap='hsv',  
 )
 
 
