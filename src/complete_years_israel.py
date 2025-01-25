@@ -116,11 +116,6 @@ print('files longer than 10 years: '+str(np.size(yrs_above_10)))
 print('total files: '+str(np.size(info.cleaned_years)))
 
 
-# num_above_10 = np.size(info[3][info[3]>10])
-#filename = DE_+info[0,:]+.txt
-    
-    
-#info_g = np.load('D:/germany_data.npy')
 
 
 

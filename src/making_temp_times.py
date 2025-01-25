@@ -33,12 +33,12 @@ from geopy.distance import geodesic
 
 drive = 'D'  #specify name of external drive 
 
-country = 'US' #TODO: may need to redefine for e.g. hawaii, folder name and save name?
-ERA_country = 'US'
-code_str = 'US_'
-minlat,minlon,maxlat,maxlon = 24, -125, 56, -66 #mainland US
-name_len = 6
-min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+# country = 'US' #TODO: may need to redefine for e.g. hawaii, folder name and save name?
+# ERA_country = 'US'
+# code_str = 'US_'
+# minlat,minlon,maxlat,maxlon = 24, -125, 56, -66 #mainland US
+# name_len = 6
+# min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
 
 
 
@@ -48,6 +48,12 @@ min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data 
 # name_len = 8 #how long the numbers are at the end of the files
 # min_startdate = dt.datetime(1981,1,1) #this is for if havent read all ERA5 data yet
  
+
+country = 'Israel'
+ERA_country = 'Israel'
+minlat,minlon,maxlat,maxlon = 27, 34, 34, 36 
+
+
 
  
 name_col = 'ppt'
@@ -63,12 +69,21 @@ info.startdate = pd.to_datetime(info.startdate)
 info.enddate = pd.to_datetime(info.enddate)
 
 info = info[info['cleaned_years']>=min_yrs] #filter out short data
-info = info[info['startdate']>=min_startdate] #filter out short data
 
-info = info[info['latitude']>=minlat] #filter station locations to within ERA bounds
-info = info[info['latitude']<=maxlat]
-info = info[info['longitude']>=minlon]
-info = info[info['longitude']<=maxlon]
+
+if 'min_startdate' in locals():
+    info = info[info['startdate']>=min_startdate] #filter out short data
+else:
+    pass
+
+
+if 'minlat' in locals():
+    info = info[info['latitude']>=minlat] #filter station locations to within ERA bounds
+    info = info[info['latitude']<=maxlat]
+    info = info[info['longitude']>=minlon]
+    info = info[info['longitude']<=maxlon]
+else:
+    pass
 
 
 
@@ -89,7 +104,13 @@ start_time = [0]*len(info)
 
 for i in np.arange(0,len(info)): #for each selected station
     start_time[i] = time.time()
-    save_path = drive+':/'+country+'_temp\\'+code_str+str(info.station[info.index[i]])+'.nc'
+    if 'code_str' in locals():
+        save_path = drive+':/'+country+'_temp\\'+code_str+str(info.station[info.index[i]])+'.nc' #save file with same name format as GSDR
+    else:
+        save_path = drive+':/'+country+'_temp\\'+str(info.station[info.index[i]])+'.nc' #save file with same name format as GSDR
+    
+    
+    
     if save_path not in saved_files:
         print(f'file {save_path} not made yet')
         
@@ -100,8 +121,11 @@ for i in np.arange(0,len(info)): #for each selected station
         
         T_ERA = make_T_timeseries(target_lat,target_lon,start_date,end_date,T_files,nans,T_nan_limit)
         
-    
-        T_ERA.to_netcdf(drive+':/'+country+'_temp/'+code_str+str(info.station[info.index[i]])+'.nc') #save file with same name format as GSDR
+        if 'code_str' in locals():
+            T_ERA.to_netcdf(drive+':/'+country+'_temp/'+code_str+str(info.station[info.index[i]])+'.nc') #save file with same name format as GSDR
+        else:
+            T_ERA.to_netcdf(drive+':/'+country+'_temp/'+str(info.station[info.index[i]])+'.nc') #save file with same name format as GSDR
+        
         
         time_taken = (time.time()-start_time[i-9])/10
         time_left = (len(info)-i)*time_taken/60
