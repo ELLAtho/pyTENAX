@@ -78,13 +78,21 @@ drive = 'D'
 # min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 # censor_thr = 0.9
 
-country = 'US' 
-ERA_country = 'US'
-country_save = 'US_main'
-code_str = 'US_'
-minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
-name_len = 6
-min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+# country = 'US' 
+# ERA_country = 'US'
+# country_save = 'US_main'
+# code_str = 'US_'
+# minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
+# name_len = 6
+# min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+# censor_thr = 0.9
+
+
+country = 'Israel'
+country_save = 'Israel'
+ERA_country = 'Israel'
+minlat,minlon,maxlat,maxlon = 27, 34, 34, 36 
+min_startdate = dt.datetime(1900,1,1)
 censor_thr = 0.9
 
 
@@ -146,7 +154,11 @@ info.enddate = pd.to_datetime(info.enddate)
 
 
 val_info = info[info['cleaned_years']>=min_yrs] #filter out stations that are less than min
-val_info = val_info[val_info['startdate']>=min_startdate]
+
+if 'min_startdate' in locals():    
+    val_info = val_info[val_info['startdate']>=min_startdate]
+else:
+    pass
 
 if 'minlat' in locals():
     
@@ -199,8 +211,13 @@ if df_savename not in saved_output_files: #read in files and create t time serie
     for i in np.arange(0, len(files_sel)):
         start_time[i] = time.time() 
         #read in ppt data
-        G,data_meta = read_GSDR_file(files_sel[i],name_col)
-        
+        if 'code_str' in locals():
+            G,data_meta = read_GSDR_file(files_sel[i],name_col)
+        else:
+            G = pd.read_csv(files_sel[i])
+            G['prec_time'] = pd.to_datetime(G['prec_time'])
+            G.set_index('prec_time', inplace=True)
+            
         print(G[0:3])
         ######################################################################
         #read in T data
@@ -209,7 +226,12 @@ if df_savename not in saved_output_files: #read in files and create t time serie
         start_date = val_info.startdate[val_info.index[i]]-pd.Timedelta(days=1) #adding an extra day either end to be safe
         end_date = val_info.enddate[val_info.index[i]]+pd.Timedelta(days=1)
         
-        save_path = drive + ':/'+country+'_temp\\'+code_str + str(val_info.station[val_info.index[i]]) + '.nc'
+        if 'code_str' in locals():
+            save_path = drive + ':/'+country+'_temp\\'+code_str + str(val_info.station[val_info.index[i]]) + '.nc'
+        else:
+            save_path = drive + ':/'+country+'_temp\\'+str(val_info.station[val_info.index[i]]) + '.nc'
+        
+        
         # Check if file already exists before saving
         
         if save_path not in saved_files:
@@ -237,7 +259,10 @@ if df_savename not in saved_output_files: #read in files and create t time serie
             data = G 
             data = S.remove_incomplete_years(data, name_col)
             t_data = (T_ERA.squeeze()-273.15).to_dataframe()
-            print(f'{data_meta.latitude},{data_meta.longitude}')
+            if 'data_meta' in locals():
+                print(f'{data_meta.latitude},{data_meta.longitude}')
+            else:
+                print(f'{target_lat},{target_lon}')
             print(t_data[0:5])
             df_arr = np.array(data[name_col])
             df_dates = np.array(data.index)
@@ -308,10 +333,15 @@ S.alpha = 0
 df_parameters_neg = df_parameters[df_parameters.b==0].copy()
 
 length_neg = len(df_parameters_neg.b)
-if name_len!=0:
-    df_parameters_neg.station = df_parameters_neg['station'].apply(lambda x: f'{int(x):0{name_len}}') #need to edit this according to file
+if 'name_len' in locals():
+    if name_len!=0:
+        df_parameters_neg.station = df_parameters_neg['station'].apply(lambda x: f'{int(x):0{name_len}}') #need to edit this according to file
+    else:
+        pass
 else:
     pass
+
+
 
 F_phats2 = [0]*length_neg
 start_time = [0]*length_neg
@@ -322,16 +352,26 @@ if save_path_neg not in saved_output_files:
     print('making the extra bs')
     for i in np.arange(0,length_neg):
         start_time[i] = time.time()
-        read_path = drive + ':/'+country+'_temp\\'+code_str + str(df_parameters_neg.station[df_parameters_neg.index[i]]) + '.nc'
-        read_path_ppt = drive + ':/'+country+'\\'+code_str + str(df_parameters_neg.station[df_parameters_neg.index[i]]) + '.txt'
+        if 'code_str' in locals():
+            read_path = drive + ':/'+country+'_temp\\'+code_str + str(df_parameters_neg.station[df_parameters_neg.index[i]]) + '.nc'
+            read_path_ppt = drive + ':/'+country+'\\'+code_str + str(df_parameters_neg.station[df_parameters_neg.index[i]]) + '.txt'
+        else:
+            read_path = drive + ':/'+country+'_temp\\'+ str(df_parameters_neg.station[df_parameters_neg.index[i]]) + '.nc'
+            read_path_ppt = drive + ':/'+country+'\\'+ str(df_parameters_neg.station[df_parameters_neg.index[i]]) + '.csv'
+            
+            
         T_ERA = xr.load_dataarray(read_path)
-        
-        G,data_meta = read_GSDR_file(read_path_ppt,name_col)
+        if 'code_str' in locals():
+            G,data_meta = read_GSDR_file(read_path_ppt,name_col)
+        else:
+            G = pd.read_csv(read_path_ppt)
+            G['prec_time'] = pd.to_datetime(G['prec_time'])
+            G.set_index('prec_time', inplace=True)
         
         data = G 
         data = S.remove_incomplete_years(data, name_col)
         t_data = (T_ERA.squeeze()-273.15).to_dataframe()
-        print(f'{data_meta.latitude},{data_meta.longitude}')
+        #print(f'{data_meta.latitude},{data_meta.longitude}')
         print(t_data[0:5])
         df_arr = np.array(data[name_col])
         df_dates = np.array(data.index)

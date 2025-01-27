@@ -44,21 +44,21 @@ drive='D' #name of drive
 # censor_thr = 0.9
 
 
-# country = 'Japan'
-# ERA_country = 'Japan'
-# country_save = 'Japan'
-# code_str = 'JP_'
-# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
-# name_len = 5
-# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-# censor_thr = 0.9
+country = 'Japan'
+ERA_country = 'Japan'
+country_save = 'Japan'
+code_str = 'JP_'
+minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+name_len = 5
+min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+censor_thr = 0.9
 
-country = 'UK' 
-ERA_country = 'UK'
-country_save = 'UK'
-code_str = 'UK_'
-name_len = 0
-min_startdate = dt.datetime(1981,1,1) #this is for if havent read all ERA5 data yet
+# country = 'UK' 
+# ERA_country = 'UK'
+# country_save = 'UK'
+# code_str = 'UK_'
+# name_len = 0
+# min_startdate = dt.datetime(1981,1,1) #this is for if havent read all ERA5 data yet
 
 
 # country = 'US' 
@@ -209,13 +209,13 @@ g_phat = np.array([mu_mu_sigma[0],sigma_mu_sigma[0]])
 ###############################################################################
 df_gen_savename = drive + ':/outputs/'+country_save+'\\synth_generated_parameters.csv'
 saved_output_files = glob.glob(drive + ':/outputs/'+country_save+'/*')
+total_events = df_parameters.n_events_per_yr.to_numpy() * val_info.cleaned_years.to_numpy()
+total_events_mean = np.nanmean(total_events) #average total events for each station to. do this many monte carl samples
+
+n_stations = np.size(df_parameters.mu) #how many resamples we need to do
 
 if df_gen_savename not in saved_output_files:
     # number of stations and average number events
-    total_events = df_parameters.n_events_per_yr.to_numpy() * val_info.cleaned_years.to_numpy()
-    total_events_mean = np.nanmean(total_events) #average total events for each station to. do this many monte carl samples
-    
-    n_stations = np.size(df_parameters.mu) #how many resamples we need to do
     
     S = TENAX(
             return_period = [2,5,10,20,50,100, 200],  #for some reason it doesnt like calculating RP =<1
