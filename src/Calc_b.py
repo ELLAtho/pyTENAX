@@ -40,6 +40,8 @@ from scipy.stats import kendalltau, pearsonr, spearmanr
 
 
 drive = 'D'
+alpha_set = 0.05
+remake = 1
 
 # country = 'Japan'
 # ERA_country = 'Japan'
@@ -88,12 +90,12 @@ drive = 'D'
 # censor_thr = 0.9
 
 
-country = 'Israel'
-country_save = 'Israel'
-ERA_country = 'Israel'
-minlat,minlon,maxlat,maxlon = 27, 34, 34, 36 
-min_startdate = dt.datetime(1900,1,1)
-censor_thr = 0.9
+# country = 'Israel'
+# country_save = 'Israel'
+# ERA_country = 'Israel'
+# minlat,minlon,maxlat,maxlon = 27, 34, 34, 36 
+# min_startdate = dt.datetime(1900,1,1)
+# censor_thr = 0.9
 
 
 # country = 'Germany' 
@@ -132,6 +134,28 @@ censor_thr = 0.9
 # min_startdate = dt.datetime(1981,1,1) #this is for if havent read all ERA5 data yet
 # censor_thr = 0.9
 
+# country = 'Germany' 
+# ERA_country = 'Germany'
+# country_save = 'Germany_b0'
+# code_str = 'DE_'
+# minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
+# name_len = 5
+# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+# censor_thr = 0.9
+# alpha_set = 1
+# remake = 0
+
+
+country = 'Japan' 
+ERA_country = 'Japan'
+country_save = 'Japan_b0'
+code_str = 'JP_'
+minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+name_len = 5
+min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+censor_thr = 0.9
+alpha_set = 1
+remake = 0
 
 name_col = 'ppt' 
 temp_name_col = "t2m"
@@ -179,7 +203,7 @@ S = TENAX(
         return_period = [1.1,1.2,1.5,2,5,10,20,50,100, 200],
         durations = [60, 180, 360, 720, 1440],
         left_censoring = [0, censor_thr],
-        alpha = 0.05,
+        alpha = alpha_set,
         min_ev_dur = 60,
         niter_smev = 1000, 
     )
@@ -329,111 +353,113 @@ else:
 ########################
 
 #RUN WITH FREE b
-S.alpha = 0
-df_parameters_neg = df_parameters[df_parameters.b==0].copy()
-
-length_neg = len(df_parameters_neg.b)
-if 'name_len' in locals():
-    if name_len!=0:
-        df_parameters_neg.station = df_parameters_neg['station'].apply(lambda x: f'{int(x):0{name_len}}') #need to edit this according to file
+if remake == 1:
+    S.alpha = 0
+    df_parameters_neg = df_parameters[df_parameters.b==0].copy()
+    
+    length_neg = len(df_parameters_neg.b)
+    if 'name_len' in locals():
+        if name_len!=0:
+            df_parameters_neg.station = df_parameters_neg['station'].apply(lambda x: f'{int(x):0{name_len}}') #need to edit this according to file
+        else:
+            pass
     else:
         pass
+    
+    
+    
+    F_phats2 = [0]*length_neg
+    start_time = [0]*length_neg
+    
+    save_path_neg = drive + ':/outputs/'+country_save+'\\parameters_neg.csv'
+    
+    if save_path_neg not in saved_output_files:
+        print('making the extra bs')
+        for i in np.arange(0,length_neg):
+            start_time[i] = time.time()
+            if 'code_str' in locals():
+                read_path = drive + ':/'+country+'_temp\\'+code_str + str(df_parameters_neg.station[df_parameters_neg.index[i]]) + '.nc'
+                read_path_ppt = drive + ':/'+country+'\\'+code_str + str(df_parameters_neg.station[df_parameters_neg.index[i]]) + '.txt'
+            else:
+                read_path = drive + ':/'+country+'_temp\\'+ str(df_parameters_neg.station[df_parameters_neg.index[i]]) + '.nc'
+                read_path_ppt = drive + ':/'+country+'\\'+ str(df_parameters_neg.station[df_parameters_neg.index[i]]) + '.csv'
+                
+                
+            T_ERA = xr.load_dataarray(read_path)
+            if 'code_str' in locals():
+                G,data_meta = read_GSDR_file(read_path_ppt,name_col)
+            else:
+                G = pd.read_csv(read_path_ppt)
+                G['prec_time'] = pd.to_datetime(G['prec_time'])
+                G.set_index('prec_time', inplace=True)
+            
+            data = G 
+            data = S.remove_incomplete_years(data, name_col)
+            t_data = (T_ERA.squeeze()-273.15).to_dataframe()
+            #print(f'{data_meta.latitude},{data_meta.longitude}')
+            print(t_data[0:5])
+            df_arr = np.array(data[name_col])
+            df_dates = np.array(data.index)
+            
+            #extract indexes of ordinary events
+            #these are time-wise indexes =>returns list of np arrays with np.timeindex
+            idx_ordinary=S.get_ordinary_events(data=df_arr,dates=df_dates, name_col=name_col,  check_gaps=False)
+                
+            
+            #get ordinary events by removing too short events
+            #returns boolean array, dates of OE in TO, FROM format, and count of OE in each years
+            arr_vals,arr_dates,n_ordinary_per_year=S.remove_short(idx_ordinary)
+            
+            #assign ordinary events values by given durations, values are in depth per duration, NOT in intensity mm/h
+            dict_ordinary, dict_AMS = S.get_ordinary_events_values(data=df_arr,dates=df_dates, arr_dates_oe=arr_dates)
+            
+            
+            
+            df_arr_t_data = np.array(t_data[temp_name_col])
+            df_dates_t_data = np.array(t_data.index)
+            
+            dict_ordinary, _ , n_ordinary_per_year = S.associate_vars(dict_ordinary, df_arr_t_data, df_dates_t_data)
+            
+            
+            
+            # Your data (P, T arrays) and threshold thr=3.8
+            P = dict_ordinary["60"]["ordinary"].to_numpy() 
+            T = dict_ordinary["60"]["T"].to_numpy()  
+            
+            
+            # Number of threshold 
+            thr = dict_ordinary["60"]["ordinary"].quantile(S.left_censoring[1])
+            
+            
+            #TENAX MODEL HERE
+            #magnitude model
+            F_phats2[i], loglik, _, _ = S.magnitude_model(P, T, thr)
+            #temperature model
+              
+            
+            
+            
+            time_taken = (time.time()-start_time[i-9])/10
+            time_left = (length_neg-i)*time_taken/60
+            print(F_phats2[i])
+            print(f"{i}/{length_neg}. Approx time left: {time_left:.0f} mins") #this is only correct after 50 loops
+        
+        
+        print('finished making b again')
+        
+        
+        df_parameters_neg['kappa2']= np.array(F_phats2)[:,0]
+        df_parameters_neg['b2'] = np.array(F_phats2)[:,1]
+        df_parameters_neg['lambda2'] = np.array(F_phats2)[:,2]
+        df_parameters_neg['a2'] = np.array(F_phats2)[:,3]
+        
+        
+        df_parameters_neg.to_csv(save_path_neg)
+    else:
+        print('bs already made. loading')
+        df_parameters_neg = pd.read_csv(save_path_neg)
 else:
-    pass
-
-
-
-F_phats2 = [0]*length_neg
-start_time = [0]*length_neg
-
-save_path_neg = drive + ':/outputs/'+country_save+'\\parameters_neg.csv'
-
-if save_path_neg not in saved_output_files:
-    print('making the extra bs')
-    for i in np.arange(0,length_neg):
-        start_time[i] = time.time()
-        if 'code_str' in locals():
-            read_path = drive + ':/'+country+'_temp\\'+code_str + str(df_parameters_neg.station[df_parameters_neg.index[i]]) + '.nc'
-            read_path_ppt = drive + ':/'+country+'\\'+code_str + str(df_parameters_neg.station[df_parameters_neg.index[i]]) + '.txt'
-        else:
-            read_path = drive + ':/'+country+'_temp\\'+ str(df_parameters_neg.station[df_parameters_neg.index[i]]) + '.nc'
-            read_path_ppt = drive + ':/'+country+'\\'+ str(df_parameters_neg.station[df_parameters_neg.index[i]]) + '.csv'
-            
-            
-        T_ERA = xr.load_dataarray(read_path)
-        if 'code_str' in locals():
-            G,data_meta = read_GSDR_file(read_path_ppt,name_col)
-        else:
-            G = pd.read_csv(read_path_ppt)
-            G['prec_time'] = pd.to_datetime(G['prec_time'])
-            G.set_index('prec_time', inplace=True)
-        
-        data = G 
-        data = S.remove_incomplete_years(data, name_col)
-        t_data = (T_ERA.squeeze()-273.15).to_dataframe()
-        #print(f'{data_meta.latitude},{data_meta.longitude}')
-        print(t_data[0:5])
-        df_arr = np.array(data[name_col])
-        df_dates = np.array(data.index)
-        
-        #extract indexes of ordinary events
-        #these are time-wise indexes =>returns list of np arrays with np.timeindex
-        idx_ordinary=S.get_ordinary_events(data=df_arr,dates=df_dates, name_col=name_col,  check_gaps=False)
-            
-        
-        #get ordinary events by removing too short events
-        #returns boolean array, dates of OE in TO, FROM format, and count of OE in each years
-        arr_vals,arr_dates,n_ordinary_per_year=S.remove_short(idx_ordinary)
-        
-        #assign ordinary events values by given durations, values are in depth per duration, NOT in intensity mm/h
-        dict_ordinary, dict_AMS = S.get_ordinary_events_values(data=df_arr,dates=df_dates, arr_dates_oe=arr_dates)
-        
-        
-        
-        df_arr_t_data = np.array(t_data[temp_name_col])
-        df_dates_t_data = np.array(t_data.index)
-        
-        dict_ordinary, _ , n_ordinary_per_year = S.associate_vars(dict_ordinary, df_arr_t_data, df_dates_t_data)
-        
-        
-        
-        # Your data (P, T arrays) and threshold thr=3.8
-        P = dict_ordinary["60"]["ordinary"].to_numpy() 
-        T = dict_ordinary["60"]["T"].to_numpy()  
-        
-        
-        # Number of threshold 
-        thr = dict_ordinary["60"]["ordinary"].quantile(S.left_censoring[1])
-        
-        
-        #TENAX MODEL HERE
-        #magnitude model
-        F_phats2[i], loglik, _, _ = S.magnitude_model(P, T, thr)
-        #temperature model
-          
-        
-        
-        
-        time_taken = (time.time()-start_time[i-9])/10
-        time_left = (length_neg-i)*time_taken/60
-        print(F_phats2[i])
-        print(f"{i}/{length_neg}. Approx time left: {time_left:.0f} mins") #this is only correct after 50 loops
-    
-    
-    print('finished making b again')
-    
-    
-    df_parameters_neg['kappa2']= np.array(F_phats2)[:,0]
-    df_parameters_neg['b2'] = np.array(F_phats2)[:,1]
-    df_parameters_neg['lambda2'] = np.array(F_phats2)[:,2]
-    df_parameters_neg['a2'] = np.array(F_phats2)[:,3]
-    
-    
-    df_parameters_neg.to_csv(save_path_neg)
-else:
-    print('bs already made. loading')
-    df_parameters_neg = pd.read_csv(save_path_neg)
-
+    print('Not doing that again!')    
 
 ##########################################################################
 
@@ -457,8 +483,10 @@ print(f'Number of stations without ERA data: {non_calc} out of {len(df_parameter
 new_df = df_parameters[['latitude','longitude','b']].copy()
 mask = new_df['b'] == 0
 
-new_df.loc[mask, 'b'] = df_parameters_neg['b2'].to_numpy()
-
+if 'df_parameters_neg' in locals():
+    new_df.loc[mask, 'b'] = df_parameters_neg['b2'].to_numpy()
+else:
+    pass
 
 
 #PLOTS

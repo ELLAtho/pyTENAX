@@ -33,6 +33,7 @@ from pyTENAX.globalTENAX import *
 import glob
 
 drive='D' #name of drive
+alpha_set = 0
 
 # country = 'Germany' 
 # ERA_country = 'Germany'
@@ -44,14 +45,14 @@ drive='D' #name of drive
 # censor_thr = 0.9
 
 
-country = 'Japan'
-ERA_country = 'Japan'
-country_save = 'Japan'
-code_str = 'JP_'
-minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
-name_len = 5
-min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-censor_thr = 0.9
+# country = 'Japan'
+# ERA_country = 'Japan'
+# country_save = 'Japan'
+# code_str = 'JP_'
+# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+# name_len = 5
+# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+# censor_thr = 0.9
 
 # country = 'UK' 
 # ERA_country = 'UK'
@@ -80,6 +81,17 @@ censor_thr = 0.9
 # min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
 # censor_thr = 0.9
 
+country = 'Germany' 
+ERA_country = 'Germany'
+country_save = 'Germany_b0'
+code_str = 'DE_'
+minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
+name_len = 5
+min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+censor_thr = 0.9
+alpha_set = 1
+
+
 name_col = 'ppt' 
 temp_name_col = "t2m"
 min_yrs = 10 
@@ -91,10 +103,10 @@ info.enddate = pd.to_datetime(info.enddate)
 val_info = info[info['cleaned_years']>=min_yrs] #filter out stations that are less than min
 val_info = val_info[val_info['startdate']>=min_startdate]
 
-# val_info = val_info[val_info['latitude']>=minlat] #filter station locations to within ERA bounds
-# val_info = val_info[val_info['latitude']<=maxlat]
-# val_info = val_info[val_info['longitude']>=minlon]
-# val_info = val_info[val_info['longitude']<=maxlon]
+val_info = val_info[val_info['latitude']>=minlat] #filter station locations to within ERA bounds
+val_info = val_info[val_info['latitude']<=maxlat]
+val_info = val_info[val_info['longitude']>=minlon]
+val_info = val_info[val_info['longitude']<=maxlon]
 
 
 # files = glob.glob(drive+':/'+country+'/*') #list of files in country folder
@@ -114,18 +126,21 @@ df_savename = drive + ':/outputs/'+country_save+'\\parameters.csv'
 
 df_parameters = pd.read_csv(df_savename) 
 TENAX_use = pd.read_csv(drive + ':/outputs/'+country_save+'/TENAX_parameters.csv') #save calculated parameters
-df_parameters_neg = pd.read_csv(save_path_neg)
 
+if np.size(glob.glob(save_path_neg)) != 0:
+    df_parameters_neg = pd.read_csv(save_path_neg)
 
-#dataframe with all values
-new_df = df_parameters[['latitude','longitude','b']].copy()
-mask = new_df['b'] == 0
+    #dataframe with all values
+    new_df = df_parameters[['latitude','longitude','b']].copy()
+    mask = new_df['b'] == 0
+    
+    new_df.loc[mask, 'b'] = df_parameters_neg['b2'].to_numpy()
+    new_df.loc[mask, 'kappa'] = df_parameters_neg['kappa2'].to_numpy()
+    new_df.loc[mask, 'lambda'] = df_parameters_neg['lambda2'].to_numpy()
+    new_df.loc[mask, 'a'] = df_parameters_neg['a2'].to_numpy()
 
-new_df.loc[mask, 'b'] = df_parameters_neg['b2'].to_numpy()
-new_df.loc[mask, 'kappa'] = df_parameters_neg['kappa2'].to_numpy()
-new_df.loc[mask, 'lambda'] = df_parameters_neg['lambda2'].to_numpy()
-new_df.loc[mask, 'a'] = df_parameters_neg['a2'].to_numpy()
-
+else:
+    new_df = df_parameters.copy()
 
 
 # LOOKING AT DISTRIBUTION OF b
@@ -138,63 +153,68 @@ lambda_mu_sigma = norm.fit(new_df['lambda'].copy().dropna())
 a_mu_sigma = norm.fit(new_df.a.copy().dropna())
 
 
-#now with beta = 4
-kappa_mu_sigma_4 = normal_model(new_df.kappa.copy().dropna(), 4)
-b_mu_sigma_4 = normal_model(new_df.b.copy().dropna(), 4)
-lambda_mu_sigma_4 = normal_model(new_df['lambda'].copy().dropna(), 4)
-a_mu_sigma_4 = normal_model(new_df.a.copy().dropna(), 4)
+# #now with beta = 4
+# kappa_mu_sigma_4 = normal_model(new_df.kappa.copy().dropna(), 4)
+# b_mu_sigma_4 = normal_model(new_df.b.copy().dropna(), 4)
+# lambda_mu_sigma_4 = normal_model(new_df['lambda'].copy().dropna(), 4)
+# a_mu_sigma_4 = normal_model(new_df.a.copy().dropna(), 4)
 
-#now with skew
-kappa_skew = normal_model(new_df.kappa.copy().dropna(), method = 'skewnorm')
-b_skew = normal_model(new_df.b.copy().dropna(), method = 'skewnorm')
-lambda_skew = normal_model(new_df['lambda'].copy().dropna(), method = 'skewnorm')
-a__skew = normal_model(new_df.a.copy().dropna(), method = 'skewnorm')
+# #now with skew
+# kappa_skew = normal_model(new_df.kappa.copy().dropna(), method = 'skewnorm')
+# b_skew = normal_model(new_df.b.copy().dropna(), method = 'skewnorm')
+# lambda_skew = normal_model(new_df['lambda'].copy().dropna(), method = 'skewnorm')
+# a__skew = normal_model(new_df.a.copy().dropna(), method = 'skewnorm')
 
 
 
 #plot distribution of values b
 bins = np.arange(np.min(new_df.b),np.max(new_df.b)+0.005,0.005)
-bin_edge = np.concatenate([np.array([bins[0]-(bins[1]-bins[0])/2]),(bins + (bins[1]-bins[0])/2)]) #convert bin centres into bin edges
-hist, bin_edges = np.histogram(new_df.b, bins=bin_edge, density=True)
-plt.plot(bins, hist, '--', color='b',label = 'observed values of b')
+if np.size(bins) > 1:
+    bin_edge = np.concatenate([np.array([bins[0]-(bins[1]-bins[0])/2]),(bins + (bins[1]-bins[0])/2)]) #convert bin centres into bin edges
+    hist, bin_edges = np.histogram(new_df.b, bins=bin_edge, density=True)
+    plt.plot(bins, hist, '--', color='b',label = 'observed values of b')
+    
+    # Plot analytical PDF of b (validation)
+    plt.plot(bins, gen_norm_pdf(bins, b_mu_sigma[0], b_mu_sigma[1], 2), '-', color='r', label='fitted b')
+    
+    # Set plot parameters
+    #ax.set_xlim(Tlims)
+    plt.xlabel('b',fontsize=14)
+    plt.ylabel('pdf',fontsize=14)
+    # plt.ylim()
+    # plt.xlim()
+    plt.legend(fontsize=8)
+    plt.tick_params(axis='both', which='major', labelsize=14)
+    
+    plt.show()
+    
+    plt.plot(bins, hist, '--', color='b',label = 'observed values of b')
+    
+    plt.plot(bins, gen_norm_pdf(bins, b_mu_sigma_4[0], b_mu_sigma_4[1], 4), '-', color='r', label='fitted b, beta = 4')
+    
+    # Set plot parameters
+    #ax.set_xlim(Tlims)
+    plt.xlabel('b',fontsize=14)
+    plt.ylabel('pdf',fontsize=14)
+    # plt.ylim()
+    # plt.xlim()
+    plt.legend(fontsize=8)
+    plt.tick_params(axis='both', which='major', labelsize=14)
+    
+    plt.show()
+    
+    TNX_FIG_temp_model(new_df.b, b_skew, 2, bins, obscol='r',valcol='b',
+                           obslabel = 'observed b values',
+                           vallabel = f'skewnorm fit, loc = {b_skew[1]:.2} \n scale = {b_skew[2]:.2}, skew = {b_skew[0]:.2}',
+                           xlimits = [-0.08,0.03],
+                           ylimits = [0,30], 
+                           method = "skewnorm") 
+    plt.show()
+    
+else:
+    pass
+    
 
-# Plot analytical PDF of b (validation)
-plt.plot(bins, gen_norm_pdf(bins, b_mu_sigma[0], b_mu_sigma[1], 2), '-', color='r', label='fitted b')
-
-# Set plot parameters
-#ax.set_xlim(Tlims)
-plt.xlabel('b',fontsize=14)
-plt.ylabel('pdf',fontsize=14)
-# plt.ylim()
-# plt.xlim()
-plt.legend(fontsize=8)
-plt.tick_params(axis='both', which='major', labelsize=14)
-
-plt.show()
-
-plt.plot(bins, hist, '--', color='b',label = 'observed values of b')
-
-plt.plot(bins, gen_norm_pdf(bins, b_mu_sigma_4[0], b_mu_sigma_4[1], 4), '-', color='r', label='fitted b, beta = 4')
-
-# Set plot parameters
-#ax.set_xlim(Tlims)
-plt.xlabel('b',fontsize=14)
-plt.ylabel('pdf',fontsize=14)
-# plt.ylim()
-# plt.xlim()
-plt.legend(fontsize=8)
-plt.tick_params(axis='both', which='major', labelsize=14)
-
-plt.show()
-
-
-TNX_FIG_temp_model(new_df.b, b_skew, 2, bins, obscol='r',valcol='b',
-                       obslabel = 'observed b values',
-                       vallabel = f'skewnorm fit, loc = {b_skew[1]:.2} \n scale = {b_skew[2]:.2}, skew = {b_skew[0]:.2}',
-                       xlimits = [-0.08,0.03],
-                       ylimits = [0,30], 
-                       method = "skewnorm") 
-plt.show()
 
 # get mean of mu and sigma for temp model
 mu_mu_sigma = norm.fit(df_parameters.mu.copy().dropna())
@@ -206,6 +226,7 @@ sigma_mu_sigma = norm.fit(df_parameters.sigma.copy().dropna())
 F_phat = np.array([kappa_mu_sigma[0],b_mu_sigma[0],lambda_mu_sigma[0],a_mu_sigma[0]])
 g_phat = np.array([mu_mu_sigma[0],sigma_mu_sigma[0]])
 
+print(F_phat)
 ###############################################################################
 df_gen_savename = drive + ':/outputs/'+country_save+'\\synth_generated_parameters.csv'
 saved_output_files = glob.glob(drive + ':/outputs/'+country_save+'/*')
@@ -221,7 +242,7 @@ if df_gen_savename not in saved_output_files:
             return_period = [2,5,10,20,50,100, 200],  #for some reason it doesnt like calculating RP =<1
             durations = [60, 180],
             left_censoring = [0, 0.90],
-            alpha = 0.0,
+            alpha = alpha_set,
             n_monte_carlo = round(total_events_mean),
             
         )
@@ -301,11 +322,16 @@ a_mu_sigma_gen = norm.fit(df_generated_parameters.a.copy().dropna())
 
 
 F_phat_gen_mean = np.array([kappa_mu_sigma_gen[0],b_mu_sigma_gen[0],lambda_mu_sigma_gen[0],a_mu_sigma_gen[0]])
-ratio = 100*sd_gen/sd_obs
+
+if sd_obs != 0:
+    ratio = 100*sd_gen/sd_obs
+    print(f'Ratio of generated spread to observed spread in b: {ratio:.2f}%')
+
+else:
+    ratio = 'b is 0 so inf'
 
 
 
-print(f'Ratio of generated spread to observed spread in b: {ratio:.2f}%')
 print(f'average observed F_phat: {F_phat}')
 print(f'average generated F_phat: {F_phat_gen_mean}')
 
@@ -322,7 +348,10 @@ print(f'Ratio a: {ratio_a:.2f}% \n kappa: {ratio_kappa:.2f}%\n lambda {ratio_lam
 
 plt.violinplot([new_df.b.copy().dropna(),df_parameters.b.copy().dropna(),df_generated_parameters.b],vert=False)
 plt.xlabel('b')
-plt.yticks([1,2,3],['b allowed to be non sig','b forced to zero if not sig',f'Monte Carlo generated samples. \n sd ratio = {ratio:.2f}%'])
+if sd_obs != 0:
+    plt.yticks([1,2,3],['b allowed to be non sig','b forced to zero if not sig',f'Monte Carlo generated samples. \n sd ratio = {ratio:.2f}%'])
+else:
+    plt.yticks([1,2,3],['b allowed to be non sig','b forced to zero if not sig','Monte Carlo generated samples.'])
 plt.title(f'{ERA_country} b')
 plt.show()
 
