@@ -146,16 +146,29 @@ remake = 1
 # remake = 0
 
 
-country = 'Japan' 
-ERA_country = 'Japan'
-country_save = 'Japan_b0'
-code_str = 'JP_'
-minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
-name_len = 5
-min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+# country = 'Japan' 
+# ERA_country = 'Japan'
+# country_save = 'Japan_b0'
+# code_str = 'JP_'
+# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+# name_len = 5
+# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+# censor_thr = 0.9
+# alpha_set = 1
+# remake = 0
+
+
+country = 'US' 
+ERA_country = 'US'
+country_save = 'US_main_b0'
+code_str = 'US_'
+minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
+name_len = 6
+min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
 censor_thr = 0.9
 alpha_set = 1
 remake = 0
+
 
 name_col = 'ppt' 
 temp_name_col = "t2m"
@@ -768,51 +781,55 @@ def pearsonr_pval(x,y):
 def spearmanr_pval(x,y):
     return spearmanr(x,y)[1]
 
-correlation_variables = df_parameters[df_parameters.columns[-8:-1]].copy()
-correlation_variables['thr'] = correlation_variables['thr'].replace(0, np.nan)
 
-correlations = correlation_variables.corr() #r values correlations between all the parameters but b is zero if non significant
-P_vals = correlation_variables.corr(method=pearsonr_pval) #p values for sig test
+if remake == 1:
 
-correlations_b = {}
-P_vals_b = {}
-for col1 in correlation_variables.columns: #correlations and p values for the new non-zero b
-    corr_value = correlation_variables[col1].corr(new_df.b)
-    correlations_b[(col1, 'b')] = corr_value
-    P_vals_b[(col1, 'b')] = correlation_variables[col1].corr(new_df.b,method=pearsonr_pval)
+    correlation_variables = df_parameters[df_parameters.columns[-8:-1]].copy()
+    correlation_variables['thr'] = correlation_variables['thr'].replace(0, np.nan)
     
-
-#############################################################################
-varis = ['mu','sigma','kappa', 'lambda', 'a', 'thr']
-for name in varis:
-
-    coeffs=np.polyfit(correlation_variables[name].dropna(),new_df.b.dropna(),1)
-    delt = (np.max(correlation_variables[name])-np.min(correlation_variables[name]))/10
-    x = np.arange(np.min(correlation_variables[name]),np.max(correlation_variables[name])+delt,delt)
-    y = coeffs[0]*x+coeffs[1]
+    correlations = correlation_variables.corr() #r values correlations between all the parameters but b is zero if non significant
+    P_vals = correlation_variables.corr(method=pearsonr_pval) #p values for sig test
+    
+    correlations_b = {}
+    P_vals_b = {}
+    for col1 in correlation_variables.columns: #correlations and p values for the new non-zero b
+        corr_value = correlation_variables[col1].corr(new_df.b)
+        correlations_b[(col1, 'b')] = corr_value
+        P_vals_b[(col1, 'b')] = correlation_variables[col1].corr(new_df.b,method=pearsonr_pval)
+        
+    
+    #############################################################################
+    varis = ['mu','sigma','kappa', 'lambda', 'a', 'thr']
+    for name in varis:
+    
+        coeffs=np.polyfit(correlation_variables[name].dropna(),new_df.b.dropna(),1)
+        delt = (np.max(correlation_variables[name])-np.min(correlation_variables[name]))/10
+        x = np.arange(np.min(correlation_variables[name]),np.max(correlation_variables[name])+delt,delt)
+        y = coeffs[0]*x+coeffs[1]
+        
+        
+        plt.scatter(correlation_variables[name],new_df.b,alpha = val_info.cleaned_years/np.max(val_info.cleaned_years))
+        plt.plot(x,y,color = 'r',label = f'y={coeffs[0]:.3f}x+{coeffs[1]:.3f}')
+        plt.xlabel(name)
+        plt.ylabel('b')
+        r_val = correlations_b[(name, "b")]
+        p_val = P_vals_b[(name, "b")]
+        plt.text(np.min(df_parameters[name]),np.min(new_df.b),f'r = {r_val:.3f}\n p = {p_val:.5f}')
+        plt.legend()
+        plt.show()
+    ##################################################
     
     
-    plt.scatter(correlation_variables[name],new_df.b,alpha = val_info.cleaned_years/np.max(val_info.cleaned_years))
-    plt.plot(x,y,color = 'r',label = f'y={coeffs[0]:.3f}x+{coeffs[1]:.3f}')
-    plt.xlabel(name)
-    plt.ylabel('b')
-    r_val = correlations_b[(name, "b")]
-    p_val = P_vals_b[(name, "b")]
-    plt.text(np.min(df_parameters[name]),np.min(new_df.b),f'r = {r_val:.3f}\n p = {p_val:.5f}')
-    plt.legend()
+    
+    #BOXPLOT
+    
+    plt.boxplot([new_df.b.copy().dropna(),df_parameters.b.copy().dropna()],vert=False)
+    plt.xlabel('b')
+    plt.yticks([1,2],['b allowed to be non sig','b forced to zero if not sig'])
+    plt.title(f'{ERA_country}')
     plt.show()
-##################################################
 
-
-
-#BOXPLOT
-
-plt.boxplot([new_df.b.copy().dropna(),df_parameters.b.copy().dropna()],vert=False)
-plt.xlabel('b')
-plt.yticks([1,2],['b allowed to be non sig','b forced to zero if not sig'])
-plt.title(f'{ERA_country}')
-plt.show()
-
-
+else:
+    pass
 
 

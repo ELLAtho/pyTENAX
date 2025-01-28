@@ -34,6 +34,7 @@ import glob
 
 drive='D' #name of drive
 alpha_set = 0
+remake = 1
 
 # country = 'Germany' 
 # ERA_country = 'Germany'
@@ -90,6 +91,18 @@ name_len = 5
 min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 censor_thr = 0.9
 alpha_set = 1
+remake = 0
+
+# country = 'Japan' 
+# ERA_country = 'Japan'
+# country_save = 'Japan_b0'
+# code_str = 'JP_'
+# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+# name_len = 5
+# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+# censor_thr = 0.9
+# alpha_set = 1
+# remake = 0
 
 
 name_col = 'ppt' 
@@ -345,31 +358,58 @@ ratio_lambda = 100*np.std(df_generated_parameters['lambda'])/np.std(new_df['lamb
 print(f'Ratio a: {ratio_a:.2f}% \n kappa: {ratio_kappa:.2f}%\n lambda {ratio_lambda:.2f}% ')
 
 
-
-plt.violinplot([new_df.b.copy().dropna(),df_parameters.b.copy().dropna(),df_generated_parameters.b],vert=False)
-plt.xlabel('b')
-if sd_obs != 0:
-    plt.yticks([1,2,3],['b allowed to be non sig','b forced to zero if not sig',f'Monte Carlo generated samples. \n sd ratio = {ratio:.2f}%'])
+if remake == 1: #this is for if we need to plot 3 violins 
+    plt.violinplot([new_df.b.copy().dropna(),df_parameters.b.copy().dropna(),df_generated_parameters.b],vert=False)
+    plt.xlabel('b')
+    if sd_obs != 0:
+        plt.yticks([1,2,3],['b allowed to be non sig','b forced to zero if not sig',f'Monte Carlo generated samples. \n sd ratio = {ratio:.2f}%'])
+    else:
+        plt.yticks([1,2,3],['b allowed to be non sig','b forced to zero if not sig','Monte Carlo generated samples.'])
+    plt.title(f'{ERA_country} b')
+    plt.show()
+    
+    plt.violinplot([new_df.a.copy().dropna(),df_parameters.a.copy().dropna(),df_generated_parameters.a],vert=False)
+    plt.xlabel('a')
+    plt.yticks([1,2,3],['a allowed to be non sig','a when b forced to zero if non sig',f'Monte Carlo generated samples. \n sd ratio = {ratio_a:.2f}%'])
+    plt.title(f'{ERA_country} a')
+    plt.show()
+    
+    plt.violinplot([new_df.kappa.copy().dropna(),df_parameters.kappa.copy().dropna(),df_generated_parameters.kappa],vert=False)
+    plt.xlabel('kappa')
+    plt.yticks([1,2,3],['kappa allowed to be non sig','kappa when b forced to zero if non sig',f'Monte Carlo generated samples. \n sd ratio = {ratio_kappa:.2f}%'])
+    plt.title(f'{ERA_country} kappa_0')
+    plt.show()
+    
+    plt.violinplot([new_df['lambda'].copy().dropna(),df_parameters['lambda'].copy().dropna(),df_generated_parameters['lambda']],vert=False)
+    plt.xlabel('lambda')
+    plt.yticks([1,2,3],['lambda allowed to be non sig','lambda when b forced to zero if non sig',f'Monte Carlo generated samples. \n sd ratio = {ratio_lambda:.2f}%'])
+    plt.title(f'{ERA_country} lambda_0')
+    plt.show()
+    
 else:
-    plt.yticks([1,2,3],['b allowed to be non sig','b forced to zero if not sig','Monte Carlo generated samples.'])
-plt.title(f'{ERA_country} b')
-plt.show()
-
-plt.violinplot([new_df.a.copy().dropna(),df_parameters.a.copy().dropna(),df_generated_parameters.a],vert=False)
-plt.xlabel('a')
-plt.yticks([1,2,3],['a allowed to be non sig','a when b forced to zero if non sig',f'Monte Carlo generated samples. \n sd ratio = {ratio_a:.2f}%'])
-plt.title(f'{ERA_country} a')
-plt.show()
-
-plt.violinplot([new_df.kappa.copy().dropna(),df_parameters.kappa.copy().dropna(),df_generated_parameters.kappa],vert=False)
-plt.xlabel('kappa')
-plt.yticks([1,2,3],['kappa allowed to be non sig','kappa when b forced to zero if non sig',f'Monte Carlo generated samples. \n sd ratio = {ratio_kappa:.2f}%'])
-plt.title(f'{ERA_country} kappa_0')
-plt.show()
-
-plt.violinplot([new_df['lambda'].copy().dropna(),df_parameters['lambda'].copy().dropna(),df_generated_parameters['lambda']],vert=False)
-plt.xlabel('lambda')
-plt.yticks([1,2,3],['lambda allowed to be non sig','lambda when b forced to zero if non sig',f'Monte Carlo generated samples. \n sd ratio = {ratio_lambda:.2f}%'])
-plt.title(f'{ERA_country} lambda_0')
-plt.show()
-
+    plt.violinplot([df_parameters.b.copy().dropna(),df_generated_parameters.b],vert=False)
+    plt.xlabel('b')
+    if sd_obs != 0:
+        plt.yticks([1,2],['b observed',f'Monte Carlo generated samples. \n sd ratio = {ratio:.2f}%'])
+    else:
+        plt.yticks([1,2],['b observed','Monte Carlo generated samples.'])
+    plt.title(f'{ERA_country} b')
+    plt.show()
+    
+    plt.violinplot([df_parameters.a.copy().dropna(),df_generated_parameters.a],vert=False)
+    plt.xlabel('a')
+    plt.yticks([1,2],['a observed',f'Monte Carlo generated samples. \n sd ratio = {ratio_a:.2f}%'])
+    plt.title(f'{ERA_country} a')
+    plt.show()
+    
+    plt.violinplot([df_parameters.kappa.copy().dropna(),df_generated_parameters.kappa],vert=False)
+    plt.xlabel('kappa')
+    plt.yticks([1,2],['kappa observed',f'Monte Carlo generated samples. \n sd ratio = {ratio_kappa:.2f}%'])
+    plt.title(f'{ERA_country} kappa_0')
+    plt.show()
+    
+    plt.violinplot([df_parameters['lambda'].copy().dropna(),df_generated_parameters['lambda']],vert=False)
+    plt.xlabel('lambda')
+    plt.yticks([1,2],['lambda observed',f'Monte Carlo generated samples. \n sd ratio = {ratio_lambda:.2f}%'])
+    plt.title(f'{ERA_country} lambda_0')
+    plt.show()
