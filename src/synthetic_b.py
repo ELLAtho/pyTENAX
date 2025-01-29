@@ -82,16 +82,16 @@ remake = 1
 # min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
 # censor_thr = 0.9
 
-country = 'Germany' 
-ERA_country = 'Germany'
-country_save = 'Germany_b0'
-code_str = 'DE_'
-minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
-name_len = 5
-min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-censor_thr = 0.9
-alpha_set = 1
-remake = 0
+# country = 'Germany' 
+# ERA_country = 'Germany'
+# country_save = 'Germany_b0'
+# code_str = 'DE_'
+# minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
+# name_len = 5
+# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+# censor_thr = 0.9
+# alpha_set = 1
+# remake = 0
 
 # country = 'Japan' 
 # ERA_country = 'Japan'
@@ -103,6 +103,17 @@ remake = 0
 # censor_thr = 0.9
 # alpha_set = 1
 # remake = 0
+
+country = 'US' 
+ERA_country = 'US'
+country_save = 'US_main_b0'
+code_str = 'US_'
+minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
+name_len = 6
+min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+censor_thr = 0.9
+alpha_set = 1
+remake = 0
 
 
 name_col = 'ppt' 

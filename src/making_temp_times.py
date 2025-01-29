@@ -42,16 +42,16 @@ drive = 'D'  #specify name of external drive
 
 
 
-# country = 'UK'
-# ERA_country = 'UK'
-# code_str = 'UK_' #string from beginning of file names
-# name_len = 8 #how long the numbers are at the end of the files
-# min_startdate = dt.datetime(1981,1,1) #this is for if havent read all ERA5 data yet
+country = 'UK'
+ERA_country = 'UK'
+code_str = 'UK_' #string from beginning of file names
+name_len = 8 #how long the numbers are at the end of the files
+min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
  
 
-country = 'Israel'
-ERA_country = 'Israel'
-minlat,minlon,maxlat,maxlon = 27, 34, 34, 36 
+# country = 'Israel'
+# ERA_country = 'Israel'
+# minlat,minlon,maxlat,maxlon = 27, 34, 34, 36 
 
 
 
