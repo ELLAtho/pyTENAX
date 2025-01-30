@@ -33,6 +33,7 @@ import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 from matplotlib.colors import LinearSegmentedColormap
 import matplotlib.patches as patches
+from matplotlib.lines import Line2D
 from scipy.stats import kendalltau, pearsonr, spearmanr
 
 
@@ -255,7 +256,21 @@ plt.title('month with the second most top 5% events')
 plt.show()
 
 
+fig, ax = plt.subplots()
 
+for station_no in month_freq_full_df.station.unique():
+    df_cut = month_freq_full_df[month_freq_full_df.station == station_no]
+    top_month = df_cut.month.iloc[0]
+    df_cut_sort = df_cut.sort_values(by = 'month')
+    plt.plot(df_cut_sort.month,df_cut_sort['count'],color = colors[top_month-1],alpha = 0.1)
+    
+
+plt.xticks(np.arange(1,13),months) #put months as the x labels
+plt.ylabel('Fraction of extreme ppt this month') 
+custom_lines = [[Line2D([0], [0], color=colors[i], lw=4)][0] for i in np.arange(0,12)]
+ax.legend(custom_lines, months)   
+plt.show()
+ 
 
 
 
