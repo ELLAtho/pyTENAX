@@ -121,11 +121,13 @@ for i in np.arange(0,len(info)): #for each selected station
         
         T_ERA = make_T_timeseries(target_lat,target_lon,start_date,end_date,T_files,nans,T_nan_limit)
         
-        if 'code_str' in locals():
-            T_ERA.to_netcdf(drive+':/'+country+'_temp/'+code_str+str(info.station[info.index[i]])+'.nc') #save file with same name format as GSDR
+        if T_ERA != []:
+            if 'code_str' in locals():
+                T_ERA.to_netcdf(drive+':/'+country+'_temp/'+code_str+str(info.station[info.index[i]])+'.nc') #save file with same name format as GSDR
+            else:
+                T_ERA.to_netcdf(drive+':/'+country+'_temp/'+str(info.station[info.index[i]])+'.nc') #save file with same name format as GSDR
         else:
-            T_ERA.to_netcdf(drive+':/'+country+'_temp/'+str(info.station[info.index[i]])+'.nc') #save file with same name format as GSDR
-        
+            print('Data not there due to ERA limits, skipping save')
         
         time_taken = (time.time()-start_time[i-9])/10
         time_left = (len(info)-i)*time_taken/60
