@@ -36,6 +36,9 @@ from statsmodels.tools.sm_exceptions import IterationLimitWarning
 # Suppress IterationLimitWarning
 warnings.simplefilter("ignore", IterationLimitWarning)
 
+
+###############################################################################
+# Choosing data
 drive='D' #name of drive
 min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
 
@@ -58,6 +61,8 @@ F_loc = np.array([25, -83, 31, -78])
 countries = ['Japan','US'] #Puerto RIco
 n_stations = 5
 
+
+#loop through the countries and read in metadata
 info = []
 
 for c in countries:
@@ -71,7 +76,7 @@ info_full = pd.concat(info,axis=0)
 
 
 
-
+#select data in the tropics according to latitude
 info_tropics_J = info[0][info[0].latitude<maxlat]
 info_tropics_J = info_tropics_J[info_tropics_J.cleaned_years>=20]
 
@@ -79,6 +84,8 @@ info_tropics_US = info[1][info[1].latitude<maxlat]
 info_tropics_US = info_tropics_US[info_tropics_US.longitude<maxlon]
 info_tropics_US = info_tropics_US[info_tropics_US.cleaned_years>=20]
 
+
+#split US data into florida, PR, Hawaii
 info_hawaii = info_tropics_US[info_tropics_US.latitude>H_loc[0]]
 info_hawaii = info_hawaii[info_hawaii.latitude<H_loc[2]]
 info_hawaii = info_hawaii[info_hawaii.longitude>H_loc[1]]
@@ -97,10 +104,14 @@ H_sort = info_hawaii.sort_values(by=['cleaned_years'],ascending=0) #sort by size
 
 F_sort = info_florida.sort_values(by=['cleaned_years'],ascending=0)
 
-J_selected = J_sort[0:n_stations]
+J_selected = J_sort[0:n_stations] #pick top n_stations in temrs of number of clean years
 H_selected = H_sort[0:n_stations]
 F_selected = F_sort[0:n_stations]
 
+
+
+###############################################################################
+# PLOTTING LOCATION OF CHOSEN STATIONS
 
 fig = plt.figure(figsize=(10, 10))
 proj = ccrs.PlateCarree()
@@ -139,6 +150,8 @@ plt.ylim(F_loc[0]-2,F_loc[2]+2)
 plt.show()
 
 
+###############################################################################
+# DOING TENAX
 #FLORIDA
 saved_files_US = glob.glob(drive+':/US_temp/*') #temp files already saved
 T_files_US = sorted(glob.glob(drive+':/ERA5_land/US*/*'))
@@ -388,7 +401,7 @@ for i in np.arange(0,n_stations):
     plt.show()
     
     
-    
+###############################################################################
 #HAWAII
 
 g_phats_H = [0]*n_stations

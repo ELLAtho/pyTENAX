@@ -39,14 +39,25 @@ from scipy.stats import kendalltau, pearsonr, spearmanr
 
 drive = 'D'
 
-country = 'Japan'
-ERA_country = 'Japan'
-country_save = 'Japan'
-code_str = 'JP_'
-minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
-name_len = 5
-min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+# country = 'Japan'
+# ERA_country = 'Japan'
+# country_save = 'Japan'
+# code_str = 'JP_'
+# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+# name_len = 5
+# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+# censor_thr = 0.9
+
+country = 'US' 
+ERA_country = 'US'
+country_save = 'US_main'
+code_str = 'US_'
+minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
+name_len = 6
+min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
 censor_thr = 0.9
+
+
 
 name_col = 'ppt' 
 temp_name_col = "t2m"
@@ -93,8 +104,8 @@ S = TENAX(
 
 
 
-save_name = f"{drive}:/outputs/{country}\\timings_top_5.csv"
-saved_output_files = glob.glob(f'{drive}:/outputs/{country}/*')
+save_name = f"{drive}:/outputs/{country_save}\\timings_top_5.csv"
+saved_output_files = glob.glob(f'{drive}:/outputs/{country_save}/*')
 if save_name not in saved_output_files:
     print('Not done the months thing yet, doing it')
         
@@ -269,9 +280,10 @@ plt.xticks(np.arange(1,13),months) #put months as the x labels
 plt.ylabel('Fraction of extreme ppt this month') 
 custom_lines = [[Line2D([0], [0], color=colors[i], lw=4)][0] for i in np.arange(0,12)]
 ax.legend(custom_lines, months)   
+plt.title(country)
 plt.show()
  
-
+ 
 
 
 
