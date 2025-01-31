@@ -121,7 +121,7 @@ for i in np.arange(0,len(info)): #for each selected station
         
         T_ERA = make_T_timeseries(target_lat,target_lon,start_date,end_date,T_files,nans,T_nan_limit)
         
-        if T_ERA != []:
+        if type(T_ERA) == xr.core.dataarray.DataArray:
             if 'code_str' in locals():
                 T_ERA.to_netcdf(drive+':/'+country+'_temp/'+code_str+str(info.station[info.index[i]])+'.nc') #save file with same name format as GSDR
             else:
@@ -137,7 +137,7 @@ for i in np.arange(0,len(info)): #for each selected station
         print(f"File {save_path} already exists. Skipping save.")
 
     
-    
+     
 
 print('Data reading finished.')
 

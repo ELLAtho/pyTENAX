@@ -44,11 +44,25 @@ temp_name_col = 't2m'
 code = '083186' #identifier of station we are looking at
 ppt_path = f"{drive}:/US/US_{code}.txt"
 temp_path = f"{drive}:/US_temp\\US_{code}.nc"
+F_loc = np.array([25, -83, 31, -78])
 
 G,data_meta = read_GSDR_file(ppt_path,name_col) #read ppt data
 T_ERA = xr.load_dataarray(temp_path) # read temp data
 
+
+fig = plt.figure(figsize=(10, 10))
+proj = ccrs.PlateCarree()
+ax1 = fig.add_subplot(1, 1, 1, projection=proj)
+ax1.coastlines()
+
+ax1.scatter(data_meta.longitude,data_meta.latitude,1000,'r','x')
+
+plt.xlim(F_loc[1]-2,F_loc[3]+2)
+plt.ylim(F_loc[0]-2,F_loc[2]+2)
+plt.show()
+
 start_time = time.time()
+
 S = TENAX(
         return_period = [1.1,1.2,1.5,2,5,10,20,50,100, 200],
         durations = [60, 180, 360, 720, 1440],
@@ -106,6 +120,14 @@ g_phat = S.temperature_model(T)
 # M is mean n of ordinary events
 n = n_ordinary_per_year.sum() / len(n_ordinary_per_year)  
 #estimates return levels using MC samples
+
+#redefining the return period so it is calculated the same as the observations
+
+AMS = dict_AMS['60']
+AMS_sort = AMS.sort_values(by=['AMS'])['AMS']
+plot_pos = np.arange(1,np.size(AMS_sort)+1)/(1+np.size(AMS_sort))
+eRP = 1/(1-plot_pos)
+S.return_period = eRP
 
 
 RL, _, P_check = S.model_inversion(F_phat, g_phat, n, Ts) 
@@ -191,34 +213,6 @@ plt.ylabel('60-minute precipitation (mm)')
 plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1))
 plt.show()
 
-#SPLITTING INTO SUMMER/WINTER
-season_separations = [5, 10]
-months = dict_ordinary["60"]["oe_time"].dt.month
-winter_inds = months.index[(months>season_separations[1]) | (months<season_separations[0])]
-summer_inds = months.index[(months<season_separations[1]+1)&(months>season_separations[0]-1)]
-T_winter = T[winter_inds]
-T_summer = T[summer_inds]
-
-
-g_phat_winter = S.temperature_model(T_winter,beta = 2)
-g_phat_summer = S.temperature_model(T_summer,beta = 2)
-
-
-winter_pdf = gen_norm_pdf(eT, g_phat_winter[0], g_phat_winter[1], 2)
-summer_pdf = gen_norm_pdf(eT, g_phat_summer[0], g_phat_summer[1], 2)
-
-combined_pdf = (winter_pdf*np.size(T_winter)+summer_pdf*np.size(T_summer))/(np.size(T_winter)+np.size(T_summer))
-
-
-#fig 3
-
-
-TNX_FIG_temp_model(T=T_summer, g_phat=g_phat_summer,beta=2,eT=eT,obscol='r',valcol='r',obslabel = None,vallabel = 'Summer')
-TNX_FIG_temp_model(T=T_winter, g_phat=g_phat_winter,beta=2,eT=eT,obscol='b',valcol='b',obslabel = None,vallabel = 'Winter')
-TNX_FIG_temp_model(T=T, g_phat=g_phat,beta=4,eT=eT,obscol='k',valcol='k',obslabel = None,vallabel = 'Annual',xlimits = [np.min(T)-3,np.max(T)+3],ylimits = [0,7/(np.max(T)-np.min(T))])
-plt.plot(eT,combined_pdf,'m',label = 'Combined summer and winter')
-plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.2))
-plt.show()
 
 
 #TENAX MODEL VALIDATION
@@ -226,6 +220,8 @@ S.n_monte_carlo = 20000 # set number of MC for getting RL
 yrs = dict_ordinary["60"]["oe_time"].dt.year
 yrs_unique = np.unique(yrs)
 midway = yrs_unique[int(np.ceil(np.size(yrs_unique)/2))-1] # -1 to adjust indexing because this returns a sort of length
+
+
 
 #DEFINE FIRST PERIOD
 P1 = P[yrs<=midway]
@@ -261,39 +257,87 @@ else:
     alpha1=0  # b parameter is significantly different from 0; 4 degrees of freedom for the LR test
 
 
+###############################################################################
+
+month_names = ['jan','feb','mar', 'apr', 'may', 'jun','jul','aug','sep','oct','nov','dec']
+#SPLITTING INTO SUMMER/WINTER
 
 
-#check magnitude model the same in both periods
-lambda_LR = -2*( loglik - (loglik1+loglik2) )
-pval = chi2.sf(lambda_LR, dof)
-if pval > S.alpha:
-    print(f"p={pval}. Magnitude models not  different at {S.alpha*100}% significance.")
-else:
-    print(f"p={pval}. Magnitude models are different at {S.alpha*100}% significance.")
-
-#modelling second model based on first magnitude and changes in mean/std
-mu_delta = np.mean(T2)-np.mean(T1)
-sigma_factor = np.std(T2)/np.std(T1)
-
-g_phat2_predict = [g_phat1[0]+mu_delta, g_phat1[1]*sigma_factor]
-RL2_predict, _,_ = S.model_inversion(F_phat1,g_phat2_predict,n2,Ts)
+S.beta = 2
+season_separations = [6, 9] #THIS IS COUNTING FROM 1. Summer includes both
+#DOING THIS PROPERLY MIGHT NEED A TOTAL REDO OF ORDINARY EVENTS
+#t_data_summer = t_data[(t_data.index.month<=season_separations[1])&(t_data.index.month>=season_separations[0])]
 
 
-#fig 7a
+months = dict_ordinary["60"]["oe_time"].dt.month
+winter_inds = months.index[(months>season_separations[1]) | (months<season_separations[0])]
+summer_inds = months.index[(months<=season_separations[1])&(months>=season_separations[0])]
+T_winter = T[winter_inds]
+T_summer = T[summer_inds]
+P_summer = P[summer_inds]
+n_summer = n/2 #TODO: this is a guess and wrong, need to do properly
 
-TNX_FIG_temp_model(T=T1, g_phat=g_phat1,beta=4,eT=eT,obscol='b',valcol='b',obslabel = None,vallabel = 'Temperature model '+str(yrs_unique[0])+'-'+str(midway))
-TNX_FIG_temp_model(T=T2, g_phat=g_phat2_predict,beta=4,eT=eT,obscol='r',valcol='r',obslabel = None,vallabel = 'Temperature model '+str(midway+1)+'-'+str(yrs_unique[-1]),xlimits = [np.min(T)-3,np.max(T)+3],ylimits = [0,5/(np.max(T)-np.min(T))]) # model based on temp ave and std changes
-plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.2))
-plt.show() #this is slightly different in code and paper I think.. using predicted T vs fitted T
 
-#fig 7b
+g_phat_winter = S.temperature_model(T_winter,beta = 2)
+g_phat_summer = S.temperature_model(T_summer,beta = 2)
 
-TNX_FIG_valid(AMS1,S.return_period,RL1,TENAXcol='b',obscol_shape = 'b+',TENAXlabel = 'The TENAX model '+str(yrs_unique[0])+'-'+str(midway),obslabel='Observed annual maxima '+str(yrs_unique[0])+'-'+str(midway))
-TNX_FIG_valid(AMS2,S.return_period,RL2_predict,TENAXcol='r',obscol_shape = 'r+',TENAXlabel = 'The predicted TENAX model '+str(midway+1)+'-'+str(yrs_unique[-1]),obslabel='Observed annual maxima '+str(midway+1)+'-'+str(yrs_unique[-1]),ylimits = [0,np.max(AMS.AMS)+10])
+
+thr_summer = np.quantile(P_summer,S.left_censoring[1])
+
+#TENAX MODEL HERE
+#magnitude model
+F_phat_summer, loglik_summer, _, _ = S.magnitude_model(P_summer, T_summer, thr_summer)
+
+winter_pdf = gen_norm_pdf(eT, g_phat_winter[0], g_phat_winter[1], 2)
+summer_pdf = gen_norm_pdf(eT, g_phat_summer[0], g_phat_summer[1], 2)
+
+combined_pdf = (winter_pdf*np.size(T_winter)+summer_pdf*np.size(T_summer))/(np.size(T_winter)+np.size(T_summer))
+
+RL_summer, _, _ = S.model_inversion(F_phat_summer, g_phat_summer, n_summer, Ts) 
+
+
+#fig 3
+
+TNX_FIG_temp_model(T=T_summer, g_phat=g_phat_summer,beta=2,eT=eT,obscol='r',valcol='r',obslabel = None,vallabel = 'Summer')
+TNX_FIG_temp_model(T=T_winter, g_phat=g_phat_winter,beta=2,eT=eT,obscol='b',valcol='b',obslabel = None,vallabel = 'Winter')
+TNX_FIG_temp_model(T=T, g_phat=g_phat,beta=4,eT=eT,obscol='k',valcol='k',obslabel = None,vallabel = 'Annual',xlimits = [np.min(T)-3,np.max(T)+3],ylimits = [0,7/(np.max(T)-np.min(T))])
+plt.plot(eT,combined_pdf,'m',label = 'Combined summer and winter')
 plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.2))
 plt.show()
 
 
+# fig 2a
+qs = [.85,.95,.99,.999]
+TNX_FIG_magn_model(P_summer,T_summer,F_phat_summer,thr_summer,eT,qs,xlimits = [np.min(T)-3,np.max(T)+3])
+plt.ylabel('60-minute precipitation (mm)')
+plt.title(f'Using only summer data ({month_names[season_separations[0]-1]} to {month_names[season_separations[1]-1]})')
+plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.2))
+plt.show()
+
+#fig 2b
+TNX_FIG_temp_model(T_summer, g_phat_summer,S.beta,eT,xlimits = [np.min(T)-3,np.max(T)+3],ylimits = [0,10/(np.max(T)-np.min(T))])
+plt.title(f'Using only summer data ({month_names[season_separations[0]-1]} to {month_names[season_separations[1]-1]})')
+plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.2))
+plt.show()
+
+
+#fig 4 
+AMS = dict_AMS['60'] # yet the annual maxima
+TNX_FIG_valid(AMS,S.return_period,RL_summer,ylimits = [0,np.max(AMS.AMS)+10])
+plt.title(f'Using only summer data ({month_names[season_separations[0]-1]} to {month_names[season_separations[1]-1]})')
+plt.ylabel('60-minute precipitation (mm)')
+plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.2))
+plt.show()
+
+
+
+#fig 5 
+scaling_rate_W, scaling_rate_q = TNX_FIG_scaling(P,T,P_mc,T_mc,F_phat,S.niter_smev,eT,iTs,xlimits = [np.min(T)-3,np.max(T)+3])
+plt.scatter(T_summer,P_summer,color = 'b',s=1.5,alpha = 0.3, label = 'Summer values')
+plt.title('fig 5')
+plt.ylabel('60-minute precipitation (mm)')
+plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1))
+plt.show()
 
 # # SENSITIVITY ANALYSIS
 
