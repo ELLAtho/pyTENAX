@@ -265,7 +265,7 @@ month_names = ['jan','feb','mar', 'apr', 'may', 'jun','jul','aug','sep','oct','n
 
 S.beta = 2
 season_separations = [6, 9] #THIS IS COUNTING FROM 1. Summer includes both
-#DOING THIS PROPERLY MIGHT NEED A TOTAL REDO OF ORDINARY EVENTS
+
 t_data_summer = t_data[(t_data.index.month<=season_separations[1])&(t_data.index.month>=season_separations[0])]
 data_summer = data[(data.index.month<=season_separations[1])&(data.index.month>=season_separations[0])]
 df_arr_summer = np.array(data_summer[name_col])

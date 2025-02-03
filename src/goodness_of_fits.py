@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Nov  5 10:07:20 2024
+Created on Mon Feb  3 13:58:04 2025
 
 @author: ellar
 """
-
 
 from os.path import dirname, abspath, join
 from os import getcwd
@@ -34,7 +33,7 @@ drive = 'D'
 
 country = 'Japan'
 code_str = 'JP' 
-n_stations = 5 #number of stations to sample
+n_stations = 2 #number of stations to sample
 min_yrs = 15 #atm this probably introduces a bug... need to put in if statement or something
 max_yrs = 1000 #if no max, set to very high
 name_col = 'ppt'
@@ -108,21 +107,6 @@ lats_sel = [selected.latitude[i] for i in selected.index]
 lons_sel = [selected.longitude[i] for i in selected.index]
 
 
-# #need to add in start and end dates here
-# start_time = time.time()
-# T_ERA = [0]*n_stations
-
-# for i in np.arange(0,n_stations): #for each selected station
-    
-#     T_temp = [0]*np.size(T_files)
-#     for n in np.arange(0,np.size(T_files)): #select temperature data a gridpoint closest to station
-#         T_temp[n] = xr.open_dataarray(T_files[n]).sel(latitude = lats_sel[i],method = 'nearest').sel(longitude = lons_sel[i],method = 'nearest')
-        
-#     T_ERA[i] = xr.concat(T_temp,dim = 'valid_time')  #combine multiple time files
-
-# print('time to read era5 '+str(time.time()-start_time))
-# print('Data reading finished.')
-
 start_time = time.time()
 T_ERA = [0]*n_stations
 for i in np.arange(0,n_stations): #for each selected station
@@ -131,7 +115,8 @@ for i in np.arange(0,n_stations): #for each selected station
 
 print('time to read era5 '+str(time.time()-start_time))
 
-#NOW WE  DO TENAX
+
+
 S = TENAX(
         return_period = [1.1,1.2,1.5,2,5,10,20,50,100, 200],
         durations = [60, 180, 360, 720, 1440],
@@ -147,15 +132,22 @@ for i in np.arange(0,n_stations):
 
 
 RL = [0]*n_stations
+RL1 = [0]*n_stations
 dicts = [0]*n_stations
 thr = [0]*n_stations
 F_phats = [0]*n_stations
+F_phats1 = [0]*n_stations
 g_phats = [0]*n_stations
 ns = [0]*n_stations
 dict_AMS = [0]*n_stations
 eRP = [0]*n_stations
+AMS = [0]*n_stations
+RMSE = [0]*n_stations
+RMSE1 = [0]*n_stations
 
 for i in np.arange(0,n_stations):
+    S.alpha = 0
+    
     data = data_full[i]
     t_data = (T_ERA[i]-273.15).to_dataframe()
 
@@ -195,8 +187,8 @@ for i in np.arange(0,n_stations):
     # Sampling intervals for the Montecarlo
     Ts = np.arange(np.min(T) - S.temp_delta, np.max(T) + S.temp_delta, S.temp_res_monte_carlo)
     
-    AMS = dict_AMS[i]['60']
-    AMS_sort = AMS.sort_values(by=['AMS'])['AMS']
+    AMS[i] = dict_AMS[i]['60']
+    AMS_sort = AMS[i].sort_values(by=['AMS'])['AMS']
     plot_pos = np.arange(1,np.size(AMS_sort)+1)/(1+np.size(AMS_sort))
     eRP[i] = 1/(1-plot_pos)
     S.return_period = eRP[i]
@@ -224,144 +216,137 @@ for i in np.arange(0,n_stations):
     
     eT = np.arange(np.min(T),np.max(T)+4,1) # define T values to calculate distributions. +4 to go beyond graph end
     
-    # fig 2a
-    qs = [.85,.95,.99,.999]
-    TNX_FIG_magn_model(P,T,F_phats[i],thr[i],eT,qs,xlimits = [eT[0],eT[-1]])
-    plt.title(titles)
-    plt.show()
-    
+       
     #fig 2b
     TNX_FIG_temp_model(T=T, g_phat=g_phats[i],beta=4,eT=eT,xlimits = [eT[0],eT[-1]])
     plt.title(titles)
     plt.show()
     
-    #fig 4 (without SMEV and uncertainty) 
-    AMS = dict_AMS[i]['60'] # yet the annual maxima
-    TNX_FIG_valid(AMS,S.return_period,RL[i],ylimits = [0,np.max(AMS.AMS)+3])
-    plt.title(titles)
+    #fig 4 
+    
+    diffs = AMS_sort - RL[i]
+    diffs_frac = diffs/AMS_sort
+    
+    RMSE[i] = np.sqrt(np.sum(diffs**2)/len(diffs))
+    
+    TNX_FIG_valid(AMS[i],S.return_period,RL[i],xlimits = [1,np.max(S.return_period)+10],ylimits = [0,np.max(np.hstack([RL[i],AMS[i].AMS.to_numpy()]))+3])
+    plt.title(titles+'. alpha = 0'+f'. RMSE: {RMSE[i]:.2f}')
+    plt.plot(S.return_period,diffs_frac*100-np.min(diffs_frac*100))
+    plt.plot(S.return_period,[-1*np.min(diffs_frac*100)]*len(S.return_period),'k--',alpha = 0.4)
     plt.show()
     
-    #fig 5 
-    iTs = np.arange(-2.5,37.5,1.5) #idk why we need a different T range here 
-    
-    TNX_FIG_scaling(P,T,P_mc,T_mc,F_phats[i],S.niter_smev,eT,iTs,xlimits = [eT[0],eT[-1]])
-    plt.title(titles)
+    # fig 2a
+    qs = [.85,.95,.99,.999]
+    TNX_FIG_magn_model(P,T,F_phats[i],thr[i],eT,qs)
+    plt.ylabel('60-minute precipitation (mm)')
+    plt.title(titles+'. alpha = 0')
+    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.2))
     plt.show()
     
-    # #SPLITTING INTO SUMMER/WINTER
-    # season_separations = [5, 10]
-    # months = dicts[i]["60"]["oe_time"].dt.month
-    # winter_inds = months.index[(months>season_separations[1]) | (months<season_separations[0])]
-    # summer_inds = months.index[(months<season_separations[1]+1)&(months>season_separations[0]-1)]
-    # T_winter = T[winter_inds]
-    # T_summer = T[summer_inds]
     
     
-    # g_phat_winter = S.temperature_model(T_winter, 2)
-    # g_phat_summer = S.temperature_model(T_summer, 2)
+    S.alpha = 1
+    F_phats1[i], loglik1, _, _ = S.magnitude_model(P, T, thr[i])
+    RL1[i], __, __ = S.model_inversion(F_phats1[i], g_phats[i], ns[i], Ts)
+    
+    #fig 4 (without SMEV and uncertainty)
+    diffs1 = AMS_sort - RL1[i]
+    diffs_frac1 = diffs1/AMS_sort
+    
+    RMSE1[i] = np.sqrt(np.sum(diffs1**2)/len(diffs1))
+    
+    TNX_FIG_valid(AMS[i],S.return_period,RL1[i],xlimits = [1,np.max(S.return_period)+10],ylimits = [0,np.max(np.hstack([RL[i],AMS[i].AMS.to_numpy()]))+3])
+    plt.plot(S.return_period,diffs_frac1*100-np.min(diffs_frac1*100))
+    plt.plot(S.return_period,[-1*np.min(diffs_frac1*100)]*len(S.return_period),'k--',alpha = 0.4)
+    plt.title(titles+'. alpha = 1' + f'. RMSE: {RMSE1[i]:.2f}')
+    plt.show()
+    
+    # fig 2a
+    TNX_FIG_magn_model(P,T,F_phats1[i],thr[i],eT,qs)
+    plt.ylabel('60-minute precipitation (mm)')
+    plt.title(titles+'. alpha = 0')
+    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.2))
+    plt.show()
+      
+    # #TENAX MODEL VALIDATION
+    # yrs = dicts[i]["60"]["oe_time"].dt.year
+    # yrs_unique = np.unique(yrs)
+    # midway = yrs_unique[int(np.ceil(np.size(yrs_unique)/2))]
+    
+    # #DEFINE FIRST PERIOD
+    # P1 = P[yrs<=midway]
+    # T1 = T[yrs<=midway]
+    # AMS1 = AMS[AMS['year']<=midway]
+    # n_ordinary_per_year1 = n_ordinary_per_year[n_ordinary_per_year.index<=midway]
+    # n1 = n_ordinary_per_year1.sum() / len(n_ordinary_per_year1)
+    
+    # #DEFINE SECOND PERIOD
+    # P2 = P[yrs>midway]
+    # T2 = T[yrs>midway]
+    # AMS2 = AMS[AMS['year']>midway]
+    # n_ordinary_per_year2 = n_ordinary_per_year[n_ordinary_per_year.index>midway]
+    # n2 = n_ordinary_per_year2.sum() / len(n_ordinary_per_year2)
     
     
-    # winter_pdf = gen_norm_pdf(eT, g_phat_winter[0], g_phat_winter[1], 2)
-    # summer_pdf = gen_norm_pdf(eT, g_phat_summer[0], g_phat_summer[1], 2)
-    
-    # combined_pdf = (winter_pdf*np.size(T_winter)+summer_pdf*np.size(T_summer))/(np.size(T_winter)+np.size(T_summer))
+    # g_phat1 = S.temperature_model(T1)
+    # g_phat2 = S.temperature_model(T2)
     
     
-    # #fig 3
+    # F_phat1, loglik1, _, _ = S.magnitude_model(P1, T1, thr[i])
+    # F_phat2, loglik2, _, _ = S.magnitude_model(P2, T2, thr[i])
     
+    # S.n_monte_carlo = 20000  #for RL, set to lower to be safe
+    # RL1, __, __ = S.model_inversion(F_phat1, g_phat1, n1, Ts)
+    # RL2, __, __ = S.model_inversion(F_phat2, g_phat2, n2, Ts)
     
-    # TNX_FIG_temp_model(T=T_summer, g_phat=g_phat_summer,beta=2,eT=eT,obscol='r',valcol='r')
-    # TNX_FIG_temp_model(T=T_winter, g_phat=g_phat_winter,beta=2,eT=eT,obscol='b',valcol='b')
-    # TNX_FIG_temp_model(T=T, g_phat=g_phats[i],beta=4,eT=eT,obscol='k',valcol='k',xlimits = [eT[0],eT[-1]],ylimits = [0,0.1])
-    # plt.plot(eT,combined_pdf,'m',label = 'Combined summer and winter')
-    # plt.title(titles)
-    # plt.show()
-    
-    
-    #TENAX MODEL VALIDATION
-    yrs = dicts[i]["60"]["oe_time"].dt.year
-    yrs_unique = np.unique(yrs)
-    midway = yrs_unique[int(np.ceil(np.size(yrs_unique)/2))]
-    
-    #DEFINE FIRST PERIOD
-    P1 = P[yrs<=midway]
-    T1 = T[yrs<=midway]
-    AMS1 = AMS[AMS['year']<=midway]
-    n_ordinary_per_year1 = n_ordinary_per_year[n_ordinary_per_year.index<=midway]
-    n1 = n_ordinary_per_year1.sum() / len(n_ordinary_per_year1)
-    
-    #DEFINE SECOND PERIOD
-    P2 = P[yrs>midway]
-    T2 = T[yrs>midway]
-    AMS2 = AMS[AMS['year']>midway]
-    n_ordinary_per_year2 = n_ordinary_per_year[n_ordinary_per_year.index>midway]
-    n2 = n_ordinary_per_year2.sum() / len(n_ordinary_per_year2)
-    
-    
-    g_phat1 = S.temperature_model(T1)
-    g_phat2 = S.temperature_model(T2)
-    
-    
-    F_phat1, loglik1, _, _ = S.magnitude_model(P1, T1, thr[i])
-    F_phat2, loglik2, _, _ = S.magnitude_model(P2, T2, thr[i])
-    
-    S.n_monte_carlo = 20000  #for RL, set to lower to be safe
-    RL1, __, __ = S.model_inversion(F_phat1, g_phat1, n1, Ts)
-    RL2, __, __ = S.model_inversion(F_phat2, g_phat2, n2, Ts)
-    
-    S.n_monte_carlo = np.size(P1)*S.niter_smev #change n_montecarlo for binning
-    _, T_mc1, P_mc1 = S.model_inversion(F_phat1, g_phat1, n1, Ts,gen_P_mc = True,gen_RL=False) 
-    _, T_mc2, P_mc2 = S.model_inversion(F_phat2, g_phat2, n2, Ts,gen_P_mc = True,gen_RL=False) 
+    # S.n_monte_carlo = np.size(P1)*S.niter_smev #change n_montecarlo for binning
+    # _, T_mc1, P_mc1 = S.model_inversion(F_phat1, g_phat1, n1, Ts,gen_P_mc = True,gen_RL=False) 
+    # _, T_mc2, P_mc2 = S.model_inversion(F_phat2, g_phat2, n2, Ts,gen_P_mc = True,gen_RL=False) 
     
     
 
-    S.n_monte_carlo = 20000   
+    # S.n_monte_carlo = 20000   
     
-    if F_phats[i][2]==0:
-        dof=3
-        alpha1=1; # b parameter is not significantly different from 0; 3 degrees of freedom for the LR test
-    else: 
-        dof=4
-        alpha1=0  # b parameter is significantly different from 0; 4 degrees of freedom for the LR test
-    
-    
+    # if F_phats[i][2]==0:
+    #     dof=3
+    #     alpha1=1; # b parameter is not significantly different from 0; 3 degrees of freedom for the LR test
+    # else: 
+    #     dof=4
+    #     alpha1=0  # b parameter is significantly different from 0; 4 degrees of freedom for the LR test
     
     
-    #check magnitude model the same in both periods
-    lambda_LR = -2*( loglik - (loglik1+loglik2) )
-    pval = chi2.sf(lambda_LR, dof)
-    
-    #modelling second model based on first magnitude and changes in mean/std
-    mu_delta = np.mean(T2)-np.mean(T1)
-    sigma_factor = np.std(T2)/np.std(T1)
-    
-    g_phat2_predict = [g_phat1[0]+mu_delta, g_phat1[1]*sigma_factor]
-    RL2_predict, _,_ = S.model_inversion(F_phat1,g_phat2_predict,n2,Ts)
     
     
-    #fig 7a
+    # #check magnitude model the same in both periods
+    # lambda_LR = -2*( loglik - (loglik1+loglik2) )
+    # pval = chi2.sf(lambda_LR, dof)
     
-    TNX_FIG_temp_model(T=T1, g_phat=g_phat1,beta=4,eT=eT,obscol='b',valcol='b',obslabel = None,vallabel = 'Temperature model '+str(yrs_unique[0])+'-'+str(midway),xlimits = [eT[0],eT[-1]])
-    TNX_FIG_temp_model(T=T2, g_phat=g_phat2_predict,beta=4,eT=eT,obscol='r',valcol='r',obslabel = None,vallabel = 'Temperature model '+str(midway+1)+'-'+str(yrs_unique[-1]),xlimits = [eT[0],eT[-1]]) # model based on temp ave and std changes
-    plt.title('fig 7a')
-    plt.show() #this is slightly different in code and paper I think.. using predicted T vs fitted T
+    # #modelling second model based on first magnitude and changes in mean/std
+    # mu_delta = np.mean(T2)-np.mean(T1)
+    # sigma_factor = np.std(T2)/np.std(T1)
     
-    #fig 7b
+    # g_phat2_predict = [g_phat1[0]+mu_delta, g_phat1[1]*sigma_factor]
+    # RL2_predict, _,_ = S.model_inversion(F_phat1,g_phat2_predict,n2,Ts)
     
-    TNX_FIG_valid(AMS1,S.return_period,RL1,TENAXcol='b',obscol_shape = 'b+',TENAXlabel = 'The TENAX model '+str(yrs_unique[0])+'-'+str(midway),obslabel='Observed annual maxima '+str(yrs_unique[0])+'-'+str(midway))
-    TNX_FIG_valid(AMS2,S.return_period,RL2_predict,TENAXcol='r',obscol_shape = 'r+',TENAXlabel = 'The predicted TENAX model '+str(midway+1)+'-'+str(yrs_unique[-1]),obslabel='Observed annual maxima '+str(midway+1)+'-'+str(yrs_unique[-1]),ylimits = [0,np.max(AMS.AMS)+3])
-    plt.title('fig 7b')
-    plt.show()
+    
+    # #fig 7a
+    
+    # TNX_FIG_temp_model(T=T1, g_phat=g_phat1,beta=4,eT=eT,obscol='b',valcol='b',obslabel = None,vallabel = 'Temperature model '+str(yrs_unique[0])+'-'+str(midway),xlimits = [eT[0],eT[-1]])
+    # TNX_FIG_temp_model(T=T2, g_phat=g_phat2_predict,beta=4,eT=eT,obscol='r',valcol='r',obslabel = None,vallabel = 'Temperature model '+str(midway+1)+'-'+str(yrs_unique[-1]),xlimits = [eT[0],eT[-1]]) # model based on temp ave and std changes
+    # plt.title('fig 7a')
+    # plt.show() #this is slightly different in code and paper I think.. using predicted T vs fitted T
+    
+    # #fig 7b
+    
+    # TNX_FIG_valid(AMS1,S.return_period,RL1,TENAXcol='b',obscol_shape = 'b+',TENAXlabel = 'The TENAX model '+str(yrs_unique[0])+'-'+str(midway),obslabel='Observed annual maxima '+str(yrs_unique[0])+'-'+str(midway))
+    # TNX_FIG_valid(AMS2,S.return_period,RL2_predict,TENAXcol='r',obscol_shape = 'r+',TENAXlabel = 'The predicted TENAX model '+str(midway+1)+'-'+str(yrs_unique[-1]),obslabel='Observed annual maxima '+str(midway+1)+'-'+str(yrs_unique[-1]),ylimits = [0,np.max(AMS.AMS)+3])
+    # plt.title('fig 7b')
+    # plt.show()
     
     
     print('finished loop '+str(i+1)+' out of '+str(n_stations))
     
-    
-    
-    
-#SAVE EXTRACTED DATA
-# for i in np.arange(0,n_stations):
-#     file_save = 'D:/sample_outputs/'+country+'_'+selected['station'][selected.index[i]]+'_dict'
 
 
-    
+
+

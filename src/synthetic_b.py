@@ -413,7 +413,7 @@ else:
     
     plt.violinplot([df_parameters.a.copy().dropna(),df_generated_parameters.a],vert=False)
     plt.xlabel('a')
-    plt.xlim(0,0.2)
+    plt.xlim(-0.1,0.2)
     plt.yticks([1,2],['a observed',f'Monte Carlo generated samples. \n sd ratio = {ratio_a:.2f}%'])
     plt.title(f'{ERA_country} a')
     plt.show()
