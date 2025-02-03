@@ -55,12 +55,12 @@ remake = 1
 # min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 # censor_thr = 0.9
 
-country = 'UK' 
-ERA_country = 'UK'
-country_save = 'UK'
-code_str = 'UK_'
-name_len = 0
-min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+# country = 'UK' 
+# ERA_country = 'UK'
+# country_save = 'UK'
+# code_str = 'UK_'
+# name_len = 0
+# min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
 
 
 # country = 'US' 
@@ -383,12 +383,14 @@ if remake == 1: #this is for if we need to plot 3 violins
     
     plt.violinplot([new_df.a.copy().dropna(),df_parameters.a.copy().dropna(),df_generated_parameters.a],vert=False)
     plt.xlabel('a')
+    plt.xlim(-0.1,0.2)
     plt.yticks([1,2,3],['a allowed to be non sig','a when b forced to zero if non sig',f'Monte Carlo generated samples. \n sd ratio = {ratio_a:.2f}%'])
     plt.title(f'{ERA_country} a')
     plt.show()
     
     plt.violinplot([new_df.kappa.copy().dropna(),df_parameters.kappa.copy().dropna(),df_generated_parameters.kappa],vert=False)
     plt.xlabel('kappa')
+    plt.xlim(0,3)
     plt.yticks([1,2,3],['kappa allowed to be non sig','kappa when b forced to zero if non sig',f'Monte Carlo generated samples. \n sd ratio = {ratio_kappa:.2f}%'])
     plt.title(f'{ERA_country} kappa_0')
     plt.show()
@@ -411,12 +413,14 @@ else:
     
     plt.violinplot([df_parameters.a.copy().dropna(),df_generated_parameters.a],vert=False)
     plt.xlabel('a')
+    plt.xlim(0,0.2)
     plt.yticks([1,2],['a observed',f'Monte Carlo generated samples. \n sd ratio = {ratio_a:.2f}%'])
     plt.title(f'{ERA_country} a')
     plt.show()
     
     plt.violinplot([df_parameters.kappa.copy().dropna(),df_generated_parameters.kappa],vert=False)
     plt.xlabel('kappa')
+    plt.xlim(0,3)
     plt.yticks([1,2],['kappa observed',f'Monte Carlo generated samples. \n sd ratio = {ratio_kappa:.2f}%'])
     plt.title(f'{ERA_country} kappa_0')
     plt.show()

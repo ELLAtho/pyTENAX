@@ -266,27 +266,62 @@ month_names = ['jan','feb','mar', 'apr', 'may', 'jun','jul','aug','sep','oct','n
 S.beta = 2
 season_separations = [6, 9] #THIS IS COUNTING FROM 1. Summer includes both
 #DOING THIS PROPERLY MIGHT NEED A TOTAL REDO OF ORDINARY EVENTS
-#t_data_summer = t_data[(t_data.index.month<=season_separations[1])&(t_data.index.month>=season_separations[0])]
+t_data_summer = t_data[(t_data.index.month<=season_separations[1])&(t_data.index.month>=season_separations[0])]
+data_summer = data[(data.index.month<=season_separations[1])&(data.index.month>=season_separations[0])]
+df_arr_summer = np.array(data_summer[name_col])
+df_dates_summer = np.array(data_summer.index)
+
+#extract indexes of ordinary events
+#these are time-wise indexes =>returns list of np arrays with np.timeindex
+idx_ordinary_summer=S.get_ordinary_events(data=df_arr_summer,dates=df_dates_summer, name_col=name_col,  check_gaps=False)
+    
+
+#get ordinary events by removing too short events
+#returns boolean array, dates of OE in TO, FROM format, and count of OE in each years
+arr_vals_summer,arr_dates_summer,n_ordinary_per_year_summer=S.remove_short(idx_ordinary_summer)
+
+#assign ordinary events values by given durations, values are in depth per duration, NOT in intensity mm/h
+dict_ordinary_summer, dict_AMS_summer = S.get_ordinary_events_values(data=df_arr_summer,dates=df_dates_summer, arr_dates_oe=arr_dates_summer)
+AMS_summer = dict_AMS_summer['60']
+
+df_arr_t_data_summer = np.array(t_data_summer[temp_name_col])
+df_dates_t_data_summer = np.array(t_data_summer.index)
+
+dict_ordinary_summer, _ , n_ordinary_per_year_summer = S.associate_vars(dict_ordinary_summer, df_arr_t_data_summer, df_dates_t_data_summer)
+
+
+# Your data (P, T arrays) and threshold thr=3.8
+P_summer = dict_ordinary_summer["60"]["ordinary"].to_numpy() 
+T_summer = dict_ordinary_summer["60"]["T"].to_numpy() 
+blocks_id_summer = dict_ordinary_summer["60"]["year"].to_numpy()  
+
+
+# Number of threshold 
+thr_summer = dict_ordinary_summer["60"]["ordinary"].quantile(S.left_censoring[1])
+
+# Sampling intervals for the Montecarlo
+Ts = np.arange(np.min(T) - S.temp_delta, np.max(T) + S.temp_delta, S.temp_res_monte_carlo)
+
+#TENAX MODEL HERE
+#magnitude model
+F_phat_summer, loglik_summer, _, _ = S.magnitude_model(P_summer, T_summer, thr_summer)
+#temperature model
+g_phat_summer = S.temperature_model(T_summer)
+# M is mean n of ordinary events
+n_summer = n_ordinary_per_year_summer.sum() / len(n_ordinary_per_year_summer)  
+#estimates return levels using MC samples
+
+
 
 
 months = dict_ordinary["60"]["oe_time"].dt.month
 winter_inds = months.index[(months>season_separations[1]) | (months<season_separations[0])]
-summer_inds = months.index[(months<=season_separations[1])&(months>=season_separations[0])]
 T_winter = T[winter_inds]
-T_summer = T[summer_inds]
-P_summer = P[summer_inds]
-n_summer = n/2 #TODO: this is a guess and wrong, need to do properly
 
 
 g_phat_winter = S.temperature_model(T_winter,beta = 2)
 g_phat_summer = S.temperature_model(T_summer,beta = 2)
 
-
-thr_summer = np.quantile(P_summer,S.left_censoring[1])
-
-#TENAX MODEL HERE
-#magnitude model
-F_phat_summer, loglik_summer, _, _ = S.magnitude_model(P_summer, T_summer, thr_summer)
 
 winter_pdf = gen_norm_pdf(eT, g_phat_winter[0], g_phat_winter[1], 2)
 summer_pdf = gen_norm_pdf(eT, g_phat_summer[0], g_phat_summer[1], 2)
@@ -324,6 +359,7 @@ plt.show()
 #fig 4 
 AMS = dict_AMS['60'] # yet the annual maxima
 TNX_FIG_valid(AMS,S.return_period,RL_summer,ylimits = [0,np.max(AMS.AMS)+10])
+plt.scatter(eRP,AMS_summer,label = 'calc from summer only')
 plt.title(f'Using only summer data ({month_names[season_separations[0]-1]} to {month_names[season_separations[1]-1]})')
 plt.ylabel('60-minute precipitation (mm)')
 plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.2))
