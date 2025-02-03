@@ -224,7 +224,7 @@ for i in np.arange(0,n_stations):
     
     #fig 4 
     
-    diffs = AMS_sort - RL[i]
+    diffs = RL[i] - AMS_sort
     diffs_frac = diffs/AMS_sort
     
     RMSE[i] = np.sqrt(np.sum(diffs**2)/len(diffs))
@@ -250,7 +250,7 @@ for i in np.arange(0,n_stations):
     RL1[i], __, __ = S.model_inversion(F_phats1[i], g_phats[i], ns[i], Ts)
     
     #fig 4 (without SMEV and uncertainty)
-    diffs1 = AMS_sort - RL1[i]
+    diffs1 = RL1[i] - AMS_sort
     diffs_frac1 = diffs1/AMS_sort
     
     RMSE1[i] = np.sqrt(np.sum(diffs1**2)/len(diffs1))
