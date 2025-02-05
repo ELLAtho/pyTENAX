@@ -237,19 +237,12 @@ for i in np.arange(0,n_stations):
     
     TNX_FIG_valid(AMS[i],S.return_period,RL[i],xlimits = [1,np.max(S.return_period)+10],ylimits = [0,np.max(np.hstack([RL[i],AMS[i].AMS.to_numpy()]))+3])
     plt.title(titles+'. alpha = 0'+f'. RMSE: {RMSE[i]:.2f}')
-    plt.plot(S.return_period,diffs_frac*100-np.min(diffs_frac*100),label = 'fractional difference')
-    plt.plot(S.return_period,[-1*np.min(diffs_frac*100)]*len(S.return_period),'k--',alpha = 0.4)
-    plt.legend()
     
     ax2 = ax.twinx()
+    plt.plot(S.return_period,diffs_frac*100,label = 'percentage difference')
+    plt.plot(S.return_period,[0]*len(S.return_period),'k--',alpha = 0.4)
     
-    # Define custom tick locations and labels for the right y-axis
-    custom_ticks = np.arange(-np.min(diffs_frac*100)-30,-np.min(diffs_frac*100)+40,10) 
-    custom_labels = [f"{t:.0f}%" for t in np.arange(-20,50,10)]
-    
-    plt.ylim(0,np.max(np.hstack([RL[i],AMS[i].AMS.to_numpy()]))+3)
-    ax2.set_yticks(custom_ticks)
-    ax2.set_yticklabels(custom_labels)
+    plt.legend()
     
     plt.show()
     
@@ -275,22 +268,14 @@ for i in np.arange(0,n_stations):
     
     fig, ax = plt.subplots()
     TNX_FIG_valid(AMS[i],S.return_period,RL1[i],xlimits = [1,np.max(S.return_period)+10],ylimits = [0,np.max(np.hstack([RL[i],AMS[i].AMS.to_numpy()]))+3])
-    plt.plot(S.return_period,diffs_frac1*100-np.min(diffs_frac1*100),label = 'fractional difference')
-    plt.plot(S.return_period,[-1*np.min(diffs_frac1*100)]*len(S.return_period),'k--',alpha = 0.4)
     plt.title(titles+'. alpha = 1' + f'. RMSE: {RMSE1[i]:.2f}')
-    plt.legend()
     
     
     ax2 = ax.twinx()
+    plt.plot(S.return_period,diffs_frac1*100,label = 'percentage difference')
+    plt.plot(S.return_period,[0]*len(S.return_period),'k--',alpha = 0.4)
     
-    # Define custom tick locations and labels for the right y-axis
-    custom_ticks = np.arange(-np.min(diffs_frac1*100)-30,-np.min(diffs_frac1*100)+40,10) 
-    custom_labels = [f"{t:.0f}%" for t in np.arange(-20,50,10)]
-    
-    plt.ylim(0,np.max(np.hstack([RL[i],AMS[i].AMS.to_numpy()]))+3)
-    ax2.set_yticks(custom_ticks)
-    ax2.set_yticklabels(custom_labels)
-    
+    plt.legend()
     
     plt.show()
     
@@ -313,21 +298,14 @@ for i in np.arange(0,n_stations):
     
     fig, ax = plt.subplots()
     TNX_FIG_valid(AMS[i],S.return_period,RL_b_set[i],xlimits = [1,np.max(S.return_period)+10],ylimits = [0,np.max(np.hstack([RL[i],AMS[i].AMS.to_numpy()]))+3])
-    plt.plot(S.return_period,diffs_frac_b_set*100-np.min(diffs_frac_b_set*100),label = 'fractional difference')
-    plt.plot(S.return_period,[-1*np.min(diffs_frac_b_set*100)]*len(S.return_period),'k--',alpha = 0.4)
     plt.title(titles+'. b set' + f'. RMSE: {RMSE_b_set[i]:.2f}')
-    plt.legend()
+    
     
     ax2 = ax.twinx()
     
-    # Define custom tick locations and labels for the right y-axis
-    custom_ticks = np.arange(-np.min(diffs_frac_b_set*100)-30,-np.min(diffs_frac_b_set*100)+40,10) 
-    custom_labels = [f"{t:.0f}%" for t in np.arange(-20,50,10)]
-    
-    plt.ylim(0,np.max(np.hstack([RL[i],AMS[i].AMS.to_numpy()]))+3)
-    ax2.set_yticks(custom_ticks)
-    ax2.set_yticklabels(custom_labels)
-    
+    plt.plot(S.return_period,diffs_frac_b_set*100,label = 'fractional difference')
+    plt.plot(S.return_period,[0]*len(S.return_period),'k--',alpha = 0.4)
+    plt.legend()
     
     plt.show()
     
