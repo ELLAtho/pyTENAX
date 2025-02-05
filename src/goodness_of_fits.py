@@ -31,13 +31,14 @@ import time
 
 drive = 'D'
 
-country = 'Japan'
-code_str = 'JP' 
+country = 'Germany'
+code_str = 'DE' 
 n_stations = 2 #number of stations to sample
 min_yrs = 15 #atm this probably introduces a bug... need to put in if statement or something
 max_yrs = 1000 #if no max, set to very high
 name_col = 'ppt'
 temp_name_col = "t2m"
+b_set = -0.01165277 #TODO: don't hardcode this
 
 
 
@@ -131,12 +132,14 @@ for i in np.arange(0,n_stations):
     data_full[i] = S.remove_incomplete_years(G[i], name_col)
 
 
-RL = [0]*n_stations
+RL = [0]*n_stations #TODO: sort this crap out
 RL1 = [0]*n_stations
+RL_b_set = [0]*n_stations
 dicts = [0]*n_stations
 thr = [0]*n_stations
 F_phats = [0]*n_stations
 F_phats1 = [0]*n_stations
+F_phats_b_set = [0]*n_stations
 g_phats = [0]*n_stations
 ns = [0]*n_stations
 dict_AMS = [0]*n_stations
@@ -144,6 +147,7 @@ eRP = [0]*n_stations
 AMS = [0]*n_stations
 RMSE = [0]*n_stations
 RMSE1 = [0]*n_stations
+RMSE_b_set = [0]*n_stations
 
 for i in np.arange(0,n_stations):
     S.alpha = 0
@@ -196,6 +200,7 @@ for i in np.arange(0,n_stations):
     #TENAX MODEL HERE
     #magnitude model
     F_phats[i], loglik, _, _ = S.magnitude_model(P, T, thr[i])
+    F_phats_b_set[i],loglik_b_set, _, _ = S.magnitude_model(P, T, thr[i],b_set=b_set)
     #temperature model
     g_phats[i] = S.temperature_model(T)
     # M is mean n of ordinary events
@@ -207,8 +212,7 @@ for i in np.arange(0,n_stations):
     _, T_mc, P_mc = S.model_inversion(F_phats[i], g_phats[i], ns[i], Ts,gen_P_mc = True,gen_RL=False) 
     S.n_monte_carlo = 20000
     
-    print(RL[i])
-    
+       
     
    #PLOTTING THE GRAPHS
     titles = str(i)+': Latitude: '+str(lats_sel[i])+'. Longitude: '+str(lons_sel[i])
@@ -229,10 +233,24 @@ for i in np.arange(0,n_stations):
     
     RMSE[i] = np.sqrt(np.sum(diffs**2)/len(diffs))
     
+    fig, ax = plt.subplots()
+    
     TNX_FIG_valid(AMS[i],S.return_period,RL[i],xlimits = [1,np.max(S.return_period)+10],ylimits = [0,np.max(np.hstack([RL[i],AMS[i].AMS.to_numpy()]))+3])
     plt.title(titles+'. alpha = 0'+f'. RMSE: {RMSE[i]:.2f}')
-    plt.plot(S.return_period,diffs_frac*100-np.min(diffs_frac*100))
+    plt.plot(S.return_period,diffs_frac*100-np.min(diffs_frac*100),label = 'fractional difference')
     plt.plot(S.return_period,[-1*np.min(diffs_frac*100)]*len(S.return_period),'k--',alpha = 0.4)
+    plt.legend()
+    
+    ax2 = ax.twinx()
+    
+    # Define custom tick locations and labels for the right y-axis
+    custom_ticks = np.arange(-np.min(diffs_frac*100)-30,-np.min(diffs_frac*100)+40,10) 
+    custom_labels = [f"{t:.0f}%" for t in np.arange(-20,50,10)]
+    
+    plt.ylim(0,np.max(np.hstack([RL[i],AMS[i].AMS.to_numpy()]))+3)
+    ax2.set_yticks(custom_ticks)
+    ax2.set_yticklabels(custom_labels)
+    
     plt.show()
     
     # fig 2a
@@ -255,18 +273,74 @@ for i in np.arange(0,n_stations):
     
     RMSE1[i] = np.sqrt(np.sum(diffs1**2)/len(diffs1))
     
+    fig, ax = plt.subplots()
     TNX_FIG_valid(AMS[i],S.return_period,RL1[i],xlimits = [1,np.max(S.return_period)+10],ylimits = [0,np.max(np.hstack([RL[i],AMS[i].AMS.to_numpy()]))+3])
-    plt.plot(S.return_period,diffs_frac1*100-np.min(diffs_frac1*100))
+    plt.plot(S.return_period,diffs_frac1*100-np.min(diffs_frac1*100),label = 'fractional difference')
     plt.plot(S.return_period,[-1*np.min(diffs_frac1*100)]*len(S.return_period),'k--',alpha = 0.4)
     plt.title(titles+'. alpha = 1' + f'. RMSE: {RMSE1[i]:.2f}')
+    plt.legend()
+    
+    
+    ax2 = ax.twinx()
+    
+    # Define custom tick locations and labels for the right y-axis
+    custom_ticks = np.arange(-np.min(diffs_frac1*100)-30,-np.min(diffs_frac1*100)+40,10) 
+    custom_labels = [f"{t:.0f}%" for t in np.arange(-20,50,10)]
+    
+    plt.ylim(0,np.max(np.hstack([RL[i],AMS[i].AMS.to_numpy()]))+3)
+    ax2.set_yticks(custom_ticks)
+    ax2.set_yticklabels(custom_labels)
+    
+    
     plt.show()
     
     # fig 2a
     TNX_FIG_magn_model(P,T,F_phats1[i],thr[i],eT,qs)
     plt.ylabel('60-minute precipitation (mm)')
-    plt.title(titles+'. alpha = 0')
+    plt.title(titles+'. alpha = 1')
     plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.2))
     plt.show()
+    
+    
+    
+    RL_b_set[i], __, __ = S.model_inversion(F_phats_b_set[i], g_phats[i], ns[i], Ts)
+    
+    #fig 4 (without SMEV and uncertainty)
+    diffs_b_set = RL_b_set[i] - AMS_sort
+    diffs_frac_b_set = diffs_b_set/AMS_sort
+    
+    RMSE_b_set[i] = np.sqrt(np.sum(diffs_b_set**2)/len(diffs_b_set))
+    
+    fig, ax = plt.subplots()
+    TNX_FIG_valid(AMS[i],S.return_period,RL_b_set[i],xlimits = [1,np.max(S.return_period)+10],ylimits = [0,np.max(np.hstack([RL[i],AMS[i].AMS.to_numpy()]))+3])
+    plt.plot(S.return_period,diffs_frac_b_set*100-np.min(diffs_frac_b_set*100),label = 'fractional difference')
+    plt.plot(S.return_period,[-1*np.min(diffs_frac_b_set*100)]*len(S.return_period),'k--',alpha = 0.4)
+    plt.title(titles+'. b set' + f'. RMSE: {RMSE_b_set[i]:.2f}')
+    plt.legend()
+    
+    ax2 = ax.twinx()
+    
+    # Define custom tick locations and labels for the right y-axis
+    custom_ticks = np.arange(-np.min(diffs_frac_b_set*100)-30,-np.min(diffs_frac_b_set*100)+40,10) 
+    custom_labels = [f"{t:.0f}%" for t in np.arange(-20,50,10)]
+    
+    plt.ylim(0,np.max(np.hstack([RL[i],AMS[i].AMS.to_numpy()]))+3)
+    ax2.set_yticks(custom_ticks)
+    ax2.set_yticklabels(custom_labels)
+    
+    
+    plt.show()
+    
+    # fig 2a
+    TNX_FIG_magn_model(P,T,F_phats_b_set[i],thr[i],eT,qs)
+    plt.ylabel('60-minute precipitation (mm)')
+    plt.title(titles+'. b set')
+    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.2))
+    plt.show()
+    
+    print(f'alpha = 0 {F_phats[i]}')
+    print(f'b set to mean {F_phats_b_set[i]}')
+    print(f'alpha = 1 {F_phats1[i]}')
       
     # #TENAX MODEL VALIDATION
     # yrs = dicts[i]["60"]["oe_time"].dt.year

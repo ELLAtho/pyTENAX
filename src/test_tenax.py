@@ -296,22 +296,17 @@ RL2_predict, _,_ = S.model_inversion(F_phat1,g_phat2_predict,n2,Ts)
 
 TNX_FIG_temp_model(T=T1, g_phat=g_phat1,beta=4,eT=eT,obscol='b',valcol='b',obslabel = None,vallabel = 'Temperature model '+str(yrs_unique[0])+'-'+str(midway))
 TNX_FIG_temp_model(T=T2, g_phat=g_phat2_predict,beta=4,eT=eT,obscol='r',valcol='r',obslabel = None,vallabel = 'Temperature model '+str(midway+1)+'-'+str(yrs_unique[-1])) # model based on temp ave and std changes
-<<<<<<< HEAD
-plt.title('Fig 7a')
-=======
+
 plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.2))
->>>>>>> origin
+
 plt.show() #this is slightly different in code and paper I think.. using predicted T vs fitted T
 
 #fig 7b
 
 TNX_FIG_valid(AMS1,S.return_period,RL1,TENAXcol='b',obscol_shape = 'b+',TENAXlabel = 'The TENAX model '+str(yrs_unique[0])+'-'+str(midway),obslabel='Observed annual maxima '+str(yrs_unique[0])+'-'+str(midway))
 TNX_FIG_valid(AMS2,S.return_period,RL2_predict,TENAXcol='r',obscol_shape = 'r+',TENAXlabel = 'The predicted TENAX model '+str(midway+1)+'-'+str(yrs_unique[-1]),obslabel='Observed annual maxima '+str(midway+1)+'-'+str(yrs_unique[-1]))
-<<<<<<< HEAD
-plt.title('Fig 7b')
-=======
+
 plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.2))
->>>>>>> origin
 plt.show()
 
 
@@ -403,10 +398,6 @@ plt.xscale('log')
 plt.xlim(1,200)
 plt.ylim(0,60)
 
-<<<<<<< HEAD
-plt.title('Fig 6')
-=======
->>>>>>> origin
 
 plt.show()
 
