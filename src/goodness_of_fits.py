@@ -31,14 +31,37 @@ import time
 
 drive = 'D'
 
-country = 'Germany'
-code_str = 'DE' 
+country = 'Japan'
+country_save = 'Japan'
+code_str = 'JP' 
 n_stations = 2 #number of stations to sample
 min_yrs = 15 #atm this probably introduces a bug... need to put in if statement or something
 max_yrs = 1000 #if no max, set to very high
 name_col = 'ppt'
 temp_name_col = "t2m"
-b_set = -0.01165277 #TODO: don't hardcode this
+
+#TODO: set subregions of e.g. Japan
+###############################################################################
+#read in saved bs
+save_path_neg = drive + ':/outputs/'+country_save+'\\parameters_neg.csv'
+df_savename = drive + ':/outputs/'+country_save+'\\parameters.csv'
+
+
+df_parameters = pd.read_csv(df_savename) 
+df_parameters_neg = pd.read_csv(save_path_neg)
+
+#dataframe with all values
+new_df = df_parameters[['latitude','longitude','b']].copy()
+mask = new_df['b'] == 0
+
+new_df.loc[mask, 'b'] = df_parameters_neg['b2'].to_numpy()
+new_df.loc[mask, 'kappa'] = df_parameters_neg['kappa2'].to_numpy()
+new_df.loc[mask, 'lambda'] = df_parameters_neg['lambda2'].to_numpy()
+new_df.loc[mask, 'a'] = df_parameters_neg['a2'].to_numpy()
+###############################################################################
+
+
+b_set = np.nanmean(new_df.b) #set b_set as average calculated b
 
 
 
@@ -53,6 +76,8 @@ comb.enddate = pd.to_datetime(comb.enddate)
 val_comb = comb[comb['cleaned_years']>=min_yrs] #filter out stations that are less than min
 val_comb = val_comb[val_comb['cleaned_years']<=max_yrs] #filter out stations that are more than max 
 
+
+#TODO: add in lat and lon conditions to choose from regions. also add plots of region
 
 comb_sort = val_comb.sort_values(by=['cleaned_years'],ascending=0) #sort by size so can choose top sizes
 
@@ -219,7 +244,7 @@ for i in np.arange(0,n_stations):
     
     
     eT = np.arange(np.min(T),np.max(T)+4,1) # define T values to calculate distributions. +4 to go beyond graph end
-    
+    ylim_perc = [-100,100]
        
     #fig 2b
     TNX_FIG_temp_model(T=T, g_phat=g_phats[i],beta=4,eT=eT,xlimits = [eT[0],eT[-1]])
@@ -239,9 +264,9 @@ for i in np.arange(0,n_stations):
     plt.title(titles+'. alpha = 0'+f'. RMSE: {RMSE[i]:.2f}')
     
     ax2 = ax.twinx()
-    plt.plot(S.return_period,diffs_frac*100,label = 'percentage difference')
+    plt.plot(S.return_period,diffs_frac*100,alpha = 0.5,label = 'percentage difference')
     plt.plot(S.return_period,[0]*len(S.return_period),'k--',alpha = 0.4)
-    
+    plt.ylim(ylim_perc)
     plt.legend()
     
     plt.show()
@@ -272,9 +297,9 @@ for i in np.arange(0,n_stations):
     
     
     ax2 = ax.twinx()
-    plt.plot(S.return_period,diffs_frac1*100,label = 'percentage difference')
+    plt.plot(S.return_period,diffs_frac1*100,alpha = 0.5,label = 'percentage difference')
     plt.plot(S.return_period,[0]*len(S.return_period),'k--',alpha = 0.4)
-    
+    plt.ylim(ylim_perc)
     plt.legend()
     
     plt.show()
@@ -303,10 +328,10 @@ for i in np.arange(0,n_stations):
     
     ax2 = ax.twinx()
     
-    plt.plot(S.return_period,diffs_frac_b_set*100,label = 'fractional difference')
+    plt.plot(S.return_period,diffs_frac_b_set*100,alpha = 0.5,label = 'fractional difference')
     plt.plot(S.return_period,[0]*len(S.return_period),'k--',alpha = 0.4)
     plt.legend()
-    
+    plt.ylim(ylim_perc)
     plt.show()
     
     # fig 2a

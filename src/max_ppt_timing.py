@@ -35,6 +35,7 @@ from matplotlib.colors import LinearSegmentedColormap
 import matplotlib.patches as patches
 from matplotlib.lines import Line2D
 from scipy.stats import kendalltau, pearsonr, spearmanr
+import matplotlib.patches as mpatches
 
 
 drive = 'D'
@@ -230,16 +231,56 @@ ax1 = fig.add_subplot(1, 1, 1, projection=proj)
 ax1.coastlines()
 ax1.add_feature(cfeature.BORDERS, linestyle=':')
 
+legend_patches = []
+
 for month_no in month_1.month.unique():
     df_cut_month = month_1[month_1.month == month_no]
-    sc = ax1.scatter( #plot the negligable at 5% lvl points
-        df_cut_month.longitude,
-        df_cut_month.latitude,
-        s = 5,
-        c = colors[month_no-1],
-        label = months[month_no-1]
-    )
-plt.legend()
+    for _, row in df_cut_month.iterrows():
+        plt.arrow(
+            row.longitude,
+            row.latitude,
+            row.fraction * np.sin(month_no * np.pi / 6) * 3, 
+            row.fraction * np.cos(month_no * np.pi / 6) * 3,
+            color=colors[month_no - 1],
+            linewidth=2,  
+            head_width=0.3,
+            head_length=0.4,  
+            length_includes_head=True
+        )
+    legend_patches.append(mpatches.Patch(color=colors[month_no - 1], label=months[month_no - 1]))
+
+plt.legend(handles=legend_patches)
+plt.title('month with the most top 5% events')
+plt.show()
+
+
+fig = plt.figure(figsize=(10, 10))
+proj = ccrs.PlateCarree()
+ax1 = fig.add_subplot(1, 1, 1, projection=proj)
+
+# Add map features
+ax1.coastlines()
+ax1.add_feature(cfeature.BORDERS, linestyle=':')
+
+legend_patches = []
+
+for month_no in month_1.month.unique():
+    df_cut_month = month_1[month_1.month == month_no]
+    for _, row in df_cut_month.iterrows():
+        plt.arrow(
+            row.longitude,
+            row.latitude,
+            row.fraction * np.sin(month_no * np.pi / 6) * 3, 
+            row.fraction * np.cos(month_no * np.pi / 6) * 3,
+            color='k',
+            linewidth=2,  
+            head_width=0.3,
+            head_length=0.4,  
+            length_includes_head=True
+        )
+    legend_patches.append(mpatches.Patch(color=colors[month_no - 1], label=months[month_no - 1]))
+
+plt.legend(handles=legend_patches)
 plt.title('month with the most top 5% events')
 plt.show()
 
