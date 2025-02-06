@@ -1210,6 +1210,8 @@ def TNX_FIG_temp_model(T, g_phat, beta, eT, obscol='r',valcol='b',
     plt.legend(fontsize=8) #NEED TO SET LOCATION OF THIS, maybe fontsize is too small as well
     plt.tick_params(axis='both', which='major', labelsize=14)
     
+    return hist, pdf_values
+    
     
 def inverse_magnitude_model(F_phat,eT,qs):
     """

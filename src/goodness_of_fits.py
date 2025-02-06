@@ -26,6 +26,7 @@ import glob
 
 from pyTENAX.intense import *
 from pyTENAX.pyTENAX import *
+from pyTENAX.globalTENAX import *
 import xarray as xr
 import time
 
@@ -107,39 +108,24 @@ print(selected['station'])
 G = [0]*n_stations
 data_meta = [0]*n_stations
 
+start_time = time.time()
+T_ERA = [0]*n_stations
 
 for i in np.arange(0, n_stations):
-    G[i] = pd.read_csv(files_sel[i], skiprows=21, names=[name_col])
-    data_meta[i] = readIntense(files_sel[i], only_metadata=True, opened=False)
+    G[i], data_meta[i] =  read_GSDR_file(files_sel[i],name_col)
+    T_path = drive + ':/'+country+'_temp\\'+code_str+'_'+str(selected.station[selected.index[i]]) + '.nc'
+    T_ERA[i] = xr.load_dataarray(T_path)
 
 
-       
-    #extract start and end dates from metadata
-    start_date_G= dt.datetime.strptime(data_meta[i].start_datetime, "%Y%m%d%H")
-    end_date_G= dt.datetime.strptime(data_meta[i].end_datetime, "%Y%m%d%H")
-    
-    time_list_G= [start_date_G+ dt.timedelta(hours=x) for x in range(0, G[i].size)] #make timelist of size of FI
-    # replace -999 with nan
-    G[i][G[i] == -999] = np.nan
-    
-    G[i]['prec_time'] = time_list_G
-    G[i] = G[i].set_index('prec_time')
 
+
+print('time to read era5 and ppt '+str(time.time()-start_time))
 
 
 
 #get selected lats and lons
 lats_sel = [selected.latitude[i] for i in selected.index]
 lons_sel = [selected.longitude[i] for i in selected.index]
-
-
-start_time = time.time()
-T_ERA = [0]*n_stations
-for i in np.arange(0,n_stations): #for each selected station
-    T_path = drive + ':/'+country+'_temp\\'+code_str+'_'+str(selected.station[selected.index[i]]) + '.nc'
-    T_ERA[i] = xr.load_dataarray(T_path)
-
-print('time to read era5 '+str(time.time()-start_time))
 
 
 

@@ -27,6 +27,7 @@ import glob
 
 from pyTENAX.intense import *
 from pyTENAX.pyTENAX import *
+from pyTENAX.globalTENAX import *
 import xarray as xr
 import time
 
@@ -84,25 +85,17 @@ print(selected['station'])
 #make empty lists to read into
 G = [0]*n_stations
 data_meta = [0]*n_stations
+T_ERA = [0]*n_stations
 
 
+start_time = time.time()
 for i in np.arange(0, n_stations):
-    G[i] = pd.read_csv(files_sel[i], skiprows=21, names=[name_col])
-    data_meta[i] = readIntense(files_sel[i], only_metadata=True, opened=False)
-
-
-       
-    #extract start and end dates from metadata
-    start_date_G= dt.datetime.strptime(data_meta[i].start_datetime, "%Y%m%d%H")
-    end_date_G= dt.datetime.strptime(data_meta[i].end_datetime, "%Y%m%d%H")
+    G[i], data_meta[i] =  read_GSDR_file(files_sel[i],name_col)
+    T_path = drive + ':/'+country+'_temp\\'+code_str+'_'+str(selected.station[selected.index[i]]) + '.nc'
+    T_ERA[i] = xr.load_dataarray(T_path)
     
-    time_list_G= [start_date_G+ dt.timedelta(hours=x) for x in range(0, G[i].size)] #make timelist of size of FI
-    # replace -999 with nan
-    G[i][G[i] == -999] = np.nan
-    
-    G[i]['prec_time'] = time_list_G
-    G[i] = G[i].set_index('prec_time')
 
+print('time to read temp and ppt '+str(time.time()-start_time))
 
 
 
@@ -111,13 +104,7 @@ lats_sel = [selected.latitude[i] for i in selected.index]
 lons_sel = [selected.longitude[i] for i in selected.index]
 
 
-start_time = time.time()
-T_ERA = [0]*n_stations
-for i in np.arange(0,n_stations): #for each selected station
-    T_path = drive + ':/'+country+'_temp\\'+code_str+'_'+str(selected.station[selected.index[i]]) + '.nc'
-    T_ERA[i] = xr.load_dataarray(T_path)
 
-print('time to read era5 '+str(time.time()-start_time))
 
 
 S = TENAX(
@@ -206,6 +193,16 @@ for i in np.arange(0,n_stations):
     ylim_perc = [-100,100]
        
     #fig 2b
-    TNX_FIG_temp_model(T=T, g_phat=g_phats[i],beta=4,eT=eT,xlimits = [eT[0],eT[-1]])
+    
+    fig = plt.figure(figsize = (5,10))
+    ax1 = fig.add_subplot(2,1,2)
+    hist, pdf_values = TNX_FIG_temp_model(T=T, g_phat=g_phats[i],beta=4,eT=eT,xlimits = [eT[0],eT[-1]])
+    
+    ax2 = fig.add_subplot(2,1,1)
+    diff_frac = (pdf_values[hist!=0]-hist[hist!=0])/hist[hist!=0]
+    diff = pdf_values - hist
+    plt.plot(eT,diff)
+    plt.plot(eT,[0]*eT,'--',alpha = 0.5, color = 'k')
+    
     plt.title(titles)
     plt.show()
