@@ -18,6 +18,7 @@ sys.path.append(RES_DIR)
 sys.path.append('D:')
 import numpy as np
 import pandas as pd
+from scipy.stats import anderson
 
 import datetime as dt
 import matplotlib.pyplot as plt
@@ -127,6 +128,8 @@ g_phats = [0]*n_stations
 ns = [0]*n_stations
 dict_AMS = [0]*n_stations
 eRP = [0]*n_stations
+diff = [0]*n_stations
+AD_test_right = [0]*n_stations
 
 for i in np.arange(0,n_stations):
     S.alpha = 0
@@ -194,15 +197,30 @@ for i in np.arange(0,n_stations):
        
     #fig 2b
     
-    fig = plt.figure(figsize = (5,10))
-    ax1 = fig.add_subplot(2,1,2)
+    fig, (ax2, ax1) = plt.subplots(2, 1, figsize=(5, 8), gridspec_kw={'height_ratios': [1, 2.5]})
+    
     hist, pdf_values = TNX_FIG_temp_model(T=T, g_phat=g_phats[i],beta=4,eT=eT,xlimits = [eT[0],eT[-1]])
     
-    ax2 = fig.add_subplot(2,1,1)
-    diff_frac = (pdf_values[hist!=0]-hist[hist!=0])/hist[hist!=0]
-    diff = pdf_values - hist
-    plt.plot(eT,diff)
-    plt.plot(eT,[0]*eT,'--',alpha = 0.5, color = 'k')
+   
     
-    plt.title(titles)
+    diff[i] = pdf_values - hist
+    
+    ###########################################################################
+    # Anderson-Darling GOF statistic
+    pdf_cum, hist_cum = np.cumsum(pdf_values), np.cumsum(hist)
+    
+    numb = [0]*len(hist_cum)
+    for ind in np.arange(1,len(hist_cum)+1):
+        numb[ind-1] = (2*ind - 1)*(np.log(hist_cum[ind-1])+np.log(1 - hist_cum[len(hist_cum)-ind]))
+    AD = -len(hist_cum)-(1/len(hist_cum))*np.nansum(numb)
+    p_stat = np.exp(1.2937 - 5.709 * AD + 0.0186 * AD **2)
+    
+    ###########################################################################
+    ax2.plot(eT,diff[i])
+    ax2.plot(eT,[0]*eT,'--',alpha = 0.5, color = 'k')
+    ax2.set_xlim(eT[0],eT[-1])
+    ax2.tick_params(labelbottom=False, bottom=False)
+    ax2.tick_params(labelsize=14)
+    
+    ax2.set_title(titles+'\n absolute difference in observations and model')
     plt.show()
