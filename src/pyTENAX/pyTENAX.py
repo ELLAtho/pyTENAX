@@ -16,6 +16,7 @@ import statsmodels.api as sm
 import matplotlib.pyplot as plt
 from packaging.version import parse
 from scipy.optimize import curve_fit
+from scipy.special import gammainc
 
 class TENAX():
     """
@@ -998,6 +999,21 @@ def gen_norm_pdf(x, mu, sigma, beta):
     coeff = beta / (2 * sigma * gamma(1 / beta))
     exponent = - (np.abs(x - mu) / sigma) ** beta
     return coeff * np.exp(exponent)
+
+
+def gen_norm_cdf(x, mu, sigma, beta):
+    """
+    Generalized normal distribution PDF.
+    x: data points
+    mu: location parameter (mean)
+    sigma: scale parameter (related to standard deviation)
+    beta: shape parameter (determines the shape of the distribution)
+    """
+    
+    first_part = np.sign(x - mu) * 1/(2 * gamma(1 / beta))
+    gam_part = gamma(1/beta) * gammainc(1/beta,(np.abs((x-mu))/sigma)**beta)
+    
+    return 0.5 + first_part * gam_part
 
 def gen_norm_loglik(x, par, beta):
     """

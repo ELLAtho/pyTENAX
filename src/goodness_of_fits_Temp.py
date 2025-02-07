@@ -34,9 +34,9 @@ import time
 
 drive = 'D'
 
-country = 'Japan'
-country_save = 'Japan'
-code_str = 'JP' 
+country = 'Germany'
+country_save = 'Germany'
+code_str = 'DE' 
 n_stations = 2 #number of stations to sample
 min_yrs = 15 #atm this probably introduces a bug... need to put in if statement or something
 max_yrs = 1000 #if no max, set to very high
@@ -130,6 +130,7 @@ dict_AMS = [0]*n_stations
 eRP = [0]*n_stations
 diff = [0]*n_stations
 AD_test_right = [0]*n_stations
+p_stat = [0]*n_stations
 
 for i in np.arange(0,n_stations):
     S.alpha = 0
@@ -208,12 +209,14 @@ for i in np.arange(0,n_stations):
     ###########################################################################
     # Anderson-Darling GOF statistic
     pdf_cum, hist_cum = np.cumsum(pdf_values), np.cumsum(hist)
+    T_order = np.sort(T)
     
-    numb = [0]*len(hist_cum)
-    for ind in np.arange(1,len(hist_cum)+1):
-        numb[ind-1] = (2*ind - 1)*(np.log(hist_cum[ind-1])+np.log(1 - hist_cum[len(hist_cum)-ind]))
-    AD = -len(hist_cum)-(1/len(hist_cum))*np.nansum(numb)
-    p_stat = np.exp(1.2937 - 5.709 * AD + 0.0186 * AD **2)
+    numb = np.zeros(len(T))
+    for ind in np.arange(1,len(T)+1):
+        numb[ind-1] = (2 * ind - 1)*(np.log(gen_norm_cdf(T_order[ind-1],g_phats[i][0],g_phats[i][1],4)) 
+                                     + np.log(1 - (gen_norm_cdf(T_order[len(T) - ind],g_phats[i][0],g_phats[i][1],4))))
+    AD = -len(T) - (1/len(T)) * np.nansum(numb)
+    p_stat[i] = np.exp(1.2937 - 5.709*np.sqrt(AD)+ 0.0186*(AD))
     
     ###########################################################################
     ax2.plot(eT,diff[i])
