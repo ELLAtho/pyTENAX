@@ -129,8 +129,7 @@ ns = [0]*n_stations
 dict_AMS = [0]*n_stations
 eRP = [0]*n_stations
 diff = [0]*n_stations
-AD_test_right = [0]*n_stations
-p_stat = [0]*n_stations
+AD = [0]*n_stations
 
 for i in np.arange(0,n_stations):
     S.alpha = 0
@@ -215,8 +214,7 @@ for i in np.arange(0,n_stations):
     for ind in np.arange(1,len(T)+1):
         numb[ind-1] = (2 * ind - 1)*(np.log(gen_norm_cdf(T_order[ind-1],g_phats[i][0],g_phats[i][1],4)) 
                                      + np.log(1 - (gen_norm_cdf(T_order[len(T) - ind],g_phats[i][0],g_phats[i][1],4))))
-    AD = -len(T) - (1/len(T)) * np.nansum(numb)
-    p_stat[i] = np.exp(1.2937 - 5.709*np.sqrt(AD)+ 0.0186*(AD))
+    AD[i] = -len(T) - (1/len(T)) * np.nansum(numb)
     
     ###########################################################################
     ax2.plot(eT,diff[i])
@@ -227,3 +225,19 @@ for i in np.arange(0,n_stations):
     
     ax2.set_title(titles+'\n absolute difference in observations and model')
     plt.show()
+    
+    coeffs=np.polyfit(hist,pdf_values,1)
+    delt = (np.max(hist)-np.min(hist))/10
+    x = np.arange(np.min(hist),np.max(hist)+delt,delt)
+    y = coeffs[0]*x+coeffs[1]
+    
+    plt.scatter(hist,pdf_values)
+    plt.plot(np.arange(min(hist),max(hist),0.005),np.arange(min(hist),max(hist),0.005),'--',color = 'k',alpha = 0.4,label = 'Equality line')
+    plt.plot(x,y,label = 'fit')
+    plt.xlabel('Observed')
+    plt.ylabel('Normal fit')
+    plt.legend()
+    plt.show()
+    
+    
+    
