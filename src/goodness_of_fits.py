@@ -17,6 +17,7 @@ sys.path.append(RES_DIR)
 sys.path.append('D:')
 import numpy as np
 import pandas as pd
+import scipy.stats as stats
 
 import datetime as dt
 import matplotlib.pyplot as plt
@@ -167,6 +168,12 @@ AMS = [0]*n_stations
 RMSE = [0]*n_stations
 RMSE1 = [0]*n_stations
 RMSE_b_set = [0]*n_stations
+ks_pvalue = [0]*n_stations
+ks_stat = [0]*n_stations
+ks_pvalue1 = [0]*n_stations
+ks_stat1 = [0]*n_stations
+ks_pvalue_b_set = [0]*n_stations
+ks_stat_b_set = [0]*n_stations
 
 for i in np.arange(0,n_stations):
     S.alpha = 0
@@ -258,11 +265,18 @@ for i in np.arange(0,n_stations):
     diffs_frac = diffs/AMS_sort
     
     RMSE[i] = np.sqrt(np.sum(diffs**2)/len(diffs))
+    ##########################################################################
+    # Kolmogorov–Smirnov  test
+    ks_test = stats.kstest(AMS_sort,RL[i])
+    ks_pvalue[i] = ks_test.pvalue
+    ks_stat[i] = ks_test.statistic
+    
+    ##########################################################################
     
     fig, ax = plt.subplots()
     
     TNX_FIG_valid(AMS[i],S.return_period,RL[i],xlimits = [1,np.max(S.return_period)+10],ylimits = [0,np.max(np.hstack([RL[i],AMS[i].AMS.to_numpy()]))+3])
-    plt.title(titles+'. alpha = 0'+f'. RMSE: {RMSE[i]:.2f}')
+    plt.title(titles+'. alpha = 0'+f'. RMSE: {RMSE[i]:.2f} \n KS p value: {ks_pvalue[i]}')
     
     ax2 = ax.twinx()
     plt.plot(S.return_period,diffs_frac*100,alpha = 0.5,label = 'percentage difference')
@@ -291,10 +305,17 @@ for i in np.arange(0,n_stations):
     diffs_frac1 = diffs1/AMS_sort
     
     RMSE1[i] = np.sqrt(np.sum(diffs1**2)/len(diffs1))
+    ##########################################################################
+    # Kolmogorov–Smirnov  test
+    ks_test1 = stats.kstest(AMS_sort,RL1[i])
+    ks_pvalue1[i] = ks_test1.pvalue
+    ks_stat1[i] = ks_test1.statistic
+    
+    ##########################################################################
     
     fig, ax = plt.subplots()
     TNX_FIG_valid(AMS[i],S.return_period,RL1[i],xlimits = [1,np.max(S.return_period)+10],ylimits = [0,np.max(np.hstack([RL[i],AMS[i].AMS.to_numpy()]))+3])
-    plt.title(titles+'. alpha = 1' + f'. RMSE: {RMSE1[i]:.2f}')
+    plt.title(titles+'. alpha = 1' + f'. RMSE: {RMSE1[i]:.2f} \n KS p value: {ks_pvalue1[i]}')
     
     
     ax2 = ax.twinx()
@@ -321,10 +342,19 @@ for i in np.arange(0,n_stations):
     diffs_frac_b_set = diffs_b_set/AMS_sort
     
     RMSE_b_set[i] = np.sqrt(np.sum(diffs_b_set**2)/len(diffs_b_set))
+    ##########################################################################
+    # Kolmogorov–Smirnov  test
+    ks_test_b_set = stats.kstest(AMS_sort,RL_b_set[i])
+    ks_pvalue_b_set[i] = ks_test_b_set.pvalue
+    ks_stat_b_set[i] = ks_test_b_set.statistic
+    
+    ##########################################################################
+    
+    
     
     fig, ax = plt.subplots()
     TNX_FIG_valid(AMS[i],S.return_period,RL_b_set[i],xlimits = [1,np.max(S.return_period)+10],ylimits = [0,np.max(np.hstack([RL[i],AMS[i].AMS.to_numpy()]))+3])
-    plt.title(titles+'. b set' + f'. RMSE: {RMSE_b_set[i]:.2f}')
+    plt.title(titles+'. b set' + f'. RMSE: {RMSE_b_set[i]:.2f}\n KS p value: {ks_pvalue_b_set[i]}')
     
     
     ax2 = ax.twinx()
