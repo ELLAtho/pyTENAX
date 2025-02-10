@@ -34,9 +34,9 @@ import time
 
 drive = 'D'
 
-country = 'Japan'
-country_save = 'Japan'
-code_str = 'JP' 
+country = 'Germany'
+country_save = 'Germany'
+code_str = 'DE' 
 n_stations = 2 #number of stations to sample
 min_yrs = 15 #atm this probably introduces a bug... need to put in if statement or something
 max_yrs = 1000 #if no max, set to very high
