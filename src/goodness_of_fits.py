@@ -35,7 +35,7 @@ drive = 'D'
 country = 'Japan'
 country_save = 'Japan'
 code_str = 'JP' 
-n_stations = 2 #number of stations to sample
+n_stations = 5 #number of stations to sample
 min_yrs = 15 #atm this probably introduces a bug... need to put in if statement or something
 max_yrs = 1000 #if no max, set to very high
 name_col = 'ppt'
@@ -81,9 +81,17 @@ val_comb = val_comb[val_comb['cleaned_years']<=max_yrs] #filter out stations tha
 #TODO: add in lat and lon conditions to choose from regions. also add plots of region
 
 comb_sort = val_comb.sort_values(by=['cleaned_years'],ascending=0) #sort by size so can choose top sizes
+max_stations = comb_sort[comb_sort.cleaned_years == comb_sort.cleaned_years.max()]
 
 
-selected = comb_sort[0:n_stations] #choose top n_stations stations
+# if there are enough stations with the maximum cleaned years, choose from these with a spread so they aren't all in the same place
+if len(max_stations)>=n_stations:
+    average_index_difference = np.trunc(len(max_stations)/n_stations) #to select stations rainging throught the max ones
+    select_indices = np.arange(0,n_stations*average_index_difference,average_index_difference)
+    
+    selected = max_stations.iloc[select_indices]
+else:
+    selected = comb_sort[0:n_stations] #choose top n_stations stations
 
 #PLOT SELECTED STATIONS LOCATIONS
 
@@ -185,6 +193,13 @@ for i in np.arange(0,n_stations):
     
     df_arr_t_data = np.array(t_data[temp_name_col])
     df_dates_t_data = np.array(t_data.index)
+    
+    if type(df_dates_t_data[0]) != np.datetime64:
+            
+        df_dates_t_data = pd.Series([item[0] for item in df_dates_t_data])
+        df_dates_t_data = np.array(df_dates_t_data)
+    else:
+        pass
     
     dicts[i], _ , n_ordinary_per_year = S.associate_vars(dict_ordinary, df_arr_t_data, df_dates_t_data)
     
