@@ -571,12 +571,15 @@ class TENAX():
             phat = phat_bset
             loglik = loglik_bset
             loglik_H1, loglik_H0shape = None, None #TODO: figure this out, do we need these outputs?
-            
+
+        
         else:
             min_phat_H1 = minimize(lambda theta: -wbl_leftcensor_loglik(theta, P, T, thr), 
                                    init_g, 
                                    method='Nelder-Mead')
             phat_H1 = min_phat_H1.x
+
+
             
             min_phat_H0shape = minimize(lambda theta: -wbl_leftcensor_loglik_H0shape(theta, P, T, thr), 
                                    init_g, 
@@ -595,7 +598,7 @@ class TENAX():
             if alpha==0 : # dependence of shape on T is always allowed 
                 phat = phat_H1;
                 loglik = loglik_H1;
-            elif alpha==1 : # dependence of shape on T is never allowed (aka b=0)
+            elif alpha==1 : # dependence of shape on T is never allowed 
                 phat = phat_H0shape;
                 loglik = loglik_H0shape;
             elif pval<=alpha : # depends on stat. significance
@@ -604,7 +607,7 @@ class TENAX():
             else:
                 phat = phat_H0shape;
                 loglik = loglik_H0shape;
-            
+                
         return phat, loglik, loglik_H1, loglik_H0shape
    
 
@@ -938,7 +941,10 @@ def wbl_leftcensor_loglik_H0shape(theta, x, t, thr):
 
 def wbl_leftcensor_loglik_bset(theta, x, t, thr,b_set):
     """
+<<<<<<< HEAD
     TODO: I dont understand these things
+=======
+>>>>>>> main
 
     Parameters
     ----------
@@ -1198,7 +1204,10 @@ def TNX_FIG_temp_model(T, g_phat, beta, eT, obscol='r',valcol='b',
 
     Returns
     -------
-    None.
+    hist : numpy.ndarray
+        pdf values of observed distribution.
+    pdf_values : numpy.ndarray
+        pdf values of fitted model.
 
     """
     
@@ -1227,7 +1236,7 @@ def TNX_FIG_temp_model(T, g_phat, beta, eT, obscol='r',valcol='b',
     plt.tick_params(axis='both', which='major', labelsize=14)
     
     return hist, pdf_values
-    
+
     
 def inverse_magnitude_model(F_phat,eT,qs):
     """
