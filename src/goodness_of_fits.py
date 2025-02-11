@@ -484,13 +484,13 @@ maxes = [np.quantile(AMS_sim[:,j],percentages[1]) for j in np.arange(0,n_years)]
 
 outs = AMS_stat[(AMS_stat > maxes) | (AMS_stat < mins)]
 eRP_out = eRP[i][(AMS_stat > maxes) | (AMS_stat < mins)]
-n_bad_stations = len(outs)
+n_bad_RL= len(outs)
 
 fig, ax = plt.subplots()
 TNX_FIG_valid(AMS[i],eRP[i],RL[i],xlimits = [1,np.max(S.return_period)+10],ylimits = [0,np.max(np.hstack([RL[i],AMS[i].AMS.to_numpy()]))+3])
 plt.fill_between(S.return_period,mins,maxes,color = 'k',alpha = 0.3)
 plt.scatter(eRP_out,outs)
-plt.title(f"number iterations {n_itn}. {n_bad_stations} stations outside range")
+plt.title(f"number iterations {n_itn}. {n_bad_RL} return levles outside range")
 plt.show()
 
 
