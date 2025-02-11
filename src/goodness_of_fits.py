@@ -456,5 +456,32 @@ for i in np.arange(0,n_stations):
     
 
 
+##############################################################################
+# trying the MC thing
+i=0
+percentages = [0.05,0.95]
+n = round(ns[i].to_numpy()[0])
+F_phat = F_phats[i]
+g_phat = g_phats[i]
+AMS_stat =  AMS[i]
+n_years = len(AMS_stat)
+S.n_monte_carlo = int(n_years*n)
+start_time = time.time()
+AMS_sim = np.zeros([1000,n_years])
+for itn in np.arange(0,1000):
+    _, _, P_mc = S.model_inversion(F_phat, g_phat, n, Ts,gen_P_mc = True,gen_RL=False) 
+    AMS_sim[itn,:] = [np.max(P_mc[j:j+n]) for j in np.arange(0,int(n_years*n),int(n))]
+    AMS_sim[itn,:].sort()
+
+print(f"Time for one station: {(time.time() - start_time):.0f}")
+
+mins = [np.quantile(AMS_sim[:,j],percentages[0]) for j in np.arange(0,n_years)]
+maxes = [np.quantile(AMS_sim[:,j],percentages[1]) for j in np.arange(0,n_years)]
+
+S.return_period = eRP[i]
 
 
+fig, ax = plt.subplots()
+TNX_FIG_valid(AMS[i],S.return_period,RL[i],xlimits = [1,np.max(S.return_period)+10],ylimits = [0,np.max(np.hstack([RL[i],AMS[i].AMS.to_numpy()]))+3])
+plt.fill_between(S.return_period,mins,maxes,color = 'k',alpha = 0.3)
+plt.show()
