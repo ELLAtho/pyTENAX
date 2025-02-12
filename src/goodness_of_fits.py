@@ -18,6 +18,7 @@ sys.path.append('D:')
 import numpy as np
 import pandas as pd
 import scipy.stats as stats
+import scipy
 
 import datetime as dt
 import matplotlib.pyplot as plt
@@ -458,40 +459,95 @@ for i in np.arange(0,n_stations):
 
 ##############################################################################
 # trying the MC thing TODO: NEXT STEP DISTRIBUTION OF MC TO MAKE GOF METRIC
-i=0
-n_itn = 1000
-percentages = [0.05,0.95]
-n = round(ns[i].to_numpy()[0])
-F_phat = F_phats[i]
-g_phat = g_phats[i]
-AMS_stat =  AMS[i].sort_values(by=['AMS'])['AMS']
-n_years = len(AMS_stat)
-S.n_monte_carlo = int(n_years*n)
-start_time = time.time()
-AMS_sim = np.zeros([n_itn,n_years])
-for itn in np.arange(0,n_itn):
-    _, _, P_mc = S.model_inversion(F_phat, g_phat, n, Ts,gen_P_mc = True,gen_RL=False) 
-    AMS_sim[itn,:] = [np.max(P_mc[j:j+n]) for j in np.arange(0,int(n_years*n),int(n))]
-    AMS_sim[itn,:].sort()
+GOF_stat = [0]*n_stations
+abs_GOF_stat = [0]*n_stations
+for i in np.arange(0,n_stations):
+    
+    titles = str(i)+': Latitude: '+str(lats_sel[i])+'. Longitude: '+str(lons_sel[i])
+    n_itn = 1000
+    percentages = [0.05,0.95]
+    n = round(ns[i].to_numpy()[0])
+    F_phat = F_phats[i]
+    g_phat = g_phats[i]
+    AMS_stat =  AMS[i].sort_values(by=['AMS'])['AMS']
+    n_years = len(AMS_stat)
+    S.n_monte_carlo = int(n_years*n)
+    start_time = time.time()
+    AMS_sim = np.zeros([n_itn,n_years])
+    for itn in np.arange(0,n_itn):
+        _, _, P_mc = S.model_inversion(F_phat, g_phat, n, Ts,gen_P_mc = True,gen_RL=False) 
+        AMS_sim[itn,:] = [np.max(P_mc[j:j+n]) for j in np.arange(0,int(n_years*n),int(n))]
+        AMS_sim[itn,:].sort()
+    
+    time_taken = time.time() - start_time
+    print(f"Time for one station: {(time_taken):.0f}")
+    
+    mins = [np.quantile(AMS_sim[:,j],percentages[0]) for j in np.arange(0,n_years)]
+    maxes = [np.quantile(AMS_sim[:,j],percentages[1]) for j in np.arange(0,n_years)]
+    
+    
+    
+    outs = AMS_stat[(AMS_stat > maxes) | (AMS_stat < mins)]
+    eRP_out = eRP[i][(AMS_stat > maxes) | (AMS_stat < mins)]
+    n_bad_RL= len(outs)
+    
+    n_bins = 50
+    prob = [0]*len(eRP[i])
+    total_prob =[0]*len(eRP[i])
+    
+    for RP_rank in np.arange(0,len(eRP[i])):
+        hist, bin_edges = np.histogram(AMS_sim[:,RP_rank], bins=n_bins, density=True)
+        bin_mids = [(bin_edges[j+1]+bin_edges[j])/2 for j in np.arange(0,len(bin_edges)-1)]
+        
+        closest_bin_mid = min(bin_mids, key=lambda x:abs(x-AMS_stat.iloc[RP_rank])) #get the bin centre value that is closest to the measured return level
+        prob[RP_rank] = hist[bin_mids == closest_bin_mid]
+        
+        hist_neg = hist[(bin_mids>AMS_stat.iloc[RP_rank])&(bin_mids<=RL[i][RP_rank])]
+        bin_neg = np.array(bin_mids)[(bin_mids>AMS_stat.iloc[RP_rank])&(bin_mids<=RL[i][RP_rank])]
+        
+        hist_pos = hist[(bin_mids<AMS_stat.iloc[RP_rank])&(bin_mids>=RL[i][RP_rank])]
+        bin_pos = np.array(bin_mids)[(bin_mids<AMS_stat.iloc[RP_rank])&(bin_mids>=RL[i][RP_rank])]
+        
+        total_prob[RP_rank] = scipy.integrate.trapezoid(hist_pos,x=bin_pos) - scipy.integrate.trapezoid(hist_neg,x=bin_neg)
+    
+    GOF_stat[i] = np.mean(total_prob)*2
+    abs_GOF_stat[i] =np.mean(np.abs(total_prob))*2
 
-time_taken = time.time() - start_time
-print(f"Time for one station: {(time_taken):.0f}")
-
-mins = [np.quantile(AMS_sim[:,j],percentages[0]) for j in np.arange(0,n_years)]
-maxes = [np.quantile(AMS_sim[:,j],percentages[1]) for j in np.arange(0,n_years)]
-
-
-
-outs = AMS_stat[(AMS_stat > maxes) | (AMS_stat < mins)]
-eRP_out = eRP[i][(AMS_stat > maxes) | (AMS_stat < mins)]
-n_bad_RL= len(outs)
-
-fig, ax = plt.subplots()
-TNX_FIG_valid(AMS[i],eRP[i],RL[i],xlimits = [1,np.max(S.return_period)+10],ylimits = [0,np.max(np.hstack([RL[i],AMS[i].AMS.to_numpy()]))+3])
-plt.fill_between(S.return_period,mins,maxes,color = 'k',alpha = 0.3)
-plt.scatter(eRP_out,outs)
-plt.title(f"number iterations {n_itn}. {n_bad_RL} return levles outside range")
-plt.show()
-
-
-
+    fig, ax = plt.subplots()
+    TNX_FIG_valid(AMS[i],eRP[i],RL[i],xlimits = [1,np.max(S.return_period)+10],ylimits = [0,np.max(np.hstack([RL[i],AMS[i].AMS.to_numpy()]))+3])
+    plt.fill_between(S.return_period,mins,maxes,color = 'k',alpha = 0.3)
+    plt.scatter(eRP_out,outs)
+    plt.title(f"{titles} \n GOF: {GOF_stat[i]:.2f}. GOF abs: {abs_GOF_stat[i]:.2f} \n {n_bad_RL} return levels outside range")
+    plt.show()
+    
+    RP_rank = 20
+    hist, bin_edges = np.histogram(AMS_sim[:,RP_rank], bins=n_bins, density=True)
+    bin_mids = [(bin_edges[j+1]+bin_edges[j])/2 for j in np.arange(0,len(bin_edges)-1)]
+    plt.plot(bin_mids,hist,color = 'k',alpha = 0.5,label = 'MC TENAX distribution')
+    plt.plot([AMS_stat.iloc[RP_rank]]*12,np.arange(0,0.12,0.01),color = 'g',label = 'obs RL')
+    plt.plot([RL[i][RP_rank]]*12,np.arange(0,0.12,0.01),color ='b',label = 'TENAX RL')
+    
+    if RL[i][RP_rank] > AMS_stat.iloc[RP_rank]:
+        min_fill = AMS_stat.iloc[RP_rank]
+        max_fill = RL[i][RP_rank]
+    else:
+        max_fill = AMS_stat.iloc[RP_rank]
+        min_fill = RL[i][RP_rank]
+        
+    
+    plt.fill_between(
+            x= bin_mids, 
+            y1= hist, 
+            where= (min_fill <= bin_mids)&(bin_mids < max_fill),
+            color= "k",
+            alpha= 0.2)
+    
+    
+    plt.xlabel('Return level')
+    plt.title(f'Return period: {eRP[i][20]:.2f}. \n Number of bins: {n_bins} \n Monte carlo samples: {len(AMS_sim[:,RP_rank])} \n Integrated area {total_prob[RP_rank]:.2f}')
+    plt.legend()
+    plt.show()
+    
+    
+    GOF_stat[i] = np.mean(total_prob)*2
+    abs_GOF_stat[i] =np.mean(np.abs(total_prob))*2
