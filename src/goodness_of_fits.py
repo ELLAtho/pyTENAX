@@ -34,9 +34,9 @@ import time
 
 drive = 'D'
 
-country = 'Japan'
-country_save = 'Japan'
-code_str = 'JP' 
+country = 'Germany'
+country_save = 'Germany'
+code_str = 'DE' 
 n_stations = 5 #number of stations to sample
 min_yrs = 15 #atm this probably introduces a bug... need to put in if statement or something
 max_yrs = 1000 #if no max, set to very high
@@ -520,7 +520,7 @@ for i in np.arange(0,n_stations):
     plt.title(f"{titles} \n GOF: {GOF_stat[i]:.2f}. GOF abs: {abs_GOF_stat[i]:.2f} \n {n_bad_RL} return levels outside range")
     plt.show()
     
-    RP_rank = 20
+    RP_rank = 15
     hist, bin_edges = np.histogram(AMS_sim[:,RP_rank], bins=n_bins, density=True)
     bin_mids = [(bin_edges[j+1]+bin_edges[j])/2 for j in np.arange(0,len(bin_edges)-1)]
     plt.plot(bin_mids,hist,color = 'k',alpha = 0.5,label = 'MC TENAX distribution')
@@ -544,7 +544,7 @@ for i in np.arange(0,n_stations):
     
     
     plt.xlabel('Return level')
-    plt.title(f'Return period: {eRP[i][20]:.2f}. \n Number of bins: {n_bins} \n Monte carlo samples: {len(AMS_sim[:,RP_rank])} \n Integrated area {total_prob[RP_rank]:.2f}')
+    plt.title(f'Return period: {eRP[i][RP_rank]:.2f}. \n Number of bins: {n_bins} \n Monte carlo samples: {len(AMS_sim[:,RP_rank])} \n Integrated area {total_prob[RP_rank]:.2f}')
     plt.legend()
     plt.show()
     
