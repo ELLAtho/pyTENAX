@@ -130,6 +130,8 @@ data_full = [0]*n_stations
 for i in np.arange(0,n_stations):
     data_full[i] = S.remove_incomplete_years(G[i], name_col)
 
+# set percentage to get temp GOF 
+GOF_perc = 0.8
 
 dicts = [0]*n_stations
 thr = [0]*n_stations
@@ -224,6 +226,17 @@ for i in np.arange(0,n_stations):
         numb[ind-1] = (2 * ind - 1)*(np.log(gen_norm_cdf(T_order[ind-1],g_phats[i][0],g_phats[i][1],4)) 
                                      + np.log(1 - (gen_norm_cdf(T_order[len(T) - ind],g_phats[i][0],g_phats[i][1],4))))
     AD[i] = -len(T) - (1/len(T)) * np.nansum(numb)
+    
+    ###########################################################################
+    # Error at upper end of temp distribution THIS IS WHERE BINS MATTER
+    min_T_upper = np.quantile(T,GOF_perc)
+    
+    T_upper_perc = T[T>=min_T_upper]
+    
+    eT_upper_perc = eT[eT>=min_T_upper]
+    hist_upper_perc = hist[eT>=min_T_upper]
+    pdf_values_upper_perc = pdf_values[eT>=min_T_upper]
+    
     
     ###########################################################################
     ax2.plot(eT,diff[i])
