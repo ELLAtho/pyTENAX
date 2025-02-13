@@ -141,6 +141,8 @@ dict_AMS = [0]*n_stations
 eRP = [0]*n_stations
 diff = [0]*n_stations
 AD = [0]*n_stations
+FRMSE_upper_perc = [0]*n_stations
+upper_perc_length = [0]*n_stations
 
 for i in np.arange(0,n_stations):
     S.alpha = 0
@@ -197,7 +199,9 @@ for i in np.arange(0,n_stations):
     ns[i] = n_ordinary_per_year.sum() / len(n_ordinary_per_year)  
     #estimates return levels using MC samples
     
-       
+    
+    min_T_upper = np.quantile(T,GOF_perc)
+    
     
    #PLOTTING THE GRAPHS
     titles = str(i)+': Latitude: '+str(lats_sel[i])+'. Longitude: '+str(lons_sel[i])
@@ -212,9 +216,25 @@ for i in np.arange(0,n_stations):
     
     hist, pdf_values = TNX_FIG_temp_model(T=T, g_phat=g_phats[i],beta=4,eT=eT,xlimits = [eT[0],eT[-1]])
     
+    diff[i] = pdf_values - hist
+    RMSE = np.sqrt(np.sum(diff[i]**2)/len(diff[i]))
+    FRMSE = np.sqrt(
+        np.sum(diff[i]**2)/len(diff[i]))/(np.sum(hist)/len(diff[i]))
+    
+    
+    eT_upper_perc = eT[eT>=min_T_upper]
+    
+    hist_upper_perc = hist[eT>=min_T_upper]
+    pdf_values_upper_perc = pdf_values[eT>=min_T_upper]
+    diff_upper_perc = pdf_values_upper_perc - hist_upper_perc
+    FRMSE_upper_perc1 = np.sqrt(
+        np.sum(diff_upper_perc**2)/len(diff_upper_perc))/(np.sum(hist_upper_perc)/len(diff_upper_perc))
+    
+    
+    ax1.plot([min_T_upper]*2,[-0.01,0.07],color = 'k', alpha = 0.4)
+    ax1.set_title(f"{len(eT)} bins. FRMSE = {FRMSE:.3f}. FRMSE on top {(1-GOF_perc)*100:.0f}% data: {FRMSE_upper_perc1:.3f}")
    
     
-    diff[i] = pdf_values - hist
     
     ###########################################################################
     # Anderson-Darling GOF statistic
@@ -227,18 +247,7 @@ for i in np.arange(0,n_stations):
                                      + np.log(1 - (gen_norm_cdf(T_order[len(T) - ind],g_phats[i][0],g_phats[i][1],4))))
     AD[i] = -len(T) - (1/len(T)) * np.nansum(numb)
     
-    ###########################################################################
-    # Error at upper end of temp distribution THIS IS WHERE BINS MATTER
-    min_T_upper = np.quantile(T,GOF_perc)
     
-    T_upper_perc = T[T>=min_T_upper]
-    
-    eT_upper_perc = eT[eT>=min_T_upper]
-    hist_upper_perc = hist[eT>=min_T_upper]
-    pdf_values_upper_perc = pdf_values[eT>=min_T_upper]
-    
-    
-    ###########################################################################
     ax2.plot(eT,diff[i])
     ax2.plot(eT,[0]*eT,'--',alpha = 0.5, color = 'k')
     ax2.set_xlim(eT[0],eT[-1])
@@ -261,4 +270,44 @@ for i in np.arange(0,n_stations):
     plt.legend()
     plt.show()
     
+    ###########################################################################
+    # Error at upper end of temp distribution THIS IS WHERE BINS MATTER
+    
+    
+    FRMSE_upper_perc[i] = [0]*6
+    upper_perc_length[i] = [0]*6
+    fig = plt.figure(figsize = (15,10))
+    
+    for bins_check_itn in np.arange(0,6):
+        n_bins = bins_check_itn * 10 + 20 # checking 20,30,40,50,60,70 total bins
+        eT_diff = (eT[-1]-eT[0])/(n_bins-1) # size of individual bin
+        
+        eT_check = np.arange(eT[0],eT[-1]+eT_diff,eT_diff) #new eT
+        
+        ax = fig.add_subplot(2,3,bins_check_itn + 1)
+        
+        hist_check, pdf_values_check = TNX_FIG_temp_model(
+            T=T,
+            g_phat=g_phats[i],beta=4,eT=eT_check,xlimits = [eT[0],eT[-1]])
+        
+        diff_check = pdf_values_check - hist_check
+        
+        eT_upper_perc = eT_check[eT_check>=min_T_upper]
+        upper_perc_length[i][bins_check_itn] = len(eT_upper_perc)
+        
+        hist_upper_perc = hist_check[eT_check>=min_T_upper]
+        pdf_values_upper_perc = pdf_values_check[eT_check>=min_T_upper]
+        diff_upper_perc = pdf_values_upper_perc - hist_upper_perc
+        
+        FRMSE_check = np.sqrt(
+            np.sum(diff_check**2)/len(diff_check))/(np.sum(hist)/len(diff_check))
+        
+        FRMSE_upper_perc[i][bins_check_itn] = np.sqrt(
+            np.sum(diff_upper_perc**2)/len(diff_upper_perc))/(np.sum(hist_upper_perc)/len(diff_upper_perc))
+        
+        ax.set_title(f"{n_bins} bins. FRMSE = {FRMSE_check:.3f} \n FRMSE on top {(1-GOF_perc)*100:.0f}% data: {FRMSE_upper_perc[i][bins_check_itn]:.3f}")
+    fig.tight_layout()
+    plt.show()
+    
+    ###########################################################################
 
