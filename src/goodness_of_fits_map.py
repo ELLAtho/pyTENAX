@@ -214,13 +214,13 @@ if save_name not in output_files:
                     df_parameters["lambda"].iloc[i],df_parameters.a.iloc[i]]
         #b always 0
         F_phat_0 = [df_parameters_0.kappa.iloc[i],df_parameters_0.b.iloc[i],
-                    df_parameters_0["lambda"].iloc[i],new_df.a.iloc[i]]
+                    df_parameters_0["lambda"].iloc[i],df_parameters_0.a.iloc[i]]
         
         n = df_parameters.n_events_per_yr.iloc[i]
         
         # Getting predicted return levels
         AMS_sort[i] = AMS.sort_values(by=['AMS'])['AMS']
-        plot_pos = np.arange(1,np.size(AMS_sort)+1)/(1+np.size(AMS_sort))
+        plot_pos = np.arange(1,np.size(AMS_sort[i])+1)/(1+np.size(AMS_sort[i]))
         
         eRP = 1/(1-plot_pos)
         S.return_period = eRP
@@ -233,13 +233,13 @@ if save_name not in output_files:
         RL_5[i], __, __ = S.model_inversion(F_phat_5, g_phat, n, Ts)
         RL_0[i], __, __ = S.model_inversion(F_phat_0, g_phat, n, Ts)
         
-        diffs = RL[i] - AMS_sort
-        diffs_5 = RL_5[i] - AMS_sort
-        diffs_0 = RL_0[i] - AMS_sort
+        diffs = RL[i] - AMS_sort[i]
+        diffs_5 = RL_5[i] - AMS_sort[i]
+        diffs_0 = RL_0[i] - AMS_sort[i]
         
-        FRMSE[i] = np.sqrt(np.sum(diffs**2)/len(diffs))/(np.sum(AMS_sort)/len(diffs))
-        FRMSE_5[i] = np.sqrt(np.sum(diffs_5**2)/len(diffs_5))/(np.sum(AMS_sort)/len(diffs_5))
-        FRMSE_0[i] = np.sqrt(np.sum(diffs_0**2)/len(diffs_0))/(np.sum(AMS_sort)/len(diffs_0))
+        FRMSE[i] = np.sqrt(np.sum(diffs**2)/len(diffs))/(np.sum(AMS_sort[i])/len(diffs))
+        FRMSE_5[i] = np.sqrt(np.sum(diffs_5**2)/len(diffs_5))/(np.sum(AMS_sort[i])/len(diffs_5))
+        FRMSE_0[i] = np.sqrt(np.sum(diffs_0**2)/len(diffs_0))/(np.sum(AMS_sort[i])/len(diffs_0))
         
         
         print(f"Free {FRMSE[i]}, 5% sig {FRMSE_5[i]}, b always 0 {FRMSE_0[i]}")
@@ -249,7 +249,7 @@ if save_name not in output_files:
     
     
     AMS_sort_save = [AMS_sort[j].to_numpy() for j in np.arange(0,len(AMS_sort))]
-    RL_df = pd.DataFrame({'station': df_parameters.station, 'obs_AMS': AMS_sort_save, 'return_levels': RL, 'return_levels_5%': RL_5, 'return_levels_b0': RL_0})
+    RL_df = pd.DataFrame({'station': df_parameters.station, 'obs_AMS': AMS_sort_save, 'return_levels': RL, 'return_levels_5': RL_5, 'return_levels_b0': RL_0})
     RL_df.to_csv(f"{drive}:/outputs/{country_save}/return_levels.csv",index=False)
     
     FRMSE_df = pd.DataFrame({'station': df_parameters.station,
@@ -261,6 +261,12 @@ if save_name not in output_files:
 else:
     print("Files already saved, reading")
     RL_df = pd.read_csv(f"{drive}:/outputs/{country_save}/return_levels.csv", dtype={'station': str})
+    RL_df.return_levels = [np.fromstring(RL_df.return_levels.iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'),sep = ' ') for j in np.arange(0,len(RL_df))]
+    RL_df["return_levels_5"] = [np.fromstring(RL_df["return_levels_5"].iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'),sep = ' ') for j in np.arange(0,len(RL_df))]
+    RL_df.return_levels_b0 = [np.fromstring(RL_df.return_levels_b0.iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'),sep = ' ') for j in np.arange(0,len(RL_df))]
+    RL_df.obs_AMS = [np.fromstring(RL_df.obs_AMS.iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'),sep = ' ') for j in np.arange(0,len(RL_df))]
+    
+    
     FRMSE_df = pd.read_csv(f"{drive}:/outputs/{country_save}/FRMSE.csv", dtype={'station': str})
 
 
@@ -395,7 +401,71 @@ plot_pos = np.arange(1,np.size(RL_df.obs_AMS.iloc[j])+1)/(1+np.size(RL_df.obs_AM
 
 eRP = 1/(1-plot_pos)
 
-TNX_FIG_valid(RL_df.obs_AMS.iloc[j],eRP,RL_df.return_levels_5)
-
+TNX_FIG_valid(RL_df.obs_AMS.iloc[j],eRP,RL_df.return_levels_b0.iloc[j],TENAXlabel = "b = 0")
+plt.plot(eRP,RL_df.return_levels.iloc[j],"r", label = "b = free")
+plt.plot(eRP,RL_df.return_levels_5.iloc[j],"g", label = "b = 5% sig")
+plt.legend()
 plt.show()
+
+
+#TYPO so b 0 is wrong... redoing :(
+
+
+S = TENAX(
+        return_period = [1.1,1.2,1.5,2,5,10,20,50,100, 200],
+        durations = [60, 180, 360, 720, 1440],
+        left_censoring = [0, censor_thr],
+        alpha = alpha_set,
+        min_ev_dur = 60,
+        niter_smev = 1000, 
+    )
+
+RL_0 = [0] * len(new_df)
+AMS_sort = [0] * len(new_df)
+start_time = [0] * len(new_df)
+FRMSE_0 = [0] * len(new_df)
+
+
+for i in np.arange(0, len(new_df)):
+    
+    # Define the model parameters by reading in those already saved
+    g_phat = [df_parameters.mu.iloc[i],df_parameters.sigma.iloc[i]]
+    
+    F_phat_0 = [df_parameters_0.kappa.iloc[i],df_parameters_0.b.iloc[i],
+                df_parameters_0["lambda"].iloc[i],df_parameters_0.a.iloc[i]]
+    
+    n = df_parameters.n_events_per_yr.iloc[i]
+    
+    # Getting predicted return levels
+    AMS_sort[i] = RL_df.obs_AMS.iloc[i]
+    plot_pos = np.arange(1,np.size(AMS_sort[i])+1)/(1+np.size(AMS_sort[i]))
+    
+    eRP = 1/(1-plot_pos)
+    S.return_period = eRP
+    
+    T_min = g_phat[0] - 2.5 * g_phat[1]
+    T_max = g_phat[0] + 2.5 * g_phat[1]
+    Ts = np.arange(T_min - S.temp_delta, T_max + S.temp_delta, S.temp_res_monte_carlo)
+    
+    RL_0[i], __, __ = S.model_inversion(F_phat_0, g_phat, n, Ts)
+    
+    diffs_0 = RL_0[i] - AMS_sort[i]
+    
+    FRMSE_0[i] = np.sqrt(np.sum(diffs_0**2)/len(diffs_0))/(np.sum(AMS_sort[i])/len(diffs_0))
+    
+    
+    print(f"Free {FRMSE_df.FRMSE.iloc[i]}, b always 0 {FRMSE_0[i]}")
+    time_taken = (time.time()-start_time[i-9])/10
+    time_left = (len(new_df)-i)*time_taken/60
+    print(f"{i}/{len(new_df)}. Approx time left: {time_left:.0f} mins") #this is only correct after 50 loops
+
+
+AMS_sort_save = [AMS_sort[j].to_numpy() for j in np.arange(0,len(AMS_sort))]
+RL_df.return_levels_b0 = RL_0
+
+#RL_df.to_csv(f"{drive}:/outputs/{country_save}/return_levels.csv",index=False)
+
+FRMSE_df.FRMSE_0 = FRMSE_0
+
+#FRMSE_df.to_csv(f"{drive}:/outputs/{country_save}/FRMSE.csv",index=False)
 

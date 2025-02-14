@@ -1387,8 +1387,11 @@ def TNX_FIG_valid(AMS,RP,RL,smev_RL=[],RL_unc=0,smev_RL_unc=0,TENAXcol='b',obsco
     None.
 
     """
-    
-    AMS_sort = AMS.sort_values(by=['AMS'])['AMS']
+    if type(AMS) == np.ndarray:
+        AMS_sort = AMS
+        
+    else:
+        AMS_sort = AMS.sort_values(by=['AMS'])['AMS']
     plot_pos = np.arange(1,np.size(AMS_sort)+1)/(1+np.size(AMS_sort))
     eRP = 1/(1-plot_pos)
     if np.size(smev_RL) != 0:
