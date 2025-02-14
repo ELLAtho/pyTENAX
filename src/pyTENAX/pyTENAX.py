@@ -611,7 +611,7 @@ class TENAX():
         return phat, loglik, loglik_H1, loglik_H0shape
    
 
-    def temperature_model(self, data_oe_temp, beta = 0, method="norm"):
+    def temperature_model(self, data_oe_temp, beta = 0, method="norm",print_0_warning = True):
 
         """
         Fits the temperature data to the TENAX temperature model.
@@ -640,7 +640,7 @@ class TENAX():
             mu, sigma = norm.fit(data_oe_temp)
             init_g = [mu, sigma]
             
-            g_phat = minimize(lambda par: -gen_norm_loglik(data_oe_temp, par, beta), init_g, method='Nelder-Mead').x
+            g_phat = minimize(lambda par: -gen_norm_loglik(data_oe_temp, par, beta,print_0_warning), init_g, method='Nelder-Mead').x
             
         elif method == "skewnorm":
             # Fit the skew-normal distribution
@@ -1021,7 +1021,7 @@ def gen_norm_cdf(x, mu, sigma, beta):
     
     return 0.5 + first_part * gam_part
 
-def gen_norm_loglik(x, par, beta):
+def gen_norm_loglik(x, par, beta, print_0_warning = True):
     """
     Log-likelihood for the generalized normal distribution.
     x: data points
@@ -1036,7 +1036,13 @@ def gen_norm_loglik(x, par, beta):
     n = len(pdf[pdf==0])
 
     if n>5:
-        print(f"warning: {n}/{len(pdf)} zero values")
+        if print_0_warning:
+            print(f"warning: {n}/{len(pdf)} zero values")
+        else:
+            pass
+    else:
+        pass
+    
         
     pdf[pdf==0] = 1e-10 #stops issue if zero generated
 
@@ -1387,7 +1393,7 @@ def TNX_FIG_valid(AMS,RP,RL,smev_RL=[],RL_unc=0,smev_RL_unc=0,TENAXcol='b',obsco
     None.
 
     """
-    if type(AMS) == np.ndarray:
+    if type(AMS) == np.ndarray: #TODO: check with petr and maybe add to main
         AMS_sort = AMS
         
     else:
