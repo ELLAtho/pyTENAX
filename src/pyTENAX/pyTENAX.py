@@ -1174,6 +1174,8 @@ def SMEV_Mc_inversion(wbl_phat, n, target_return_periods, vguess, method_root_sc
             else:
                 # Use root_scalar as an alternative to MATLAB's fzero
                 result = root_scalar(func, bracket=[vguess[0], vguess[-1]], x0=first_guess, method=method_root_scalar)
+                if result.converged:
+                    qnt[t] = result.root
         else:
             # Use root_scalar as an alternative to MATLAB's fzero
             result = root_scalar(func, bracket=[vguess[0], vguess[-1]], x0=first_guess, method=method_root_scalar)
