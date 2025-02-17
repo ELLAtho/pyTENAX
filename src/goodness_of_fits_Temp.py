@@ -314,42 +314,43 @@ for i in np.arange(0,n_stations):
 #Temp monte carlo uncertainty
 i=0
 percentages = [0.05,0.95]
-T = dicts[i]["60"]["T"].to_numpy()
-n_events = len(T)
-S.n_monte_carlo = n_events
 n_itn = 1000
-
-Ts = np.arange(np.min(T) - S.temp_delta, np.max(T) + S.temp_delta, S.temp_res_monte_carlo)
-pdf_values = gen_norm_pdf(Ts, g_phats[i][0], g_phats[i][1], S.beta)
-df = np.vstack([pdf_values, Ts])
-
-g_phat_gen = [0]*n_itn
-start_time = time.time()
-pdf_values_gen = [0]*n_itn
-hist_gen= [0]*n_itn
-
-for mc_i in np.arange(0,n_itn):
-    _, T_mc, _ = S.model_inversion([1,0,3,0], g_phats[i], ns[i], Ts,gen_P_mc = False,gen_RL=False) 
-    T_mc = T_mc.reshape(-1)
-    g_phat_gen[mc_i] = S.temperature_model(T_mc,print_0_warning = False)
-    pdf_values_gen[mc_i] = gen_norm_pdf(eT, g_phat_gen[mc_i][0], g_phat_gen[mc_i][1], S.beta)
-    eT_edges = np.concatenate([np.array([eT[0]-(eT[1]-eT[0])/2]),(eT + (eT[1]-eT[0])/2)]) #convert bin centres into bin edges
-    hist_gen[mc_i], bin_edges_gen = np.histogram(T_mc, bins=eT_edges, density=True)
-
-pdf_values_gen = np.array(pdf_values_gen)
-hist_gen = np.array(hist_gen)
-time_to_MC = (time.time() - start_time)/60
-print(f"{time_to_MC:.1f} mins")
-
-mins = [np.quantile(hist_gen[:,j],percentages[0]) for j in np.arange(0,len(eT))]
-maxes = [np.quantile(hist_gen[:,j],percentages[1]) for j in np.arange(0,len(eT))]
+hist_gen = [0]*n_stations
 
 
-hist, pdf_values = TNX_FIG_temp_model(T=T, g_phat=g_phats[i],beta=4,eT=eT,xlimits = [eT[0],eT[-1]])
-plt.fill_between(eT,mins,maxes,color = 'b',alpha = 0.3,label = f'Monte carlo generated {(percentages[1]-percentages[0])*100:.0f}% spread')
-plt.legend()
-plt.show()
+for i in np.arange(0,n_stations):
 
+    titles = str(i)+': Latitude: '+str(lats_sel[i])+'. Longitude: '+str(lons_sel[i])
+    T = dicts[i]["60"]["T"].to_numpy()
+    n_events = len(T)
+    S.n_monte_carlo = n_events
+    
+    Ts = np.arange(np.min(T) - S.temp_delta, np.max(T) + S.temp_delta, S.temp_res_monte_carlo)
+    pdf_values = gen_norm_pdf(Ts, g_phats[i][0], g_phats[i][1], S.beta)
+    df = np.vstack([pdf_values, Ts])
+    
+    start_time = time.time()
+    hist_gen[i] = [0]*n_itn
+    
+    for mc_i in np.arange(0,n_itn):
+        _, T_mc, _ = S.model_inversion([1,0,3,0], g_phats[i], ns[i], Ts,gen_P_mc = False,gen_RL=False) 
+        T_mc = T_mc.reshape(-1)
+        eT_edges = np.concatenate([np.array([eT[0]-(eT[1]-eT[0])/2]),(eT + (eT[1]-eT[0])/2)]) #convert bin centres into bin edges
+        hist_gen[i][mc_i], bin_edges_gen = np.histogram(T_mc, bins=eT_edges, density=True)
+    
+    hist_gen[i] = np.array(hist_gen[i])
+    time_to_MC = (time.time() - start_time)/60
+    print(f"{time_to_MC:.1f} mins")
+    
+    mins = [np.quantile(hist_gen[i][:,j],percentages[0]) for j in np.arange(0,len(eT))]
+    maxes = [np.quantile(hist_gen[i][:,j],percentages[1]) for j in np.arange(0,len(eT))]
+    
+    
+    hist, pdf_values = TNX_FIG_temp_model(T=T, g_phat=g_phats[i],beta=4,eT=eT,xlimits = [eT[0],eT[-1]])
+    plt.fill_between(eT,mins,maxes,color = 'b',alpha = 0.3,label = f'Monte carlo generated {(percentages[1]-percentages[0])*100:.0f}% spread')
+    plt.legend()
+    plt.title(titles)
+    plt.show()
 
 
 
