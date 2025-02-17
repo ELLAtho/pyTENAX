@@ -19,6 +19,7 @@ import numpy as np
 import pandas as pd
 import scipy.stats as stats
 import scipy
+from scipy.stats import gaussian_kde
 
 import datetime as dt
 import matplotlib.pyplot as plt
@@ -34,9 +35,9 @@ import time
 
 drive = 'D'
 
-country = 'Germany'
-country_save = 'Germany'
-code_str = 'DE' 
+country = 'Japan'
+country_save = 'Japan'
+code_str = 'JP' 
 n_stations = 5 #number of stations to sample
 min_yrs = 15 #atm this probably introduces a bug... need to put in if statement or something
 max_yrs = 1000 #if no max, set to very high
@@ -495,13 +496,14 @@ for i in np.arange(0,n_stations):
     n_bins = 50
     prob = [0]*len(eRP[i])
     total_prob =[0]*len(eRP[i])
+    kde = [0]*len(eRP[i])
     
     for RP_rank in np.arange(0,len(eRP[i])):
         hist, bin_edges = np.histogram(AMS_sim[:,RP_rank], bins=n_bins, density=True)
         bin_mids = [(bin_edges[j+1]+bin_edges[j])/2 for j in np.arange(0,len(bin_edges)-1)]
         
-        closest_bin_mid = min(bin_mids, key=lambda x:abs(x-AMS_stat.iloc[RP_rank])) #get the bin centre value that is closest to the measured return level
-        prob[RP_rank] = hist[bin_mids == closest_bin_mid]
+        kde[RP_rank]  = gaussian_kde(AMS_sim[:,RP_rank]) #use kernel density to get probability
+        prob[RP_rank] = kde[RP_rank](AMS_stat.iloc[RP_rank])
         
         hist_neg = hist[(bin_mids>AMS_stat.iloc[RP_rank])&(bin_mids<=RL[i][RP_rank])]
         bin_neg = np.array(bin_mids)[(bin_mids>AMS_stat.iloc[RP_rank])&(bin_mids<=RL[i][RP_rank])]
@@ -519,7 +521,7 @@ for i in np.arange(0,n_stations):
     TNX_FIG_valid(AMS[i],eRP[i],RL[i],xlimits = [1,np.max(S.return_period)+10],ylimits = [0,np.max(np.hstack([RL[i],AMS[i].AMS.to_numpy()]))+3])
     plt.fill_between(S.return_period,mins,maxes,color = 'k',alpha = 0.3)
     plt.scatter(eRP_out,outs)
-    plt.title(f"{titles} \n GOF: {GOF_stat[i]:.2f}. GOF abs: {abs_GOF_stat[i]:.2f} \n {n_bad_RL} return levels outside range")
+    plt.title(f"{titles} \n GOF: {GOF_stat[i]:.2f}. GOF abs: {abs_GOF_stat[i]:.2f} \n log of multiplied probabilities {np.log(mult_prob[i]):.2f} \n {n_bad_RL} return levels outside range")
     plt.show()
     
     RP_rank = 15
@@ -528,6 +530,7 @@ for i in np.arange(0,n_stations):
     plt.plot(bin_mids,hist,color = 'k',alpha = 0.5,label = 'MC TENAX distribution')
     plt.plot([AMS_stat.iloc[RP_rank]]*12,np.arange(0,0.12,0.01),color = 'g',label = 'obs RL')
     plt.plot([RL[i][RP_rank]]*12,np.arange(0,0.12,0.01),color ='b',label = 'TENAX RL')
+    plt.plot(bin_mids,kde[RP_rank](bin_mids),label = 'kernel density')
     
     if RL[i][RP_rank] > AMS_stat.iloc[RP_rank]:
         min_fill = AMS_stat.iloc[RP_rank]
