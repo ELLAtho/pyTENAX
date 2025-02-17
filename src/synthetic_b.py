@@ -36,14 +36,14 @@ drive='D' #name of drive
 alpha_set = 0
 remake = 1
 
-# country = 'Germany' 
-# ERA_country = 'Germany'
-# country_save = 'Germany'
-# code_str = 'DE_'
-# minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
-# name_len = 5
-# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-# censor_thr = 0.9
+country = 'Germany' 
+ERA_country = 'Germany'
+country_save = 'Germany'
+code_str = 'DE_'
+minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
+name_len = 5
+min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+censor_thr = 0.9
 
 
 # country = 'Japan'
@@ -157,7 +157,7 @@ if np.size(glob.glob(save_path_neg)) != 0:
     df_parameters_neg = pd.read_csv(save_path_neg)
 
     #dataframe with all values
-    new_df = df_parameters[['latitude','longitude','b']].copy()
+    new_df = df_parameters[['latitude','longitude','b','kappa','lambda','a']].copy()
     mask = new_df['b'] == 0
     
     new_df.loc[mask, 'b'] = df_parameters_neg['b2'].to_numpy()

@@ -126,7 +126,8 @@ if np.size(glob.glob(save_path_neg)) != 0:
     df_parameters_neg = pd.read_csv(save_path_neg, dtype={'station': str})
 
     #dataframe with all values
-    new_df = df_parameters[['station','latitude','longitude','b']].copy()
+    new_df = df_parameters[['station','latitude','longitude','b','kappa','lambda','a']].copy()
+    
     mask = new_df['b'] == 0
     
     new_df.loc[mask, 'b'] = df_parameters_neg['b2'].to_numpy()
@@ -139,6 +140,7 @@ else:
 
 missing_rows = pd.merge(df_parameters.station, df_parameters_0.station, how='left', indicator=True).query('_merge == "left_only"').drop('_merge', axis=1)
 if len(missing_rows) != 0:
+    print("miss-match, dropping")
     df_parameters = df_parameters.drop(missing_rows.index)
     new_df = new_df.drop(missing_rows.index)
 else:
@@ -167,7 +169,7 @@ if save_name not in output_files:
     FRMSE = [0] * len(new_df)
     FRMSE_5 = [0] * len(new_df)
     FRMSE_0 = [0] * len(new_df)
-    
+    station_flags_df = pd.DataFrame({"index_number" :[], "station": []})
     
     for i in np.arange(0, len(new_df)):
         start_time[i] = time.time() 
@@ -240,7 +242,11 @@ if save_name not in output_files:
         FRMSE[i] = np.sqrt(np.sum(diffs**2)/len(diffs))/(np.sum(AMS_sort[i])/len(diffs))
         FRMSE_5[i] = np.sqrt(np.sum(diffs_5**2)/len(diffs_5))/(np.sum(AMS_sort[i])/len(diffs_5))
         FRMSE_0[i] = np.sqrt(np.sum(diffs_0**2)/len(diffs_0))/(np.sum(AMS_sort[i])/len(diffs_0))
-        
+        if np.any(np.isnan(RL_5[i])):
+            print("There is a NaN value in the RL.")
+            station_flags_df = pd.concat([station_flags_df,pd.DataFrame({"index_number" :[i], "station": [df_parameters.station.iloc[i]]})])
+        else:
+            pass
         
         print(f"Free {FRMSE[i]}, 5% sig {FRMSE_5[i]}, b always 0 {FRMSE_0[i]}")
         time_taken = (time.time()-start_time[i-9])/10
@@ -393,10 +399,127 @@ cb.ax.tick_params(labelsize=12)
 fig.suptitle(f'GSDR: {ERA_country}. FRMSE on RL', fontsize=16)
 plt.show()
 
+#differences
+
+fig = plt.figure(figsize=(10, 10))
+norm = mcolors.Normalize(vmin=-0.7, vmax=0.7)
+cmap = 'seismic'
+
+
+proj = ccrs.PlateCarree()
+ax1 = fig.add_subplot(2, 2, 1, projection=proj)
+
+# Add map features
+ax1.coastlines()
+ax1.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc = ax1.scatter(
+    df_parameters.longitude,
+    df_parameters.latitude,
+    c=(FRMSE_df.FRMSE - FRMSE_df.FRMSE_5),
+    cmap=cmap,
+    norm = norm,
+    s = s,
+)
+ax1.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+ax1.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
+ax1.tick_params(labelsize=12)  
+
+plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+ax1.set_title("b free - 5% sig")
+
+
+
+ax2 = fig.add_subplot(2, 2, 2, projection=proj)
+ax2.coastlines()
+ax2.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc = ax2.scatter(
+    df_parameters.longitude,
+    df_parameters.latitude,
+    c=(FRMSE_df.FRMSE - FRMSE_df.FRMSE_0),
+    cmap=cmap,
+    norm = norm,  
+    s = s,
+)
+ax2.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+ax2.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
+ax2.tick_params(labelsize=12)  
+plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+ax2.set_title("b free - b 0")
+
+
+ax3 = fig.add_subplot(2, 2, 3, projection=proj)
+ax3.coastlines()
+ax3.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc = ax3.scatter(
+    df_parameters.longitude,
+    df_parameters.latitude,
+    c=(FRMSE_df.FRMSE_5 - FRMSE_df.FRMSE_0),
+    cmap=cmap,
+    norm = norm,  
+    s = s,  
+)
+ax3.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+ax3.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
+ax3.tick_params(labelsize=12)  
+plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+ax3.set_title("b 5 - b 0")
+
+ax4 = fig.add_subplot(2, 2, 4, projection=proj)
+ax4.coastlines()
+ax4.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc4 = ax4.scatter(
+    val_info.longitude,
+    val_info.latitude,
+    c=val_info.cleaned_years,
+    cmap="viridis",
+    s = s,  
+)
+ax4.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+ax4.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
+ax4.tick_params(labelsize=12)  
+plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+
+fig.subplots_adjust(right=0.85)
+
+cbar_ax4 = fig.add_axes([0.87, 0.12, 0.03, 0.32])  # Position for the colorbar outside
+cb4 = plt.colorbar(sc4, cax=cbar_ax4)  # Colorbar for ax4
+cb4.set_label('Number of complete years', fontsize=14)
+cb4.ax.tick_params(labelsize=12)
+
+ax4.set_title("cleaned years")
+
+
+
+
+
+# Add a colorbar at the bottom
+cbar_ax = fig.add_subplot([0.15, 0.02, 0.7, 0.03])  # Position for the colorbar
+cb = plt.colorbar(sc, cax=cbar_ax, orientation='horizontal')
+cb.set_label(r'$\Delta$FRMSE', fontsize=14)
+cb.ax.tick_params(labelsize=12)
+
+# Set x and y ticks
+
+
+#fig.tight_layout()
+fig.suptitle(f'GSDR: {ERA_country}. FRMSE on RL', fontsize=16)
+plt.show()
 
 
 # CHECKS
-j = 0
+j = 19
 plot_pos = np.arange(1,np.size(RL_df.obs_AMS.iloc[j])+1)/(1+np.size(RL_df.obs_AMS.iloc[j]))
 
 eRP = 1/(1-plot_pos)
@@ -408,64 +531,4 @@ plt.legend()
 plt.show()
 
 
-#TYPO so b 0 is wrong... redoing :(
-
-
-S = TENAX(
-        return_period = [1.1,1.2,1.5,2,5,10,20,50,100, 200],
-        durations = [60, 180, 360, 720, 1440],
-        left_censoring = [0, censor_thr],
-        alpha = alpha_set,
-        min_ev_dur = 60,
-        niter_smev = 1000, 
-    )
-
-RL_0 = [0] * len(new_df)
-AMS_sort = [0] * len(new_df)
-start_time = [0] * len(new_df)
-FRMSE_0 = [0] * len(new_df)
-
-
-for i in np.arange(0, len(new_df)):
-    
-    # Define the model parameters by reading in those already saved
-    g_phat = [df_parameters.mu.iloc[i],df_parameters.sigma.iloc[i]]
-    
-    F_phat_0 = [df_parameters_0.kappa.iloc[i],df_parameters_0.b.iloc[i],
-                df_parameters_0["lambda"].iloc[i],df_parameters_0.a.iloc[i]]
-    
-    n = df_parameters.n_events_per_yr.iloc[i]
-    
-    # Getting predicted return levels
-    AMS_sort[i] = RL_df.obs_AMS.iloc[i]
-    plot_pos = np.arange(1,np.size(AMS_sort[i])+1)/(1+np.size(AMS_sort[i]))
-    
-    eRP = 1/(1-plot_pos)
-    S.return_period = eRP
-    
-    T_min = g_phat[0] - 2.5 * g_phat[1]
-    T_max = g_phat[0] + 2.5 * g_phat[1]
-    Ts = np.arange(T_min - S.temp_delta, T_max + S.temp_delta, S.temp_res_monte_carlo)
-    
-    RL_0[i], __, __ = S.model_inversion(F_phat_0, g_phat, n, Ts)
-    
-    diffs_0 = RL_0[i] - AMS_sort[i]
-    
-    FRMSE_0[i] = np.sqrt(np.sum(diffs_0**2)/len(diffs_0))/(np.sum(AMS_sort[i])/len(diffs_0))
-    
-    
-    print(f"Free {FRMSE_df.FRMSE.iloc[i]}, b always 0 {FRMSE_0[i]}")
-    time_taken = (time.time()-start_time[i-9])/10
-    time_left = (len(new_df)-i)*time_taken/60
-    print(f"{i}/{len(new_df)}. Approx time left: {time_left:.0f} mins") #this is only correct after 50 loops
-
-
-AMS_sort_save = [AMS_sort[j].to_numpy() for j in np.arange(0,len(AMS_sort))]
-RL_df.return_levels_b0 = RL_0
-
-#RL_df.to_csv(f"{drive}:/outputs/{country_save}/return_levels.csv",index=False)
-
-FRMSE_df.FRMSE_0 = FRMSE_0
-
-#FRMSE_df.to_csv(f"{drive}:/outputs/{country_save}/FRMSE.csv",index=False)
 

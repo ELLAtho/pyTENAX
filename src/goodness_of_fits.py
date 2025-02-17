@@ -461,6 +461,7 @@ for i in np.arange(0,n_stations):
 # trying the MC thing TODO: NEXT STEP DISTRIBUTION OF MC TO MAKE GOF METRIC
 GOF_stat = [0]*n_stations
 abs_GOF_stat = [0]*n_stations
+mult_prob = [0]*n_stations
 for i in np.arange(0,n_stations):
     
     titles = str(i)+': Latitude: '+str(lats_sel[i])+'. Longitude: '+str(lons_sel[i])
@@ -508,8 +509,9 @@ for i in np.arange(0,n_stations):
         hist_pos = hist[(bin_mids<AMS_stat.iloc[RP_rank])&(bin_mids>=RL[i][RP_rank])]
         bin_pos = np.array(bin_mids)[(bin_mids<AMS_stat.iloc[RP_rank])&(bin_mids>=RL[i][RP_rank])]
         
+        
         total_prob[RP_rank] = scipy.integrate.trapezoid(hist_pos,x=bin_pos) - scipy.integrate.trapezoid(hist_neg,x=bin_neg)
-    
+    mult_prob[i]=np.prod(prob)
     GOF_stat[i] = np.mean(total_prob)*2
     abs_GOF_stat[i] =np.mean(np.abs(total_prob))*2
 
