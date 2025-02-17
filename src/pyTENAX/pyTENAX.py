@@ -1167,8 +1167,13 @@ def SMEV_Mc_inversion(wbl_phat, n, target_return_periods, vguess, method_root_sc
         # Define the function for root finding
         def func(y):
             return MC_tSMEV_cdf(y, wbl_phat, n) - pr[t]
-        if np.sign(func(vguess[0])) == np.sign(func(vguess[-1])):
-            print("signs the same, will cause error. returning nans")
+        
+        if method_root_scalar == "brentq":
+            if np.sign(func(vguess[0])) == np.sign(func(vguess[-1])):
+                print("signs the same, will cause error. returning nans")
+            else:
+                # Use root_scalar as an alternative to MATLAB's fzero
+                result = root_scalar(func, bracket=[vguess[0], vguess[-1]], x0=first_guess, method=method_root_scalar)
         else:
             # Use root_scalar as an alternative to MATLAB's fzero
             result = root_scalar(func, bracket=[vguess[0], vguess[-1]], x0=first_guess, method=method_root_scalar)

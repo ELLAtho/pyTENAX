@@ -326,19 +326,23 @@ df = np.vstack([pdf_values, Ts])
 g_phat_gen = [0]*n_itn
 start_time = time.time()
 pdf_values_gen = [0]*n_itn
+hist_gen= [0]*n_itn
 
 for mc_i in np.arange(0,n_itn):
     _, T_mc, _ = S.model_inversion([1,0,3,0], g_phats[i], ns[i], Ts,gen_P_mc = False,gen_RL=False) 
     T_mc = T_mc.reshape(-1)
     g_phat_gen[mc_i] = S.temperature_model(T_mc,print_0_warning = False)
     pdf_values_gen[mc_i] = gen_norm_pdf(eT, g_phat_gen[mc_i][0], g_phat_gen[mc_i][1], S.beta)
+    eT_edges = np.concatenate([np.array([eT[0]-(eT[1]-eT[0])/2]),(eT + (eT[1]-eT[0])/2)]) #convert bin centres into bin edges
+    hist_gen[mc_i], bin_edges_gen = np.histogram(T_mc, bins=eT_edges, density=True)
 
 pdf_values_gen = np.array(pdf_values_gen)
+hist_gen = np.array(hist_gen)
 time_to_MC = (time.time() - start_time)/60
 print(f"{time_to_MC:.1f} mins")
 
-mins = [np.quantile(pdf_values_gen[:,j],percentages[0]) for j in np.arange(0,len(eT))]
-maxes = [np.quantile(pdf_values_gen[:,j],percentages[1]) for j in np.arange(0,len(eT))]
+mins = [np.quantile(hist_gen[:,j],percentages[0]) for j in np.arange(0,len(eT))]
+maxes = [np.quantile(hist_gen[:,j],percentages[1]) for j in np.arange(0,len(eT))]
 
 
 hist, pdf_values = TNX_FIG_temp_model(T=T, g_phat=g_phats[i],beta=4,eT=eT,xlimits = [eT[0],eT[-1]])
