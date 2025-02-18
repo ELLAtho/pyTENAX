@@ -18,6 +18,7 @@ sys.path.append(RES_DIR)
 sys.path.append('D:')
 import numpy as np
 import pandas as pd
+from scipy.stats import gaussian_kde
 
 import datetime as dt
 import glob
@@ -285,6 +286,80 @@ else:
     
     FRMSE_df = pd.read_csv(f"{drive}:/outputs/{country_save}/FRMSE.csv", dtype={'station': str})
 
+
+
+###############################################################################
+# Probs and stuff
+
+mult_prob = [0] * len(new_df)
+ave_prob = [0] * len(new_df)
+mins = [0] * len(new_df)
+maxes = [0] * len(new_df)
+n_bad_RL = [0] * len(new_df)
+
+for i in np.arange(0,len(new_df)):
+    
+    n_itn = 1000
+    percentages = [0.05,0.95]
+    n = round(df_parameters.n_events_per_yr.iloc[i])
+    
+    g_phat = [df_parameters.mu.iloc[i],df_parameters.sigma.iloc[i]]
+    if np.any(np.isnan(g_phat[0])):
+        print(f"no gphat. {g_phat}")
+        
+        mult_prob[i] = np.nan
+        ave_prob[i] = np.nan
+    else:
+        #free
+        F_phat = [new_df.kappa.iloc[i],new_df.b.iloc[i],
+                  new_df["lambda"].iloc[i],new_df.a.iloc[i]]
+        #5% sig
+        F_phat_5 = [df_parameters.kappa.iloc[i],df_parameters.b.iloc[i],
+                    df_parameters["lambda"].iloc[i],df_parameters.a.iloc[i]]
+        #b always 0
+        F_phat_0 = [df_parameters_0.kappa.iloc[i],df_parameters_0.b.iloc[i],
+                    df_parameters_0["lambda"].iloc[i],df_parameters_0.a.iloc[i]]
+        
+    
+    
+    AMS_stat = RL_df.obs_AMS.iloc[i] 
+    n_years = len(AMS_stat)
+    S.n_monte_carlo = int(n_years*n)
+    
+    AMS_sim = np.zeros([n_itn,n_years])
+    for itn in np.arange(0,n_itn):
+        _, _, P_mc = S.model_inversion(F_phat, g_phat, n, Ts,gen_P_mc = True,gen_RL=False) 
+        AMS_sim[itn,:] = [np.max(P_mc[j:j+n]) for j in np.arange(0,int(n_years*n),int(n))]
+        AMS_sim[itn,:].sort()
+    
+    mins[i] = [np.quantile(AMS_sim[:,j],percentages[0]) for j in np.arange(0,n_years)]
+    maxes[i] = [np.quantile(AMS_sim[:,j],percentages[1]) for j in np.arange(0,n_years)]
+    
+    
+    outs = AMS_stat[(AMS_stat > maxes) | (AMS_stat < mins)]
+    n_bad_RL[i] = len(outs)
+    
+    prob = [0]*len(eRP[i])
+    total_prob =[0]*len(eRP[i])
+    kde = [0]*len(eRP[i])
+    
+    for RP_rank in np.arange(0,len(eRP[i])):
+        
+        kde[RP_rank]  = gaussian_kde(AMS_sim[:,RP_rank]) #use kernel density to get probability
+        prob[RP_rank] = kde[RP_rank](AMS_stat.iloc[RP_rank])
+        
+    mult_prob[i] = np.prod(prob)
+    ave_prob[i] = np.mean(prob)
+    
+liklihood_df = pd.DataFrame({'station': df_parameters.station,
+                             "mult_prob": mult_prob,
+                             "ave_prob": ave_prob,
+                             "mins": mins,
+                             "maxes": maxes,
+                             "n_bad_RL": n_bad_RL
+                             })
+
+# TODO: check format of mins and maxes, dont know if pandas will understand
 
 
 #maps
