@@ -35,14 +35,14 @@ import time
 
 drive = 'D'
 
-country = 'Japan'
-country_save = 'Japan'
-code_str = 'JP'
+# country = 'Japan'
+# country_save = 'Japan'
+# code_str = 'JP'
 
 
-# country = 'Germany'
-# country_save = 'Germany'
-# code_str = 'DE'
+country = 'Germany'
+country_save = 'Germany'
+code_str = 'DE'
 
  
 n_stations = 5 #number of stations to sample
@@ -470,6 +470,7 @@ for i in np.arange(0,n_stations):
 GOF_stat = [0]*n_stations
 abs_GOF_stat = [0]*n_stations
 mult_prob = [0]*n_stations
+ave_prob = [0]*n_stations
 for i in np.arange(0,n_stations):
     
     titles = str(i)+': Latitude: '+str(lats_sel[i])+'. Longitude: '+str(lons_sel[i])
@@ -520,7 +521,8 @@ for i in np.arange(0,n_stations):
         
         
         total_prob[RP_rank] = scipy.integrate.trapezoid(hist_pos,x=bin_pos) - scipy.integrate.trapezoid(hist_neg,x=bin_neg)
-    mult_prob[i]=np.prod(prob)
+    mult_prob[i] = np.prod(prob)
+    ave_prob[i] = np.mean(prob)
     GOF_stat[i] = np.mean(total_prob)*2
     abs_GOF_stat[i] =np.mean(np.abs(total_prob))*2
 
@@ -569,7 +571,7 @@ for i in np.arange(0,n_stations):
 years_cutoff = 20
 
 mult_prob_cutoff  = [0]*n_stations
-
+ave_perc = [100*ave_prob[k] for k in range(len(ave_prob))]
 for i in np.arange(0,n_stations):
     titles = str(i)+': Latitude: '+str(lats_sel[i])+'. Longitude: '+str(lons_sel[i])
     
