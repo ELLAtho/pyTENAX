@@ -37,7 +37,14 @@ drive = 'D'
 
 country = 'Japan'
 country_save = 'Japan'
-code_str = 'JP' 
+code_str = 'JP'
+
+
+# country = 'Germany'
+# country_save = 'Germany'
+# code_str = 'DE'
+
+ 
 n_stations = 5 #number of stations to sample
 min_yrs = 15 #atm this probably introduces a bug... need to put in if statement or something
 max_yrs = 1000 #if no max, set to very high
@@ -459,7 +466,7 @@ for i in np.arange(0,n_stations):
 
 
 ##############################################################################
-# trying the MC thing TODO: NEXT STEP DISTRIBUTION OF MC TO MAKE GOF METRIC
+#MC GOF
 GOF_stat = [0]*n_stations
 abs_GOF_stat = [0]*n_stations
 mult_prob = [0]*n_stations
@@ -556,3 +563,65 @@ for i in np.arange(0,n_stations):
     
     GOF_stat[i] = np.mean(total_prob)*2
     abs_GOF_stat[i] =np.mean(np.abs(total_prob))*2
+
+
+###########
+years_cutoff = 20
+
+mult_prob_cutoff  = [0]*n_stations
+
+for i in np.arange(0,n_stations):
+    titles = str(i)+': Latitude: '+str(lats_sel[i])+'. Longitude: '+str(lons_sel[i])
+    
+    n_itn = 1000
+    percentages = [0.05,0.95]
+    n = round(ns[i].to_numpy()[0])
+    F_phat = F_phats[i]
+    g_phat = g_phats[i]
+    AMS_cutoff = AMS[i][0:years_cutoff]
+    AMS_stat =  AMS_cutoff.sort_values(by=['AMS'])['AMS']
+    
+    n_years = len(AMS_stat)
+    S.n_monte_carlo = int(n_years*n)
+    start_time = time.time()
+    AMS_sim = np.zeros([n_itn,n_years])
+    for itn in np.arange(0,n_itn):
+        _, _, P_mc = S.model_inversion(F_phat, g_phat, n, Ts,gen_P_mc = True,gen_RL=False) 
+        AMS_sim[itn,:] = [np.max(P_mc[j:j+n]) for j in np.arange(0,int(n_years*n),int(n))]
+        AMS_sim[itn,:].sort()
+    
+    time_taken = time.time() - start_time
+    print(f"Time for one station: {(time_taken):.0f}")
+    
+    kde = [0]*n_years
+    
+    for RP_rank in np.arange(0,n_years):
+        
+        kde[RP_rank]  = gaussian_kde(AMS_sim[:,RP_rank]) #use kernel density to get probability
+        prob[RP_rank] = kde[RP_rank](AMS_stat.iloc[RP_rank])
+        
+    mult_prob_cutoff[i]=np.prod(prob)
+    
+    plot_pos = np.arange(1,np.size(AMS_stat)+1)/(1+np.size(AMS_stat))
+    eRP_cutoff = 1/(1-plot_pos)
+    
+    mins = [np.quantile(AMS_sim[:,j],percentages[0]) for j in np.arange(0,n_years)]
+    maxes = [np.quantile(AMS_sim[:,j],percentages[1]) for j in np.arange(0,n_years)]
+    
+    
+    fig, ax = plt.subplots()
+    TNX_FIG_valid(AMS_stat.to_numpy(),eRP_cutoff,RL[i][0:years_cutoff],xlimits = [1,np.max(S.return_period)+10],ylimits = [0,np.max(np.hstack([RL[i],AMS[i].AMS.to_numpy()]))+3],TENAXcol='w')
+    plt.plot(S.return_period,RL[i])
+    plt.fill_between(eRP_cutoff,mins,maxes,color = 'k',alpha = 0.3)
+    plt.title(f"{titles} \n GOF: {GOF_stat[i]:.2f}. GOF abs: {abs_GOF_stat[i]:.2f} \n log of multiplied probabilities {np.log(mult_prob_cutoff[i]):.2f} \n {n_bad_RL} return levels outside range")
+    plt.show()
+    
+
+
+
+
+
+
+
+
+
