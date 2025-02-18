@@ -594,6 +594,7 @@ for i in np.arange(0,n_stations):
     print(f"Time for one station: {(time_taken):.0f}")
     
     kde = [0]*n_years
+    prob = [0]*n_years
     
     for RP_rank in np.arange(0,n_years):
         
