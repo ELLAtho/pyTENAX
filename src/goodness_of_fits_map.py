@@ -208,46 +208,56 @@ if save_name not in output_files:
         
         # Define the model parameters by reading in those already saved
         g_phat = [df_parameters.mu.iloc[i],df_parameters.sigma.iloc[i]]
-        #free
-        F_phat = [new_df.kappa.iloc[i],new_df.b.iloc[i],
-                  new_df["lambda"].iloc[i],new_df.a.iloc[i]]
-        #5% sig
-        F_phat_5 = [df_parameters.kappa.iloc[i],df_parameters.b.iloc[i],
-                    df_parameters["lambda"].iloc[i],df_parameters.a.iloc[i]]
-        #b always 0
-        F_phat_0 = [df_parameters_0.kappa.iloc[i],df_parameters_0.b.iloc[i],
-                    df_parameters_0["lambda"].iloc[i],df_parameters_0.a.iloc[i]]
-        
-        n = df_parameters.n_events_per_yr.iloc[i]
-        
-        # Getting predicted return levels
-        AMS_sort[i] = AMS.sort_values(by=['AMS'])['AMS']
-        plot_pos = np.arange(1,np.size(AMS_sort[i])+1)/(1+np.size(AMS_sort[i]))
-        
-        eRP = 1/(1-plot_pos)
-        S.return_period = eRP
-        
-        T_min = g_phat[0] - 2.5 * g_phat[1]
-        T_max = g_phat[0] + 2.5 * g_phat[1]
-        Ts = np.arange(T_min - S.temp_delta, T_max + S.temp_delta, S.temp_res_monte_carlo)
-        
-        RL[i], __, __ = S.model_inversion(F_phat, g_phat, n, Ts)
-        RL_5[i], __, __ = S.model_inversion(F_phat_5, g_phat, n, Ts)
-        RL_0[i], __, __ = S.model_inversion(F_phat_0, g_phat, n, Ts)
-        
-        diffs = RL[i] - AMS_sort[i]
-        diffs_5 = RL_5[i] - AMS_sort[i]
-        diffs_0 = RL_0[i] - AMS_sort[i]
-        
-        FRMSE[i] = np.sqrt(np.sum(diffs**2)/len(diffs))/(np.sum(AMS_sort[i])/len(diffs))
-        FRMSE_5[i] = np.sqrt(np.sum(diffs_5**2)/len(diffs_5))/(np.sum(AMS_sort[i])/len(diffs_5))
-        FRMSE_0[i] = np.sqrt(np.sum(diffs_0**2)/len(diffs_0))/(np.sum(AMS_sort[i])/len(diffs_0))
-        if np.any(np.isnan(RL_5[i])):
-            print("There is a NaN value in the RL.")
-            station_flags_df = pd.concat([station_flags_df,pd.DataFrame({"index_number" :[i], "station": [df_parameters.station.iloc[i]]})])
+        if np.any(np.isnan(g_phat[0])):
+            print(f"no gphat. {g_phat}")
+            RL[i] = np.nan
+            RL_5[i] = np.nan
+            RL_0[i]  = np.nan
+            
+            FRMSE[i] = np.nan
+            FRMSE_5[i] = np.nan
+            FRMSE_0[i] = np.nan
         else:
-            pass
-        
+            #free
+            F_phat = [new_df.kappa.iloc[i],new_df.b.iloc[i],
+                      new_df["lambda"].iloc[i],new_df.a.iloc[i]]
+            #5% sig
+            F_phat_5 = [df_parameters.kappa.iloc[i],df_parameters.b.iloc[i],
+                        df_parameters["lambda"].iloc[i],df_parameters.a.iloc[i]]
+            #b always 0
+            F_phat_0 = [df_parameters_0.kappa.iloc[i],df_parameters_0.b.iloc[i],
+                        df_parameters_0["lambda"].iloc[i],df_parameters_0.a.iloc[i]]
+            
+            n = df_parameters.n_events_per_yr.iloc[i]
+            
+            # Getting predicted return levels
+            AMS_sort[i] = AMS.sort_values(by=['AMS'])['AMS']
+            plot_pos = np.arange(1,np.size(AMS_sort[i])+1)/(1+np.size(AMS_sort[i]))
+            
+            eRP = 1/(1-plot_pos)
+            S.return_period = eRP
+            
+            T_min = g_phat[0] - 2.5 * g_phat[1]
+            T_max = g_phat[0] + 2.5 * g_phat[1]
+            Ts = np.arange(T_min - S.temp_delta, T_max + S.temp_delta, S.temp_res_monte_carlo)
+            
+            RL[i], __, __ = S.model_inversion(F_phat, g_phat, n, Ts)
+            RL_5[i], __, __ = S.model_inversion(F_phat_5, g_phat, n, Ts)
+            RL_0[i], __, __ = S.model_inversion(F_phat_0, g_phat, n, Ts)
+            
+            diffs = RL[i] - AMS_sort[i]
+            diffs_5 = RL_5[i] - AMS_sort[i]
+            diffs_0 = RL_0[i] - AMS_sort[i]
+            
+            FRMSE[i] = np.sqrt(np.sum(diffs**2)/len(diffs))/(np.sum(AMS_sort[i])/len(diffs))
+            FRMSE_5[i] = np.sqrt(np.sum(diffs_5**2)/len(diffs_5))/(np.sum(AMS_sort[i])/len(diffs_5))
+            FRMSE_0[i] = np.sqrt(np.sum(diffs_0**2)/len(diffs_0))/(np.sum(AMS_sort[i])/len(diffs_0))
+            if np.any(np.isnan(RL_5[i])):
+                print("There is a NaN value in the RL.")
+                station_flags_df = pd.concat([station_flags_df,pd.DataFrame({"index_number" :[i], "station": [df_parameters.station.iloc[i]]})])
+            else:
+                pass
+            
         print(f"Free {FRMSE[i]}, 5% sig {FRMSE_5[i]}, b always 0 {FRMSE_0[i]}")
         time_taken = (time.time()-start_time[i-9])/10
         time_left = (len(new_df)-i)*time_taken/60
@@ -278,6 +288,9 @@ else:
 
 
 #maps
+significants = df_parameters[df_parameters.b != 0]
+
+
 lon_lims = [truncate_neg(np.min(df_parameters.longitude),2.5),np.ceil(np.max(df_parameters.longitude/2.5))*2.5]
 lat_lims = [truncate_neg(np.min(df_parameters.latitude),2.5),np.ceil(np.max(df_parameters.latitude/2.5))*2.5]
 s = 7
@@ -327,6 +340,14 @@ sc = ax2.scatter(
     norm = norm,  
     s = s,
 )
+
+#plot the locations of significant stations
+scsig = ax2.scatter(
+    significants.longitude,
+    significants.latitude,s=20, facecolors='none', edgecolors='r'
+)
+
+
 ax2.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
 ax2.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
 ax2.tick_params(labelsize=12)  
@@ -466,6 +487,9 @@ sc = ax3.scatter(
     norm = norm,  
     s = s,  
 )
+
+
+
 ax3.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
 ax3.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
 ax3.tick_params(labelsize=12)  
@@ -517,17 +541,79 @@ cb.ax.tick_params(labelsize=12)
 fig.suptitle(f'GSDR: {ERA_country}. FRMSE on RL', fontsize=16)
 plt.show()
 
+############################################################################
+#SCATTERS/CORRELATIONS
+
+fig = plt.figure()
+s= 10
+
+ax1 = fig.add_subplot(2,2,1)
+ax1.scatter(val_info.cleaned_years,FRMSE_df.FRMSE, s=s)
+ax1.plot()
+
+
+ax2 = fig.add_subplot(2,2,2)
+ax2.plot(np.arange(0,0.7,0.1),np.arange(0,0.7,0.1),"--k",alpha = 0.4)
+ax2.scatter(FRMSE_df.FRMSE,FRMSE_df.FRMSE_0, s=s,alpha = 0.5)
+
+diff_all_0 = FRMSE_df.FRMSE_0 -FRMSE_df.FRMSE
+n_above = diff_all_0[diff_all_0>0.01].count()
+n_below = diff_all_0[diff_all_0<-0.01].count()
+
+ax2.set_xlabel(f"free ({n_below} more than 0.01 difference)")
+ax2.set_ylabel(f"b = 0 ({n_above})")
+ax2.set_xlim(0,0.6)
+ax2.set_ylim(0,0.6)
+
+
+ax3 = fig.add_subplot(2,2,3)
+ax3.plot(np.arange(0,0.7,0.1),np.arange(0,0.7,0.1),"--k",alpha = 0.4)
+ax3.scatter(FRMSE_df.FRMSE,FRMSE_df.FRMSE_5, s=s,alpha = 0.5)
+
+diff_all_5 = FRMSE_df.FRMSE_5 -FRMSE_df.FRMSE
+n_above = diff_all_5[diff_all_5>0.01].count()
+n_below = diff_all_5[diff_all_5<-0.01].count()
+
+ax3.set_xlabel(f"free ({n_below})")
+ax3.set_ylabel(f"b = 5% sig ({n_above})")
+ax3.set_xlim(0,0.6)
+ax3.set_ylim(0,0.6)
+
+
+ax4 = fig.add_subplot(2,2,4)
+ax4.plot(np.arange(0,0.7,0.1),np.arange(0,0.7,0.1),"--k",alpha = 0.4)
+ax4.scatter(FRMSE_df.FRMSE_0,FRMSE_df.FRMSE_5, s=s,alpha = 0.5)
+
+diff_0_5 = FRMSE_df.FRMSE_5 -FRMSE_df.FRMSE_0
+n_above = diff_0_5[diff_0_5>0.01].count()
+n_below = diff_0_5[diff_0_5<-0.01].count()
+
+ax4.set_xlabel(f"b = 0 ({n_below})")
+ax4.set_ylabel(f"b = 5% sig ({n_above})")
+ax4.set_xlim(0,0.6)
+ax4.set_ylim(0,0.6)
+
+fig.suptitle(f"{country}")
+fig.tight_layout()
+plt.show()
+
+
+
+
+
+
 
 # CHECKS
-j = 19
+j = 25
 plot_pos = np.arange(1,np.size(RL_df.obs_AMS.iloc[j])+1)/(1+np.size(RL_df.obs_AMS.iloc[j]))
 
 eRP = 1/(1-plot_pos)
 
 TNX_FIG_valid(RL_df.obs_AMS.iloc[j],eRP,RL_df.return_levels_b0.iloc[j],TENAXlabel = "b = 0")
-plt.plot(eRP,RL_df.return_levels.iloc[j],"r", label = "b = free")
-plt.plot(eRP,RL_df.return_levels_5.iloc[j],"g", label = "b = 5% sig")
+plt.plot(eRP,RL_df.return_levels.iloc[j],"r", alpha = 0.5,label = "b = free")
+plt.plot(eRP,RL_df.return_levels_5.iloc[j],"g",alpha = 0.5, label = "b = 5% sig")
 plt.legend()
+plt.title(f"station {j}: {FRMSE_df.station.iloc[j]}. free FRMSE: {FRMSE_df.FRMSE.iloc[j]:.3f} \n 5% sig FRMSE: {FRMSE_df.FRMSE_5.iloc[j]:.3f} \n b always 0 FRMSE: {FRMSE_df.FRMSE_0.iloc[j]:.3f}")
 plt.show()
 
 
