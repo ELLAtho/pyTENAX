@@ -145,3 +145,26 @@ if len(missing_rows) != 0:
 else:
     pass
 
+
+df_generated_parameters = pd.read_csv(drive + ':/outputs/'+country_save+'\\synth_generated_parameters.csv')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

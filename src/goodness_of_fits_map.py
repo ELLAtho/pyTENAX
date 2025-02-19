@@ -751,8 +751,8 @@ plt.show()
 #probabilities
 
 fig = plt.figure(figsize=(20, 20))
-norm = mcolors.Normalize(vmin=-0.7, vmax=0.7)
-cmap = 'seismic'
+norm = mcolors.Normalize(vmin=0, vmax=0.5)
+cmap = 'hsv'
 
 
 proj = ccrs.PlateCarree()
@@ -768,6 +768,7 @@ sc = ax1.scatter(
     df_parameters.latitude,
     c = liklihood_df.ave_prob,
     cmap=cmap,
+    norm = norm,
     s = s,
 )
 ax1.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
@@ -780,49 +781,49 @@ ax1.set_title("b free")
 
 
 
-# ax2 = fig.add_subplot(2, 2, 2, projection=proj)
-# ax2.coastlines()
-# ax2.add_feature(cfeature.BORDERS, linestyle=':')
+ax2 = fig.add_subplot(2, 2, 2, projection=proj)
+ax2.coastlines()
+ax2.add_feature(cfeature.BORDERS, linestyle=':')
 
 
-# sc = ax2.scatter(
-#     df_parameters.longitude,
-#     df_parameters.latitude,
-#     c=(FRMSE_df.FRMSE - FRMSE_df.FRMSE_0),
-#     cmap=cmap,
-#     norm = norm,  
-#     s = s,
-# )
-# ax2.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
-# ax2.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
-# ax2.tick_params(labelsize=12)  
-# plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
-# plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
-# ax2.set_title("b free - b 0")
+sc = ax2.scatter(
+    df_parameters.longitude,
+    df_parameters.latitude,
+    c=liklihood_df.ave_prob_5,
+    cmap=cmap,
+    norm = norm,
+    s = s,
+)
+ax2.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+ax2.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
+ax2.tick_params(labelsize=12)  
+plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+ax2.set_title("5%")
 
 
-# ax3 = fig.add_subplot(2, 2, 3, projection=proj)
-# ax3.coastlines()
-# ax3.add_feature(cfeature.BORDERS, linestyle=':')
+ax3 = fig.add_subplot(2, 2, 3, projection=proj)
+ax3.coastlines()
+ax3.add_feature(cfeature.BORDERS, linestyle=':')
 
 
-# sc = ax3.scatter(
-#     df_parameters.longitude,
-#     df_parameters.latitude,
-#     c=(FRMSE_df.FRMSE_5 - FRMSE_df.FRMSE_0),
-#     cmap=cmap,
-#     norm = norm,  
-#     s = s,  
-# )
+sc = ax3.scatter(
+    df_parameters.longitude,
+    df_parameters.latitude,
+    c=liklihood_df.ave_prob_0,
+    cmap=cmap,  
+    norm = norm,
+    s = s,  
+)
 
 
 
-# ax3.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
-# ax3.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
-# ax3.tick_params(labelsize=12)  
-# plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
-# plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
-# ax3.set_title("b 5 - b 0")
+ax3.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+ax3.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
+ax3.tick_params(labelsize=12)  
+plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+ax3.set_title("b = 0")
 
 ax4 = fig.add_subplot(2, 2, 4, projection=proj)
 ax4.coastlines()
@@ -858,15 +859,135 @@ ax4.set_title("cleaned years")
 # Add a colorbar at the bottom
 cbar_ax = fig.add_subplot([0.15, 0.02, 0.7, 0.03])  # Position for the colorbar
 cb = plt.colorbar(sc, cax=cbar_ax, orientation='horizontal')
-cb.set_label(r'$\Delta$FRMSE', fontsize=14)
+cb.set_label('Average probability', fontsize=14)
 cb.ax.tick_params(labelsize=12)
-
-# Set x and y ticks
 
 
 #fig.tight_layout()
-fig.suptitle(f'GSDR: {ERA_country}. FRMSE on RL', fontsize=16)
+fig.suptitle(f'GSDR: {ERA_country}.', fontsize=16)
 plt.show()
+
+
+
+
+
+
+#difference
+fig = plt.figure(figsize=(20, 20))
+norm = mcolors.Normalize(vmin=-0.05, vmax=0.05)
+cmap = 'seismic'
+
+
+proj = ccrs.PlateCarree()
+ax1 = fig.add_subplot(2, 2, 1, projection=proj)
+
+# Add map features
+ax1.coastlines()
+ax1.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc = ax1.scatter(
+    df_parameters.longitude,
+    df_parameters.latitude,
+    c = liklihood_df.ave_prob - liklihood_df.ave_prob_5,
+    cmap=cmap,
+    norm = norm,
+    s = s,
+)
+ax1.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+ax1.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
+ax1.tick_params(labelsize=12)  
+
+plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+ax1.set_title("b free - 5")
+
+
+
+ax2 = fig.add_subplot(2, 2, 2, projection=proj)
+ax2.coastlines()
+ax2.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc = ax2.scatter(
+    df_parameters.longitude,
+    df_parameters.latitude,
+    c=liklihood_df.ave_prob - liklihood_df.ave_prob_0,
+    cmap=cmap,
+    norm = norm,
+    s = s,
+)
+ax2.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+ax2.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
+ax2.tick_params(labelsize=12)  
+plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+ax2.set_title("free - 0")
+
+
+ax3 = fig.add_subplot(2, 2, 3, projection=proj)
+ax3.coastlines()
+ax3.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc = ax3.scatter(
+    df_parameters.longitude,
+    df_parameters.latitude,
+    c=liklihood_df.ave_prob_5 - liklihood_df.ave_prob_0,
+    cmap=cmap,  
+    norm = norm,
+    s = s,  
+)
+
+
+
+ax3.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+ax3.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
+ax3.tick_params(labelsize=12)  
+plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+ax3.set_title("5 - 0")
+
+ax4 = fig.add_subplot(2, 2, 4, projection=proj)
+ax4.coastlines()
+ax4.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc4 = ax4.scatter(
+    val_info.longitude,
+    val_info.latitude,
+    c=val_info.cleaned_years,
+    cmap="viridis",
+    s = s,  
+)
+ax4.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+ax4.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
+ax4.tick_params(labelsize=12)  
+plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+
+fig.subplots_adjust(right=0.85)
+
+cbar_ax4 = fig.add_axes([0.87, 0.12, 0.03, 0.32])  # Position for the colorbar outside
+cb4 = plt.colorbar(sc4, cax=cbar_ax4)  # Colorbar for ax4
+cb4.set_label('Number of complete years', fontsize=14)
+cb4.ax.tick_params(labelsize=12)
+
+ax4.set_title("cleaned years")
+
+
+# Add a colorbar at the bottom
+cbar_ax = fig.add_subplot([0.15, 0.02, 0.7, 0.03])  # Position for the colorbar
+cb = plt.colorbar(sc, cax=cbar_ax, orientation='horizontal')
+cb.set_label('Average probability', fontsize=14)
+cb.ax.tick_params(labelsize=12)
+
+
+#fig.tight_layout()
+fig.suptitle(f'GSDR: {ERA_country}.', fontsize=16)
+plt.show()
+
+
 
 
 
@@ -930,9 +1051,10 @@ plt.show()
 
 
 
-
-
-
+plt.scatter(FRMSE_df.FRMSE,liklihood_df.ave_prob)
+plt.xlabel("FRMSE")
+plt.ylabel("average prob")
+plt.show()
 
 # CHECKS
 j = 19
