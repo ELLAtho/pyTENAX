@@ -19,6 +19,7 @@ sys.path.append('D:')
 import numpy as np
 import pandas as pd
 from scipy.stats import anderson
+from scipy.stats import gaussian_kde
 
 import datetime as dt
 import matplotlib.pyplot as plt
@@ -215,8 +216,10 @@ for i in np.arange(0,n_stations):
     fig, (ax2, ax1) = plt.subplots(2, 1, figsize=(5, 8), gridspec_kw={'height_ratios': [1, 2.5]})
     
     hist, pdf_values = TNX_FIG_temp_model(T=T, g_phat=g_phats[i],beta=4,eT=eT,xlimits = [eT[0],eT[-1]])
+    kde  = gaussian_kde(T) #use kernel density to get probability
+    prob = kde(eT)
     
-    diff[i] = pdf_values - hist
+    diff[i] = pdf_values - prob
     RMSE = np.sqrt(np.sum(diff[i]**2)/len(diff[i]))
     FRMSE = np.sqrt(
         np.sum(diff[i]**2)/len(diff[i]))/(np.sum(hist)/len(diff[i]))
