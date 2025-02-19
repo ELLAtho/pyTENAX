@@ -222,16 +222,16 @@ for i in np.arange(0,n_stations):
     diff[i] = pdf_values - prob
     RMSE = np.sqrt(np.sum(diff[i]**2)/len(diff[i]))
     FRMSE = np.sqrt(
-        np.sum(diff[i]**2)/len(diff[i]))/(np.sum(hist)/len(diff[i]))
+        np.sum(diff[i]**2)/len(diff[i]))/(np.sum(prob)/len(diff[i]))
     
     
     eT_upper_perc = eT[eT>=min_T_upper]
     
-    hist_upper_perc = hist[eT>=min_T_upper]
+    prob_upper_perc = prob[eT>=min_T_upper]
     pdf_values_upper_perc = pdf_values[eT>=min_T_upper]
-    diff_upper_perc = pdf_values_upper_perc - hist_upper_perc
+    diff_upper_perc = pdf_values_upper_perc - prob_upper_perc
     FRMSE_upper_perc1 = np.sqrt(
-        np.sum(diff_upper_perc**2)/len(diff_upper_perc))/(np.sum(hist_upper_perc)/len(diff_upper_perc))
+        np.sum(diff_upper_perc**2)/len(diff_upper_perc))/(np.sum(prob_upper_perc)/len(diff_upper_perc))
     
     
     ax1.plot([min_T_upper]*2,[-0.01,0.07],color = 'k', alpha = 0.4)
@@ -292,21 +292,23 @@ for i in np.arange(0,n_stations):
         hist_check, pdf_values_check = TNX_FIG_temp_model(
             T=T,
             g_phat=g_phats[i],beta=4,eT=eT_check,xlimits = [eT[0],eT[-1]])
+        prob_check = kde(eT_check)
         
-        diff_check = pdf_values_check - hist_check
+        
+        diff_check = pdf_values_check - prob_check
         
         eT_upper_perc = eT_check[eT_check>=min_T_upper]
         upper_perc_length[i][bins_check_itn] = len(eT_upper_perc)
         
-        hist_upper_perc = hist_check[eT_check>=min_T_upper]
+        prob_upper_perc = prob_check[eT_check>=min_T_upper]
         pdf_values_upper_perc = pdf_values_check[eT_check>=min_T_upper]
-        diff_upper_perc = pdf_values_upper_perc - hist_upper_perc
+        diff_upper_perc = pdf_values_upper_perc - prob_upper_perc
         
         FRMSE_check = np.sqrt(
-            np.sum(diff_check**2)/len(diff_check))/(np.sum(hist)/len(diff_check))
+            np.sum(diff_check**2)/len(diff_check))/(np.sum(prob_check)/len(diff_check))
         
         FRMSE_upper_perc[i][bins_check_itn] = np.sqrt(
-            np.sum(diff_upper_perc**2)/len(diff_upper_perc))/(np.sum(hist_upper_perc)/len(diff_upper_perc))
+            np.sum(diff_upper_perc**2)/len(diff_upper_perc))/(np.sum(prob_upper_perc)/len(diff_upper_perc))
         
         ax.set_title(f"{n_bins} bins. FRMSE = {FRMSE_check:.3f} \n FRMSE on top {(1-GOF_perc)*100:.0f}% data: {FRMSE_upper_perc[i][bins_check_itn]:.3f}")
     fig.tight_layout()

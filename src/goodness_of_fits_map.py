@@ -304,93 +304,191 @@ else:
 ###############################################################################
 # Probs and stuff
 
-mult_prob = [0] * len(new_df)
-ave_prob = [0] * len(new_df)
-mins = [0] * len(new_df)
-maxes = [0] * len(new_df)
-n_bad_RL = [0] * len(new_df)
-start_time = [0] * len(new_df)
 
-for i in np.arange(0,len(new_df)):
-    start_time[i] = time.time()
-    n_itn = 1000
-    percentages = [0.05,0.95]
-    n = round(df_parameters.n_events_per_yr.iloc[i])
-    
-    g_phat = [df_parameters.mu.iloc[i],df_parameters.sigma.iloc[i]]
-    if np.any(np.isnan(g_phat[0])):
-        print(f"no gphat. {g_phat}")
-        
-        mult_prob[i] = np.nan
-        ave_prob[i] = np.nan
-    else:
-        #free
-        F_phat = [new_df.kappa.iloc[i],new_df.b.iloc[i],
-                  new_df["lambda"].iloc[i],new_df.a.iloc[i]]
-        #5% sig
-        F_phat_5 = [df_parameters.kappa.iloc[i],df_parameters.b.iloc[i],
-                    df_parameters["lambda"].iloc[i],df_parameters.a.iloc[i]]
-        #b always 0
-        F_phat_0 = [df_parameters_0.kappa.iloc[i],df_parameters_0.b.iloc[i],
-                    df_parameters_0["lambda"].iloc[i],df_parameters_0.a.iloc[i]]
-            
-        
-        
-        AMS_stat = RL_df.obs_AMS.iloc[i] 
-        plot_pos = np.arange(1,np.size(AMS_stat)+1)/(1+AMS_stat)
-        eRP = 1/(1-plot_pos)
-        
-        
-        n_years = len(AMS_stat)
-        S.n_monte_carlo = int(n_years*n)
-        
-        AMS_sim = np.zeros([n_itn,n_years])
-        for itn in np.arange(0,n_itn):
-            _, _, P_mc = S.model_inversion(F_phat, g_phat, n, Ts,gen_P_mc = True,gen_RL=False,method_root_scalar="secant") 
-            AMS_sim[itn,:] = [np.max(P_mc[j:j+n]) for j in np.arange(0,int(n_years*n),int(n))]
-            AMS_sim[itn,:].sort()
-        
-        mins[i] = [np.quantile(AMS_sim[:,j],percentages[0]) for j in np.arange(0,n_years)]
-        maxes[i] = [np.quantile(AMS_sim[:,j],percentages[1]) for j in np.arange(0,n_years)]
-        
-        
-        outs = AMS_stat[(AMS_stat > maxes[i]) | (AMS_stat < mins[i])]
-        n_bad_RL[i] = len(outs)
-        
-        prob = [0]*len(eRP)
-        total_prob =[0]*len(eRP)
-        kde = [0]*len(eRP)
-        
-        for RP_rank in np.arange(0,len(eRP)):
-            valid_data = AMS_sim[:, RP_rank]
-            valid_data = valid_data[np.isfinite(valid_data)]
-            valid_data = valid_data[valid_data < 10000]
-            data_removed = n_itn - len(valid_data)
-            if data_removed > 50:
-                print(f"warning. {data_removed} values inf, nan, or too large. index {i}")
-            else:
-                pass
-            kde[RP_rank]  = gaussian_kde(valid_data) #use kernel density to get probability
-            prob[RP_rank] = kde[RP_rank](AMS_stat[RP_rank])
-            
-        mult_prob[i] = np.prod(prob)
-        ave_prob[i] = np.mean(prob)
-    
-    if i%50 == 0:
-        print(f"multiplied prob {mult_prob[i]}")
-        time_taken = (time.time()-start_time[i-9])/10
-        time_left = (len(new_df)-i)*time_taken/60
-        print(f"{i}/{len(new_df)}. Approx time left: {time_left:.0f} mins")
-    
-liklihood_df = pd.DataFrame({'station': df_parameters.station,
-                             "mult_prob": mult_prob,
-                             "ave_prob": ave_prob,
-                             "mins": mins,
-                             "maxes": maxes,
-                             "n_bad_RL": n_bad_RL
-                             })
+save_name_lik = f"{drive}:/outputs/{country_save}\\liklihood.csv"
 
-# TODO: check format of mins and maxes, dont know if pandas will understand
+if save_name_lik not in output_files:
+        
+    mult_prob = [0] * len(new_df)
+    ave_prob = [0] * len(new_df)
+    mins = [0] * len(new_df)
+    maxes = [0] * len(new_df)
+    n_bad_RL = [0] * len(new_df)
+    
+    
+    mult_prob_5 = [0] * len(new_df)
+    ave_prob_5 = [0] * len(new_df)
+    mins_5 = [0] * len(new_df)
+    maxes_5 = [0] * len(new_df)
+    n_bad_RL_5 = [0] * len(new_df)
+    
+    
+    mult_prob_0 = [0] * len(new_df)
+    ave_prob_0 = [0] * len(new_df)
+    mins_0 = [0] * len(new_df)
+    maxes_0 = [0] * len(new_df)
+    n_bad_RL_0 = [0] * len(new_df)
+    
+    start_time = [0] * len(new_df)
+    
+    for i in np.arange(0,len(new_df)):
+        start_time[i] = time.time()
+        n_itn = 1000
+        percentages = [0.05,0.95]
+        
+        g_phat = [df_parameters.mu.iloc[i],df_parameters.sigma.iloc[i]]
+        if np.any(np.isnan(g_phat[0])):
+            print(f"no gphat. {g_phat}")
+            
+            mult_prob[i] = np.nan
+            ave_prob[i] = np.nan
+        else:
+            n = round(df_parameters.n_events_per_yr.iloc[i])
+            #free
+            F_phat = [new_df.kappa.iloc[i],new_df.b.iloc[i],
+                      new_df["lambda"].iloc[i],new_df.a.iloc[i]]
+            #5% sig
+            F_phat_5 = [df_parameters.kappa.iloc[i],df_parameters.b.iloc[i],
+                        df_parameters["lambda"].iloc[i],df_parameters.a.iloc[i]]
+            #b always 0
+            F_phat_0 = [df_parameters_0.kappa.iloc[i],df_parameters_0.b.iloc[i],
+                        df_parameters_0["lambda"].iloc[i],df_parameters_0.a.iloc[i]]
+                
+            
+            
+            AMS_stat = RL_df.obs_AMS.iloc[i] 
+            plot_pos = np.arange(1,np.size(AMS_stat)+1)/(1+AMS_stat)
+            eRP = 1/(1-plot_pos)
+            
+            
+            n_years = len(AMS_stat)
+            S.n_monte_carlo = int(n_years*n)
+            
+            AMS_sim = np.zeros([n_itn,n_years])
+            for itn in np.arange(0,n_itn):
+                _, _, P_mc = S.model_inversion(F_phat, g_phat, n, Ts,gen_P_mc = True,gen_RL=False,method_root_scalar="secant") 
+                AMS_sim[itn,:] = [np.max(P_mc[j:j+n]) for j in np.arange(0,int(n_years*n),int(n))]
+                AMS_sim[itn,:].sort()
+            
+            mins[i] = [np.quantile(AMS_sim[:,j],percentages[0]) for j in np.arange(0,n_years)]
+            maxes[i] = [np.quantile(AMS_sim[:,j],percentages[1]) for j in np.arange(0,n_years)]
+            
+            
+            outs = AMS_stat[(AMS_stat > maxes[i]) | (AMS_stat < mins[i])]
+            n_bad_RL[i] = len(outs)
+            
+            prob = [0]*len(eRP)
+            total_prob =[0]*len(eRP)
+            kde = [0]*len(eRP)
+            
+            for RP_rank in np.arange(0,len(eRP)):
+                valid_data = AMS_sim[:, RP_rank]
+                valid_data = valid_data[np.isfinite(valid_data)]
+                valid_data = valid_data[valid_data < 10000]
+                data_removed = n_itn - len(valid_data)
+                if data_removed > 50:
+                    print(f"warning. {data_removed} values inf, nan, or too large. index {i}")
+                else:
+                    pass
+                kde[RP_rank]  = gaussian_kde(valid_data) #use kernel density to get probability
+                prob[RP_rank] = kde[RP_rank](AMS_stat[RP_rank])
+                
+            mult_prob[i] = np.prod(prob)
+            ave_prob[i] = np.mean(prob)
+            
+            AMS_sim_0 = np.zeros([n_itn,n_years])
+            for itn in np.arange(0,n_itn):
+                _, _, P_mc = S.model_inversion(F_phat_0, g_phat, n, Ts,gen_P_mc = True,gen_RL=False,method_root_scalar="secant") 
+                AMS_sim_0[itn,:] = [np.max(P_mc[j:j+n]) for j in np.arange(0,int(n_years*n),int(n))]
+                AMS_sim_0[itn,:].sort()
+            
+            mins_0[i] = [np.quantile(AMS_sim_0[:,j],percentages[0]) for j in np.arange(0,n_years)]
+            maxes_0[i] = [np.quantile(AMS_sim_0[:,j],percentages[1]) for j in np.arange(0,n_years)]
+            
+            
+            outs_0 = AMS_stat[(AMS_stat > maxes_0[i]) | (AMS_stat < mins_0[i])]
+            n_bad_RL_0[i] = len(outs_0)
+            
+            prob_0 = [0]*len(eRP)
+            total_prob_0 =[0]*len(eRP)
+            kde_0 = [0]*len(eRP)
+            
+            for RP_rank in np.arange(0,len(eRP)):
+                valid_data = AMS_sim_0[:, RP_rank]
+                valid_data = valid_data[np.isfinite(valid_data)]
+                valid_data = valid_data[valid_data < 10000]
+                data_removed = n_itn - len(valid_data)
+                if data_removed > 50:
+                    print(f"warning. {data_removed} values inf, nan, or too large. index {i}")
+                else:
+                    pass
+                kde_0[RP_rank]  = gaussian_kde(valid_data) #use kernel density to get probability
+                prob_0[RP_rank] = kde_0[RP_rank](AMS_stat[RP_rank])
+                
+            mult_prob_0[i] = np.prod(prob_0)
+            ave_prob_0[i] = np.mean(prob_0)
+            
+            
+            AMS_sim_5 = np.zeros([n_itn,n_years])
+            for itn in np.arange(0,n_itn):
+                _, _, P_mc = S.model_inversion(F_phat_5, g_phat, n, Ts,gen_P_mc = True,gen_RL=False,method_root_scalar="secant") 
+                AMS_sim_5[itn,:] = [np.max(P_mc[j:j+n]) for j in np.arange(0,int(n_years*n),int(n))]
+                AMS_sim_5[itn,:].sort()
+            
+            mins_5[i] = [np.quantile(AMS_sim_5[:,j],percentages[0]) for j in np.arange(0,n_years)]
+            maxes_5[i] = [np.quantile(AMS_sim_5[:,j],percentages[1]) for j in np.arange(0,n_years)]
+            
+            
+            outs_5 = AMS_stat[(AMS_stat > maxes_5[i]) | (AMS_stat < mins_5[i])]
+            n_bad_RL_5[i] = len(outs_5)
+            
+            prob_5 = [0]*len(eRP)
+            total_prob_5 =[0]*len(eRP)
+            kde_5 = [0]*len(eRP)
+            
+            for RP_rank in np.arange(0,len(eRP)):
+                valid_data = AMS_sim_5[:, RP_rank]
+                valid_data = valid_data[np.isfinite(valid_data)]
+                valid_data = valid_data[valid_data < 10000]
+                data_removed = n_itn - len(valid_data)
+                if data_removed > 50:
+                    print(f"warning. {data_removed} values inf, nan, or too large. index {i}")
+                else:
+                    pass
+                kde_5[RP_rank]  = gaussian_kde(valid_data) #use kernel density to get probability
+                prob_5[RP_rank] = kde_5[RP_rank](AMS_stat[RP_rank])
+                
+            mult_prob_5[i] = np.prod(prob_5)
+            ave_prob_5[i] = np.mean(prob_5)
+            
+        if i%50 == 0:
+            print(f"multiplied prob {mult_prob[i]}")
+            time_taken = (time.time()-start_time[i-9])/10
+            time_left = (len(new_df)-i)*time_taken/60
+            print(f"{i}/{len(new_df)}. Approx time left: {time_left:.0f} mins")
+        
+    liklihood_df = pd.DataFrame({'station': df_parameters.station,
+                                 "mult_prob": mult_prob,
+                                 "ave_prob": ave_prob,
+                                 "mins": mins,
+                                 "maxes": maxes,
+                                 "n_bad_RL": n_bad_RL,
+                                 "mult_prob_0": mult_prob_0,
+                                 "ave_prob_0": ave_prob_0,
+                                 "mins_0": mins_0,
+                                 "maxes_0": maxes_0,
+                                 "n_bad_RL_0": n_bad_RL_0,
+                                 "mult_prob_5": mult_prob_5,
+                                 "ave_prob_5": ave_prob_5,
+                                 "mins_5": mins_5,
+                                 "maxes_5": maxes_5,
+                                 "n_bad_RL_5": n_bad_RL_5,
+                                 })
+    
+    liklihood_df.to_csv(f"{drive}:/outputs/{country_save}/liklihood.csv",index=False)
+else:
+    liklihood_df = pd.read_csv(f"{drive}:/outputs/{country_save}/liklihood.csv",dtype={'station': str})
+# TODO: add _5 and _0
 
 
 #maps
@@ -649,6 +747,128 @@ cb.ax.tick_params(labelsize=12)
 #fig.tight_layout()
 fig.suptitle(f'GSDR: {ERA_country}. FRMSE on RL', fontsize=16)
 plt.show()
+#############################################################################
+#probabilities
+
+fig = plt.figure(figsize=(20, 20))
+norm = mcolors.Normalize(vmin=-0.7, vmax=0.7)
+cmap = 'seismic'
+
+
+proj = ccrs.PlateCarree()
+ax1 = fig.add_subplot(2, 2, 1, projection=proj)
+
+# Add map features
+ax1.coastlines()
+ax1.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc = ax1.scatter(
+    df_parameters.longitude,
+    df_parameters.latitude,
+    c = liklihood_df.ave_prob,
+    cmap=cmap,
+    s = s,
+)
+ax1.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+ax1.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
+ax1.tick_params(labelsize=12)  
+
+plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+ax1.set_title("b free")
+
+
+
+# ax2 = fig.add_subplot(2, 2, 2, projection=proj)
+# ax2.coastlines()
+# ax2.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+# sc = ax2.scatter(
+#     df_parameters.longitude,
+#     df_parameters.latitude,
+#     c=(FRMSE_df.FRMSE - FRMSE_df.FRMSE_0),
+#     cmap=cmap,
+#     norm = norm,  
+#     s = s,
+# )
+# ax2.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+# ax2.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
+# ax2.tick_params(labelsize=12)  
+# plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+# plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+# ax2.set_title("b free - b 0")
+
+
+# ax3 = fig.add_subplot(2, 2, 3, projection=proj)
+# ax3.coastlines()
+# ax3.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+# sc = ax3.scatter(
+#     df_parameters.longitude,
+#     df_parameters.latitude,
+#     c=(FRMSE_df.FRMSE_5 - FRMSE_df.FRMSE_0),
+#     cmap=cmap,
+#     norm = norm,  
+#     s = s,  
+# )
+
+
+
+# ax3.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+# ax3.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
+# ax3.tick_params(labelsize=12)  
+# plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+# plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+# ax3.set_title("b 5 - b 0")
+
+ax4 = fig.add_subplot(2, 2, 4, projection=proj)
+ax4.coastlines()
+ax4.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc4 = ax4.scatter(
+    val_info.longitude,
+    val_info.latitude,
+    c=val_info.cleaned_years,
+    cmap="viridis",
+    s = s,  
+)
+ax4.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+ax4.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
+ax4.tick_params(labelsize=12)  
+plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+
+fig.subplots_adjust(right=0.85)
+
+cbar_ax4 = fig.add_axes([0.87, 0.12, 0.03, 0.32])  # Position for the colorbar outside
+cb4 = plt.colorbar(sc4, cax=cbar_ax4)  # Colorbar for ax4
+cb4.set_label('Number of complete years', fontsize=14)
+cb4.ax.tick_params(labelsize=12)
+
+ax4.set_title("cleaned years")
+
+
+
+
+
+# Add a colorbar at the bottom
+cbar_ax = fig.add_subplot([0.15, 0.02, 0.7, 0.03])  # Position for the colorbar
+cb = plt.colorbar(sc, cax=cbar_ax, orientation='horizontal')
+cb.set_label(r'$\Delta$FRMSE', fontsize=14)
+cb.ax.tick_params(labelsize=12)
+
+# Set x and y ticks
+
+
+#fig.tight_layout()
+fig.suptitle(f'GSDR: {ERA_country}. FRMSE on RL', fontsize=16)
+plt.show()
+
+
 
 ############################################################################
 #SCATTERS/CORRELATIONS
