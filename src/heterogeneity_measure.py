@@ -42,24 +42,24 @@ drive = 'D'
 alpha_set = 0.05
 
 
-# country = 'Germany' 
-# ERA_country = 'Germany'
-# country_save = 'Germany'
-# code_str = 'DE_'
-# minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
-# name_len = 5
-# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-# censor_thr = 0.9
-
-
-country = 'Japan'
-ERA_country = 'Japan'
-country_save = 'Japan'
-code_str = 'JP_'
-minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+country = 'Germany' 
+ERA_country = 'Germany'
+country_save = 'Germany'
+code_str = 'DE_'
+minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
 name_len = 5
 min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 censor_thr = 0.9
+
+
+# country = 'Japan'
+# ERA_country = 'Japan'
+# country_save = 'Japan'
+# code_str = 'JP_'
+# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+# name_len = 5
+# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+# censor_thr = 0.9
 
 
 name_col = 'ppt' 
@@ -148,13 +148,94 @@ else:
 
 df_generated_parameters = pd.read_csv(drive + ':/outputs/'+country_save+'\\synth_generated_parameters.csv')
 
+#without L-moments...
+
+
+print(f"{len(new_df)} stations")
+
+variables = df_generated_parameters.columns[-5:-1]
+for variable in variables:
+    v = np.std(new_df[variable])
+    mu_v = np.mean(df_generated_parameters[variable])
+    sigma_v = np.std(df_generated_parameters[variable])
+
+    H = np.abs((v - mu_v)/sigma_v)
+    if H < 1:
+        print(f"{country}. {variable} definitely homogeneous. H = {H}")
+    elif H > 1 and H < 2:
+        print(f"{country}. {variable} maybe heterogeneous. H = {H}")
+    else:
+        print(f"{country}. {variable} definitely heterogeneous. H = {H}")
+
+
+#cutout
+
+
+minlat_cut , minlon_cut , maxlat_cut , maxlon_cut = 49, 9, 50, 10
 
 
 
+s = 3 
+
+
+fig = plt.figure(figsize=(10, 10))
+proj = ccrs.PlateCarree()
+ax1 = fig.add_subplot(1, 1, 1, projection=proj)
+ax1.coastlines()
+ax1.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+ax1.plot([minlon, minlon],[minlat, maxlat],  'r', linewidth=2, transform=ccrs.PlateCarree())
+ax1.plot([maxlon, maxlon],[maxlat, minlat],  'r', linewidth=2, transform=ccrs.PlateCarree())
+
+ax1.plot([minlon, maxlon],[minlat, minlat],  'r', linewidth=2, transform=ccrs.PlateCarree())
+ax1.plot([maxlon, minlon],[maxlat, maxlat],  'r', linewidth=2, transform=ccrs.PlateCarree(),label = 'Germany')
+
+
+ax1.plot([minlon_cut , minlon_cut ],[minlat_cut , maxlat_cut ],  'b', linewidth=2, transform=ccrs.PlateCarree())
+ax1.plot([maxlon_cut , maxlon_cut ],[maxlat_cut , minlat_cut ],  'b', linewidth=2, transform=ccrs.PlateCarree())
+
+ax1.plot([minlon_cut , maxlon_cut ],[minlat_cut , minlat_cut ],  'b', linewidth=2, transform=ccrs.PlateCarree())
+ax1.plot([maxlon_cut , minlon_cut ],[maxlat_cut , maxlat_cut ],  'b', linewidth=2, transform=ccrs.PlateCarree(),label = 'Germany cut')
+
+if df_parameters.b.min() == 0:
+    norm = mcolors.TwoSlopeNorm(vmin=-0.06, vcenter=0, vmax=0.06)
+else:
+    norm = mcolors.TwoSlopeNorm(vmin=df_parameters.b.min(), vcenter=0, vmax=-1*df_parameters.b.min())
 
 
 
+plt.scatter(new_df.longitude,new_df.latitude,
+            c = new_df.b,
+            s = s,
+            cmap = 'seismic',
+            norm = norm)
 
+
+plt.legend()
+plt.show()
+
+
+
+new_df_cut = new_df[new_df['latitude']>=minlat_cut] #filter station locations to within ERA bounds
+new_df_cut = new_df_cut[new_df_cut['latitude']<=maxlat_cut]
+new_df_cut = new_df_cut[new_df_cut['longitude']>=minlon_cut]
+new_df_cut = new_df_cut[new_df_cut['longitude']<=maxlon_cut]
+
+print("###############################################")
+print(f"{len(new_df_cut)} stations")
+for variable in variables:
+    v = np.std(new_df_cut[variable])
+    mu_v = np.mean(df_generated_parameters[variable])
+    sigma_v = np.std(df_generated_parameters[variable])
+
+    H = np.abs((v - mu_v)/sigma_v)
+    if H < 1:
+        print(f"{country}. {variable} definitely homogeneous. H = {H}")
+    elif H > 1 and H < 2:
+        print(f"{country}. {variable} maybe heterogeneous. H = {H}")
+    else:
+        print(f"{country}. {variable} definitely heterogeneous. H = {H}")
 
 
 
