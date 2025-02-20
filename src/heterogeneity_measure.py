@@ -161,17 +161,17 @@ for variable in variables:
 
     H = np.abs((v - mu_v)/sigma_v)
     if H < 1:
-        print(f"{country}. {variable} definitely homogeneous. H = {H}")
+        print(f"{country}. {variable} definitely homogeneous. H = {H:.2f}")
     elif H > 1 and H < 2:
-        print(f"{country}. {variable} maybe heterogeneous. H = {H}")
+        print(f"{country}. {variable} maybe heterogeneous. H = {H:.2f}")
     else:
-        print(f"{country}. {variable} definitely heterogeneous. H = {H}")
+        print(f"{country}. {variable} definitely heterogeneous. H = {H:.2f}")
 
 
 #cutout
 
 
-minlat_cut , minlon_cut , maxlat_cut , maxlon_cut = 49, 9, 50, 10
+minlat_cut , minlon_cut , maxlat_cut , maxlon_cut = 48, 8, 50, 10
 
 
 
@@ -231,11 +231,11 @@ for variable in variables:
 
     H = np.abs((v - mu_v)/sigma_v)
     if H < 1:
-        print(f"{country}. {variable} definitely homogeneous. H = {H}")
+        print(f"{country}. {variable} definitely homogeneous. H = {H:.2f}")
     elif H > 1 and H < 2:
-        print(f"{country}. {variable} maybe heterogeneous. H = {H}")
+        print(f"{country}. {variable} maybe heterogeneous. H = {H:.2f}")
     else:
-        print(f"{country}. {variable} definitely heterogeneous. H = {H}")
+        print(f"{country}. {variable} definitely heterogeneous. H = {H:.2f}")
 
 
 
