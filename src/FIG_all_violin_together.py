@@ -201,9 +201,81 @@ plt.show()
 
 
 
+###############################################################################
+#Errors
+  
+
+FRMSE_df_G = pd.read_csv(f"{drive}:/outputs/Germany/FRMSE.csv", dtype={'station': str})
+liklihood_df_G = pd.read_csv(f"{drive}:/outputs/Germany/liklihood.csv",dtype={'station': str})
+
+
+FRMSE_df_J = pd.read_csv(f"{drive}:/outputs/Japan/FRMSE.csv", dtype={'station': str})
+liklihood_df_J = pd.read_csv(f"{drive}:/outputs/Japan/liklihood.csv",dtype={'station': str})
+    
+colors = ['y','y','y','r','r','r']
+
+bplot = plt.boxplot([FRMSE_df_G.FRMSE.copy().dropna(),
+                   FRMSE_df_G.FRMSE_0.copy().dropna(),
+                   FRMSE_df_G.FRMSE_5.copy().dropna(),
+                   FRMSE_df_J.FRMSE.copy().dropna(),
+                   FRMSE_df_J.FRMSE_0.copy().dropna(),
+                   FRMSE_df_J.FRMSE_5.copy().dropna()],
+                  vert=False, patch_artist=True)
+
+for patch, color in zip(bplot['boxes'], colors):
+    patch.set_facecolor(color)
+
+    
+yellow_patch = mpatches.Patch(color='y', label='Germany')
+red_patch = mpatches.Patch(color='r', label='Japan')
+
+plt.legend(handles=[red_patch, yellow_patch], loc='upper right', fontsize=15)
+plt.xlabel('FRMSE')
+#plt.xlim(-0.1,0.2)
+plt.yticks([1,2,3,4,5,6],['free','b = 0','5% sig','free','b = 0','5% sig'])
+plt.xlim(0,1)
+plt.title('FRMSE')
+
+
+plt.show()
+
+
+bplot = plt.boxplot([liklihood_df_G.ave_prob.copy().dropna(),
+                   liklihood_df_G.ave_prob_0.copy().dropna(),
+                   liklihood_df_G.ave_prob_5.copy().dropna(),
+                   liklihood_df_J.ave_prob.copy().dropna(),
+                   liklihood_df_J.ave_prob_0.copy().dropna(),
+                   liklihood_df_J.ave_prob_5.copy().dropna()],
+                  vert=False, patch_artist=True)
+
+for patch, color in zip(bplot['boxes'], colors):
+    patch.set_facecolor(color)
+
+    
+yellow_patch = mpatches.Patch(color='y', label='Germany')
+red_patch = mpatches.Patch(color='r', label='Japan')
+
+plt.legend(handles=[red_patch, yellow_patch], loc='upper right', fontsize=15)
+plt.xlabel('FRMSE')
+#plt.xlim(-0.1,0.2)
+plt.yticks([1,2,3,4,5,6],['free','b = 0','5% sig','free','b = 0','5% sig'])
+#plt.xlim(0,1)
+plt.title('Average probability')
+
+
+plt.show()
+
+
+# plt.boxplot([liklihood_df.ave_prob.copy().dropna(),liklihood_df.ave_prob_0.copy().dropna(),liklihood_df.ave_prob_5.copy().dropna()],vert=False)
+# plt.xlabel('Average probability')
+# #plt.xlim(-0.1,0.2)
+# plt.yticks([1,2,3],['free','b = 0','5% sig'])
+# plt.title(f'{ERA_country} average probability')
+# plt.show()
 
 
     
+
     
     
     

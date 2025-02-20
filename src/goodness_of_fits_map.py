@@ -488,7 +488,6 @@ if save_name_lik not in output_files:
     liklihood_df.to_csv(f"{drive}:/outputs/{country_save}/liklihood.csv",index=False)
 else:
     liklihood_df = pd.read_csv(f"{drive}:/outputs/{country_save}/liklihood.csv",dtype={'station': str})
-# TODO: add _5 and _0
 
 
 #maps
