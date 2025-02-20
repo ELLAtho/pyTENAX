@@ -1056,6 +1056,23 @@ plt.xlabel("FRMSE")
 plt.ylabel("average prob")
 plt.show()
 
+###############################################################################
+#Box plots of errors
+plt.boxplot([FRMSE_df.FRMSE.copy().dropna(),FRMSE_df.FRMSE_0.copy().dropna(),FRMSE_df.FRMSE_5.copy().dropna()],vert=False)
+plt.xlabel('FRMSE')
+#plt.xlim(-0.1,0.2)
+plt.yticks([1,2,3],['free','b = 0','5% sig'])
+plt.title(f'{ERA_country} FRMSE')
+plt.show()
+
+plt.boxplot([liklihood_df.ave_prob.copy().dropna(),liklihood_df.ave_prob_0.copy().dropna(),liklihood_df.ave_prob_5.copy().dropna()],vert=False)
+plt.xlabel('Average probability')
+#plt.xlim(-0.1,0.2)
+plt.yticks([1,2,3],['free','b = 0','5% sig'])
+plt.title(f'{ERA_country} average probability')
+plt.show()
+
+
 # CHECKS
 j = 19
 plot_pos = np.arange(1,np.size(RL_df.obs_AMS.iloc[j])+1)/(1+np.size(RL_df.obs_AMS.iloc[j]))
