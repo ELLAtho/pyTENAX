@@ -32,6 +32,11 @@ import time
 
 drive = 'D'
 
+
+choose = False #for selecting a specific file
+chosen_stations = ['12441']
+
+
 country = 'Japan'
 code_str = 'JP' 
 n_stations = 5 #number of stations to sample
@@ -67,6 +72,13 @@ if len(max_stations)>=n_stations:
 else:
     selected = comb_sort[0:n_stations] #choose top n_stations stations
 
+
+if choose:
+    print('selecting specific stations')
+    selected = comb[comb.station.isin(chosen_stations)]
+else:
+    pass
+    
 
 
 #PLOT SELECTED STATIONS LOCATIONS
