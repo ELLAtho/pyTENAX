@@ -256,7 +256,7 @@ yellow_patch = mpatches.Patch(color='y', label='Germany')
 red_patch = mpatches.Patch(color='r', label='Japan')
 
 plt.legend(handles=[red_patch, yellow_patch], loc='upper right', fontsize=15)
-plt.xlabel('FRMSE')
+plt.xlabel('probability')
 #plt.xlim(-0.1,0.2)
 plt.yticks([1,2,3,4,5,6],['free','b = 0','5% sig','free','b = 0','5% sig'])
 #plt.xlim(0,1)
@@ -265,6 +265,13 @@ plt.title('Average probability')
 
 plt.show()
 
+info_G = pd.read_csv(drive+':/metadata/'+"Germany"+'_fulldata.csv', dtype={'station': str})
+info_G_match = info_G[info_G.station.isin(liklihood_df_G.station)]
+n_years_G = info_G_match.cleaned_years.to_numpy()
+
+info_J = pd.read_csv(drive+':/metadata/'+"Japan"+'_fulldata.csv', dtype={'station': str})
+info_J_match = info_J[info_J.station.isin(liklihood_df_J.station)]
+n_years_J = info_J_match.cleaned_years.to_numpy()
 
 
 bplot = plt.boxplot([np.log(liklihood_df_G.mult_prob.copy().dropna()),
@@ -283,18 +290,41 @@ yellow_patch = mpatches.Patch(color='y', label='Germany')
 red_patch = mpatches.Patch(color='r', label='Japan')
 
 plt.legend(handles=[red_patch, yellow_patch], loc='upper right', fontsize=15)
-plt.xlabel('FRMSE')
+plt.xlabel('log(product(probability))')
 #plt.xlim(-0.1,0.2)
 plt.yticks([1,2,3,4,5,6],['free','b = 0','5% sig','free','b = 0','5% sig'])
 #plt.xlim(0,1)
-plt.title('Average probability')
+plt.title('log(product(probability))')
 
 
 plt.show()
 
 
 
+bplot = plt.boxplot([liklihood_df_G.mult_prob.copy()**(1/n_years_G),
+                   liklihood_df_G.mult_prob_0.copy()**(1/n_years_G),
+                   (liklihood_df_G.mult_prob_5.copy())**(1/n_years_G),
+                   ((liklihood_df_J.mult_prob.copy())**(1/n_years_J)).dropna(),
+                   (liklihood_df_J.mult_prob_0.copy())**(1/n_years_J),
+                   (liklihood_df_J.mult_prob_5.copy())**(1/n_years_J)],
+                  vert=False, patch_artist=True)
 
+for patch, color in zip(bplot['boxes'], colors):
+    patch.set_facecolor(color)
+
+    
+yellow_patch = mpatches.Patch(color='y', label='Germany')
+red_patch = mpatches.Patch(color='r', label='Japan')
+
+plt.legend(handles=[red_patch, yellow_patch], loc='upper right', fontsize=15)
+plt.xlabel('prob')
+#plt.xlim(-0.1,0.2)
+plt.yticks([1,2,3,4,5,6],['free','b = 0','5% sig','free','b = 0','5% sig'])
+#plt.xlim(0,1)
+plt.title('mult average')
+
+
+plt.show()
     
 
     

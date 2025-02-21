@@ -490,6 +490,23 @@ else:
     liklihood_df = pd.read_csv(f"{drive}:/outputs/{country_save}/liklihood.csv",dtype={'station': str})
 
 
+################################################################################
+# With set b
+b_set = np.mean(new_df.b)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #maps
 significants = df_parameters[df_parameters.b != 0]
 show_sig_locs = False

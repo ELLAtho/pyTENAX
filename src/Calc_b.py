@@ -475,6 +475,156 @@ else:
     print('Not doing that again!')    
 
 ##########################################################################
+# RUN WITH AVERAGE b
+new_df = df_parameters[['latitude','longitude','b']].copy()
+mask = new_df['b'] == 0
+
+if 'df_parameters_neg' in locals():
+    new_df.loc[mask, 'b'] = df_parameters_neg['b2'].to_numpy()
+else:
+    pass
+
+b_set = np.mean(new_df.b)
+
+
+df_savename = drive + ':/outputs/'+country_save+'\\parameters_bset.csv'
+saved_output_files = glob.glob(drive + ':/outputs/'+country_save+'/*')
+
+if df_savename not in saved_output_files: #read in files and create t time series and do TENAX if it hasnt been done already
+    print('TENAX not done yet on '+country_save+' with set b. making data.')
+    
+    T_files = sorted(glob.glob(drive+':/ERA5_land/'+ERA_country+'*/*')) #make list of era5 files
+    saved_files = glob.glob(drive+':/'+country+'_temp/*') #temp files already saved
+    
+    F_phats = [0]*len(files_sel)
+    RL = [0]*len(files_sel)
+    
+    nans = xr.open_dataarray(T_files[0])[0] 
+    nans = np.invert(np.isnan(nans)).astype(int)
+    
+    saved_counter = 0
+    
+    start_time = [0]*len(files_sel)
+    
+    for i in np.arange(0, len(files_sel)):
+        start_time[i] = time.time() 
+        #read in ppt data
+        if 'code_str' in locals():
+            G,data_meta = read_GSDR_file(files_sel[i],name_col)
+        else:
+            G = pd.read_csv(files_sel[i])
+            G['prec_time'] = pd.to_datetime(G['prec_time'])
+            G.set_index('prec_time', inplace=True)
+            
+        ######################################################################
+        #read in T data
+        if 'code_str' in locals():
+            save_path = drive + ':/'+country+'_temp\\'+code_str + str(val_info.station[val_info.index[i]]) + '.nc'
+        else:
+            save_path = drive + ':/'+country+'_temp\\'+str(val_info.station[val_info.index[i]]) + '.nc'
+        
+        
+        # Check if file already exists before saving
+        
+        if save_path not in saved_files:
+            print(f'file {save_path} not there')
+            T_ERA = []
+            
+        else:
+            print(f"File {save_path} already exists. Skipping loading.")
+            T_ERA = xr.load_dataarray(save_path)
+            
+            #####################################################################
+        #TENAX 
+        if len(T_ERA) == 0: # dont do tenax if no T data saved
+            print('skip')
+            F_phats[i] = np.array([np.nan,np.nan,np.nan,np.nan])
+            RL[i] = np.nan
+        else:
+            data = G 
+            data = S.remove_incomplete_years(data, name_col)
+            t_data = (T_ERA.squeeze()-273.15).to_dataframe()
+            
+            df_arr = np.array(data[name_col])
+            df_dates = np.array(data.index)
+            
+            #extract indexes of ordinary events
+            #these are time-wise indexes =>returns list of np arrays with np.timeindex
+            idx_ordinary=S.get_ordinary_events(data=df_arr,dates=df_dates, name_col=name_col,  check_gaps=False)
+                
+            
+            #get ordinary events by removing too short events
+            #returns boolean array, dates of OE in TO, FROM format, and count of OE in each years
+            arr_vals,arr_dates,n_ordinary_per_year=S.remove_short(idx_ordinary)
+            
+            #assign ordinary events values by given durations, values are in depth per duration, NOT in intensity mm/h
+            dict_ordinary, dict_AMS = S.get_ordinary_events_values(data=df_arr,dates=df_dates, arr_dates_oe=arr_dates)
+            
+            AMS = dict_AMS['60']
+            
+            
+            df_arr_t_data = np.array(t_data[temp_name_col])
+            df_dates_t_data = np.array(t_data.index)
+            
+            dict_ordinary, _ , n_ordinary_per_year = S.associate_vars(dict_ordinary, df_arr_t_data, df_dates_t_data)
+            
+            
+            
+            # Your data (P, T arrays) and threshold thr=3.8
+            P = dict_ordinary["60"]["ordinary"].to_numpy() 
+            T = dict_ordinary["60"]["T"].to_numpy()  
+            
+            
+            # Number of threshold 
+            thr = dict_ordinary["60"]["ordinary"].quantile(S.left_censoring[1])
+            
+            
+            n = n_ordinary_per_year.sum() / len(n_ordinary_per_year)  
+            
+            AMS_sort = AMS.sort_values(by=['AMS'])['AMS']
+            plot_pos = np.arange(1,np.size(AMS_sort)+1)/(1+np.size(AMS_sort))
+            
+            eRP = 1/(1-plot_pos)
+            S.return_period = eRP
+            
+            #TENAX MODEL HERE
+            #magnitude model
+            F_phats_norm, loglik, _, _ = S.magnitude_model(P, T, thr)
+            F_phats[i], loglik, _, _ = S.magnitude_model(P, T, thr, b_set = b_set)
+            #temperature model
+            g_phat = S.temperature_model(T)
+            
+            T_min = g_phat[0] - 2.5 * g_phat[1]
+            T_max = g_phat[0] + 2.5 * g_phat[1]
+            Ts = np.arange(T_min - S.temp_delta, T_max + S.temp_delta, S.temp_res_monte_carlo)
+            
+            RL[i], __, __ = S.model_inversion(F_phats[i], g_phat, n, Ts)
+            
+            
+            time_taken = (time.time()-start_time[i-9])/10
+            time_left = (len(files_sel)-i)*time_taken/60
+            print(f"b set: {F_phats[i]}. normal {F_phats_norm}")
+            print(RL[i])
+            print(f"{i}/{len(files_sel)}. Current average time to complete one {time_taken:.0f}s. Approx time left: {time_left:.0f} mins") #this is only correct after 50 loops
+        
+    
+    
+    df_parameters_bset = pd.DataFrame({'station':val_info.station,'latitude':val_info.latitude,'longitude':val_info.longitude,
+                                       'kappa':np.array(F_phats)[:,0],'b':np.array(F_phats)[:,1],'lambda':np.array(F_phats)[:,2],'a':np.array(F_phats)[:,3],
+                                       'return_levels': RL
+                                       })
+    df_parameters_bset.to_csv(df_savename) #save calculated parameters
+    
+
+else:
+    print('TENAX already done! reading in data')
+    df_parameters_bset = pd.read_csv(df_savename) 
+    
+
+
+
+
+###########################################################################
 
 b_zero = df_parameters.b[df_parameters.b==0].count()
 total = df_parameters.b.count()
@@ -492,14 +642,6 @@ print(f'Percent of stations with significant negative b: {perc_neg:.0f}%')
 non_calc = df_parameters['b'].isna().sum()
 print(f'Number of stations without ERA data: {non_calc} out of {len(df_parameters)} stations')
 
-
-new_df = df_parameters[['latitude','longitude','b']].copy()
-mask = new_df['b'] == 0
-
-if 'df_parameters_neg' in locals():
-    new_df.loc[mask, 'b'] = df_parameters_neg['b2'].to_numpy()
-else:
-    pass
 
 
 #PLOTS
