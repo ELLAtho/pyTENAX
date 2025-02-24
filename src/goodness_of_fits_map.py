@@ -1386,8 +1386,8 @@ for i in np.arange(0,len(new_df)):
 
 
 fig = plt.figure(figsize=(10, 10))
-norm = mcolors.Normalize(vmin=10, vmax=100)
-cmap = 'hsv'
+norm = mcolors.Normalize(vmin=np.min(RL10_df.return_levels), vmax=np.max(RL10_df.return_levels)-20)
+cmap = 'rainbow'
 
 
 proj = ccrs.PlateCarree()
