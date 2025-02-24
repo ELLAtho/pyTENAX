@@ -36,6 +36,7 @@ import cartopy.feature as cfeature
 from matplotlib.colors import LinearSegmentedColormap
 import matplotlib.patches as patches
 from scipy.stats import kendalltau, pearsonr, spearmanr
+from scipy.interpolate import interp1d
 
 
 
@@ -1346,7 +1347,157 @@ else:
     fig.suptitle(f'GSDR: {ERA_country}.', fontsize=16)
     plt.show()
     
+##############################################################################
+#Plot return levels
+RL10_df = pd.DataFrame({
+    "return_levels":np.zeros(len(new_df)),
+    "return_levels_b0":np.zeros(len(new_df)),
+    "return_levels_5":np.zeros(len(new_df)),
+    })
 
+for i in np.arange(0,len(new_df)):
+    plot_pos = np.arange(1,np.size(RL_df.obs_AMS.iloc[i])+1)/(1+np.size(RL_df.obs_AMS.iloc[i]))
+
+    eRP = 1/(1-plot_pos)
+    RL_free = RL_df.return_levels.iloc[i]
+    RL_0 = RL_df.return_levels_b0.iloc[i]
+    RL_5 = RL_df.return_levels_5.iloc[i]
+    
+    if np.size(RL_free) == 1:
+        RL10_df.loc[i, 'return_levels'] = np.nan
+    else:
+        interp_func = interp1d(eRP, RL_free)
+        RL10_df.loc[i, 'return_levels'] = interp_func(10)
+        
+    if np.size(RL_0) == 1:
+        RL10_df.loc[i, 'return_levels_b0'] = np.nan
+    else:
+        interp_func = interp1d(eRP, RL_0)
+        RL10_df.loc[i, 'return_levels_b0'] = interp_func(10)
+    
+    if np.size(RL_5) == 1:
+        RL10_df.loc[i, 'return_levels_5'] = np.nan
+    else:
+        interp_func = interp1d(eRP, RL_5)
+        RL10_df.loc[i, 'return_levels_5'] = interp_func(10)
+    
+
+
+
+
+fig = plt.figure(figsize=(10, 10))
+norm = mcolors.Normalize(vmin=10, vmax=100)
+cmap = 'hsv'
+
+
+proj = ccrs.PlateCarree()
+ax1 = fig.add_subplot(2, 2, 1, projection=proj)
+
+# Add map features
+ax1.coastlines()
+ax1.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc = ax1.scatter(
+    df_parameters.longitude,
+    df_parameters.latitude,
+    c = RL10_df.return_levels,
+    cmap=cmap,
+    norm = norm,
+    s = s,
+)
+ax1.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+ax1.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
+ax1.tick_params(labelsize=12)  
+
+plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+ax1.set_title("free")
+
+
+
+ax2 = fig.add_subplot(2, 2, 2, projection=proj)
+ax2.coastlines()
+ax2.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc = ax2.scatter(
+    df_parameters.longitude,
+    df_parameters.latitude,
+    c = RL10_df.return_levels_b0,
+    cmap=cmap,
+    norm = norm,
+    s = s,
+)
+
+ax2.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+ax2.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
+ax2.tick_params(labelsize=12)  
+plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+ax2.set_title("b = 0")
+
+
+ax3 = fig.add_subplot(2, 2, 3, projection=proj)
+ax3.coastlines()
+ax3.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc = ax3.scatter(
+    df_parameters.longitude,
+    df_parameters.latitude,
+    c = RL10_df.return_levels_5,
+    cmap=cmap,
+    norm = norm,
+    s = s,
+)
+
+
+ax3.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+ax3.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
+ax3.tick_params(labelsize=12)  
+plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+ax3.set_title("5% sig")
+
+ax4 = fig.add_subplot(2, 2, 4, projection=proj)
+ax4.coastlines()
+ax4.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc4 = ax4.scatter(
+    val_info.longitude,
+    val_info.latitude,
+    c=val_info.cleaned_years,
+    cmap="viridis",
+    s = s,  
+)
+ax4.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+ax4.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
+ax4.tick_params(labelsize=12)  
+plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+
+fig.subplots_adjust(right=0.85)
+
+cbar_ax4 = fig.add_axes([0.87, 0.12, 0.03, 0.32])  # Position for the colorbar outside
+cb4 = plt.colorbar(sc4, cax=cbar_ax4)  # Colorbar for ax4
+cb4.set_label('Number of complete years', fontsize=14)
+cb4.ax.tick_params(labelsize=12)
+
+ax4.set_title("cleaned years")
+
+
+# Add a colorbar at the bottom
+cbar_ax = fig.add_subplot([0.15, 0.02, 0.7, 0.03])  # Position for the colorbar
+cb = plt.colorbar(sc, cax=cbar_ax, orientation='horizontal')
+cb.set_label('10 year 1 hour return level (mm)', fontsize=14)
+cb.ax.tick_params(labelsize=12)
+
+
+#fig.tight_layout()
+fig.suptitle(f'{ERA_country} 10 year return levels.', fontsize=16)
+plt.show()
 
 
 
