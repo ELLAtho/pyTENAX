@@ -271,7 +271,66 @@ else:
         
         
 
+##############################################################################
+#plots
+lon_lims = [truncate_neg(np.min(df_parameters.longitude),2.5),np.ceil(np.max(df_parameters.longitude/2.5))*2.5]
+lat_lims = [truncate_neg(np.min(df_parameters.latitude),2.5),np.ceil(np.max(df_parameters.latitude/2.5))*2.5]
+s = 5
 
+
+fig = plt.figure(figsize=(10, 10))
+norm = mcolors.Normalize(vmin=0, vmax=np.max(temp_FRMSE_df.FRMSE_upper_perc))
+cmap = 'viridis'
+
+
+proj = ccrs.PlateCarree()
+ax1 = fig.add_subplot(2, 1, 1, projection=proj)
+
+# Add map features
+ax1.coastlines()
+ax1.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc = ax1.scatter(
+    df_parameters.longitude,
+    df_parameters.latitude,
+    c = temp_FRMSE_df.FRMSE,
+    cmap=cmap,
+    norm = norm,
+    s = s,
+)
+ax1.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+ax1.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
+ax1.tick_params(labelsize=12)  
+
+plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+ax1.set_title("FRMSE")
+plt.colorbar(sc)
+
+
+ax2 = fig.add_subplot(2, 1, 2, projection=proj)
+ax2.coastlines()
+ax2.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc = ax2.scatter(
+    df_parameters.longitude,
+    df_parameters.latitude,
+    c=temp_FRMSE_df.FRMSE_upper_perc,
+    cmap=cmap,
+    norm = norm,
+    s = s,
+)
+ax2.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+ax2.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
+ax2.tick_params(labelsize=12)  
+plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+ax2.set_title("FRMSE upper_perc")
+plt.colorbar(sc)
+
+plt.show()
 
 
 
