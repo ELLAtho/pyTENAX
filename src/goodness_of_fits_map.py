@@ -492,19 +492,121 @@ else:
 
 ################################################################################
 # With set b
-b_set = np.mean(new_df.b)
 
+save_bset = f"{drive}:/outputs/{country_save}\\parameters_bset.csv"
 
+if save_bset in output_files:
+    print("hell yeah lets do some mean b liklihood")
+    df_parameters_bset = pd.read_csv(save_bset,dtype={'station': str})
+        
+    
+    if "mult_prob_bset" in liklihood_df.columns:
+        print("you've already done it! bset data is ready")
+    else:
+        print(f"bset liklihoods not yet calculated for {country}")
+        mult_prob_bset = [0] * len(new_df)
+        ave_prob_bset = [0] * len(new_df)
+        mins_bset = [0] * len(new_df)
+        maxes_bset = [0] * len(new_df)
+        n_bad_RL_bset = [0] * len(new_df)
+        FRMSE_bset = [0] * len(new_df)
+        
+        RL = [0] * len(new_df)
+        
+        start_time = [0] * len(new_df)
+        
+        for i in np.arange(0,len(new_df)):
+            start_time[i] = time.time()
+            n_itn = 1000
+            percentages = [0.05,0.95]
+            
+            g_phat = [df_parameters.mu.iloc[i],df_parameters.sigma.iloc[i]]
+            if np.any(np.isnan(g_phat[0])):
+                print(f"no gphat. {g_phat}")
+                
+                mult_prob[i] = np.nan
+                ave_prob[i] = np.nan
+            else:
+                n = round(df_parameters.n_events_per_yr.iloc[i])
+                #free
+                F_phat = [df_parameters_bset.kappa.iloc[i],df_parameters_bset.b.iloc[i],
+                          df_parameters_bset["lambda"].iloc[i],df_parameters_bset.a.iloc[i]]
+                    
+                AMS_stat = RL_df.obs_AMS.iloc[i] 
+                plot_pos = np.arange(1,np.size(AMS_stat)+1)/(1+AMS_stat)
+                eRP = 1/(1-plot_pos)
+                
+                
+                T_min = g_phat[0] - 2.5 * g_phat[1]
+                T_max = g_phat[0] + 2.5 * g_phat[1]
+                Ts = np.arange(T_min - S.temp_delta, T_max + S.temp_delta, S.temp_res_monte_carlo)
+                
+                n_years = len(AMS_stat)
+                S.n_monte_carlo = int(n_years*n)
+                
+                AMS_sim = np.zeros([n_itn,n_years])
+                for itn in np.arange(0,n_itn):
+                    _, _, P_mc = S.model_inversion(F_phat, g_phat, n, Ts,gen_P_mc = True,gen_RL=False,method_root_scalar="secant") 
+                    AMS_sim[itn,:] = [np.max(P_mc[j:j+n]) for j in np.arange(0,int(n_years*n),int(n))]
+                    AMS_sim[itn,:].sort()
+                
+                mins_bset[i] = [np.quantile(AMS_sim[:,j],percentages[0]) for j in np.arange(0,n_years)]
+                maxes_bset[i] = [np.quantile(AMS_sim[:,j],percentages[1]) for j in np.arange(0,n_years)]
+                
+                
+                outs = AMS_stat[(AMS_stat > maxes_bset[i]) | (AMS_stat < mins_bset[i])]
+                n_bad_RL_bset[i] = len(outs)
+                
+                prob = [0]*len(eRP)
+                total_prob =[0]*len(eRP)
+                kde = [0]*len(eRP)
+                
+                for RP_rank in np.arange(0,len(eRP)):
+                    valid_data = AMS_sim[:, RP_rank]
+                    valid_data = valid_data[np.isfinite(valid_data)]
+                    valid_data = valid_data[valid_data < 10000]
+                    data_removed = n_itn - len(valid_data)
+                    if data_removed > 50:
+                        print(f"warning. {data_removed} values inf, nan, or too large. index {i}")
+                    else:
+                        pass
+                    kde[RP_rank]  = gaussian_kde(valid_data) #use kernel density to get probability
+                    prob[RP_rank] = kde[RP_rank](AMS_stat[RP_rank])
+                    
+                mult_prob_bset[i] = np.prod(prob)
+                ave_prob_bset[i] = np.mean(prob)
+                
+                
+                
+                RL[i] = np.fromstring(df_parameters_bset.return_levels.iloc[i].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'), sep=' ')
+                
+                
+                diffs = RL[i] - AMS_stat
+                
+                FRMSE_bset[i] = np.sqrt(np.sum(diffs**2)/len(diffs))/(np.sum(AMS_stat)/len(diffs))
+                
+                
+            if i%50 == 0:
+                print(f"multiplied prob {mult_prob_bset[i]}")
+                time_taken = (time.time()-start_time[i-9])/10
+                time_left = (len(new_df)-i)*time_taken/60
+                print(f"{i}/{len(new_df)}. Approx time left: {time_left:.0f} mins")
+                
+        liklihood_df["mult_prob_bset"] = mult_prob_bset
+        liklihood_df["ave_prob_bset"] = ave_prob_bset
+        liklihood_df["mins_bset"] = ave_prob_bset
+        liklihood_df["maxes_bset"] = ave_prob_bset
+        liklihood_df["n_bad_RL_bset"] = n_bad_RL_bset
+        
+        FRMSE_df["FRMSE_bset"] = FRMSE_bset
+        RL_df["return_levels_bset"] = RL
+        
+        liklihood_df.to_csv(f"{drive}:/outputs/{country_save}/liklihood.csv",index=False)
+        RL_df.to_csv(f"{drive}:/outputs/{country_save}/return_levels.csv",index=False)
+        FRMSE_df.to_csv(f"{drive}:/outputs/{country_save}/FRMSE.csv",index=False)
 
-
-
-
-
-
-
-
-
-
+else:
+    print("go to Calc_b if you want to look at b mean")
 
 
 #maps
@@ -646,7 +748,7 @@ plt.show()
 #differences
 
 fig = plt.figure(figsize=(20, 20))
-norm = mcolors.Normalize(vmin=-0.7, vmax=0.7)
+norm = mcolors.Normalize(vmin=-0.2, vmax=0.2)
 cmap = 'seismic'
 
 

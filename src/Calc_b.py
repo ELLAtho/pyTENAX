@@ -613,7 +613,7 @@ if df_savename not in saved_output_files: #read in files and create t time serie
                                        'kappa':np.array(F_phats)[:,0],'b':np.array(F_phats)[:,1],'lambda':np.array(F_phats)[:,2],'a':np.array(F_phats)[:,3],
                                        'return_levels': RL
                                        })
-    df_parameters_bset.to_csv(df_savename) #save calculated parameters
+    df_parameters_bset.to_csv(df_savename,index=False) #save calculated parameters
     
 
 else:
