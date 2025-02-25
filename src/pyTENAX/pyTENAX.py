@@ -993,6 +993,55 @@ def wbl_leftcensor_loglik_bset(theta, x, t, thr,b_set):
 
     return loglik
 
+def wbl_leftcensor_loglik_exp(theta, x, t, thr):
+    """
+    TODO: I dont understand these things
+
+    Parameters
+    ----------
+    theta : float
+        initial guess for fit.
+    x : numpy.ndarray
+        precipitation values.
+    t : numpy.ndarray
+        temperature values.
+    thr : float
+        threshold value for left-censoring.
+
+    Returns
+    -------
+    loglik : TYPE
+        DESCRIPTION.
+
+    """
+    #theta is init guess
+    # x is precipitaon\
+    # t is temperature
+    # thr is threshold value (exact, no percentual)
+    a_w = theta[0]
+    b_w = theta[1]
+    a_C = theta[2]
+    b_C = theta[3]
+
+    # Apply conditions based on the threshold
+    t0 = t[x < thr]
+    shapes0 = a_w + b_w * t0
+    scales0 = a_C * np.exp(b_C * t0)
+    
+    x1 = x[x >= thr]
+    t1 = t[x >= thr]
+    shapes1 = a_w * np.exp(b_w * t1)
+    scales1 = a_C * np.exp(b_C * t1)
+
+    # Calculate the log-likelihood components
+    loglik1 = np.sum(np.log(weibull_min.cdf(thr, c=shapes0, scale=scales0)))
+    loglik2 = np.sum(np.log(weibull_min.pdf(x1, c=shapes1, scale=scales1)))
+
+    # Sum the components for the final log-likelihood
+    loglik = loglik1 + loglik2
+
+    return loglik
+
 
 def gen_norm_pdf(x, mu, sigma, beta):
     """
