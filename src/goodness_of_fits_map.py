@@ -1232,7 +1232,7 @@ if "mult_prob_bset" in liklihood_df.columns:
     #fig.tight_layout()
     fig.suptitle(f'GSDR: {ERA_country}.', fontsize=16)
     plt.show()
-    
+
     
     
 else:
@@ -1351,7 +1351,11 @@ else:
     #fig.tight_layout()
     fig.suptitle(f'GSDR: {ERA_country}.', fontsize=16)
     plt.show()
-    
+
+##############################################################################
+# 
+
+
 ##############################################################################
 #Plot return levels
 RL10_df = pd.DataFrame({
@@ -1564,19 +1568,49 @@ plt.show()
 
 ###############################################################################
 #Box plots of errors
-plt.boxplot([FRMSE_df.FRMSE.copy().dropna(),FRMSE_df.FRMSE_0.copy().dropna(),FRMSE_df.FRMSE_5.copy().dropna()],vert=False)
-plt.xlabel('FRMSE')
-#plt.xlim(-0.1,0.2)
-plt.yticks([1,2,3],['free','b = 0','5% sig'])
-plt.title(f'{ERA_country} FRMSE')
-plt.show()
+if "FRMSE_bset" in FRMSE_df.columns:
+    plt.boxplot([FRMSE_df.FRMSE.copy().dropna(),FRMSE_df.FRMSE_0.copy().dropna(),FRMSE_df.FRMSE_bset.copy().dropna()],vert=False)
+    plt.xlabel('FRMSE')
+    #plt.xlim(-0.1,0.2)
+    plt.yticks([1,2,3],['free','b = 0','b set'])
+    plt.title(f'{ERA_country} FRMSE')
+    plt.show()
+    
+    plt.boxplot([liklihood_df.ave_prob.copy().dropna(),liklihood_df.ave_prob_0.copy().dropna(),liklihood_df.ave_prob_bset.copy().dropna()],vert=False)
+    plt.xlabel('Average probability')
+    #plt.xlim(-0.1,0.2)
+    plt.yticks([1,2,3],['free','b = 0','b set'])
+    plt.title(f'{ERA_country} average probability')
+    plt.show()
+    
+    plt.boxplot([
+        np.log(liklihood_df.mult_prob) - np.log(liklihood_df.mult_prob_bset),
+        np.log(liklihood_df.mult_prob) - np.log(liklihood_df.mult_prob_0),
+        np.log(liklihood_df.mult_prob_bset) - np.log(liklihood_df.mult_prob_0)],
+        vert=False)
+    
+    plt.xlabel('log products')
+    #plt.xlim(-0.1,0.2)
+    plt.yticks([1,2,3],['bfree - bset','b free - b 0','bset - b 0'])
+    plt.title(f'{ERA_country} log products difference')
+    plt.grid()
+    plt.show()
 
-plt.boxplot([liklihood_df.ave_prob.copy().dropna(),liklihood_df.ave_prob_0.copy().dropna(),liklihood_df.ave_prob_5.copy().dropna()],vert=False)
-plt.xlabel('Average probability')
-#plt.xlim(-0.1,0.2)
-plt.yticks([1,2,3],['free','b = 0','5% sig'])
-plt.title(f'{ERA_country} average probability')
-plt.show()
+
+else:
+    plt.boxplot([FRMSE_df.FRMSE.copy().dropna(),FRMSE_df.FRMSE_0.copy().dropna(),FRMSE_df.FRMSE_5.copy().dropna()],vert=False)
+    plt.xlabel('FRMSE')
+    #plt.xlim(-0.1,0.2)
+    plt.yticks([1,2,3],['free','b = 0','5% sig'])
+    plt.title(f'{ERA_country} FRMSE')
+    plt.show()
+    
+    plt.boxplot([liklihood_df.ave_prob.copy().dropna(),liklihood_df.ave_prob_0.copy().dropna(),liklihood_df.ave_prob_5.copy().dropna()],vert=False)
+    plt.xlabel('Average probability')
+    #plt.xlim(-0.1,0.2)
+    plt.yticks([1,2,3],['free','b = 0','5% sig'])
+    plt.title(f'{ERA_country} average probability')
+    plt.show()
 
 
     
