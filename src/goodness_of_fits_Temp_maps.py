@@ -44,24 +44,24 @@ drive = 'D'
 alpha_set = 0.05
 
 
-country = 'Germany' 
-ERA_country = 'Germany'
-country_save = 'Germany'
-code_str = 'DE_'
-minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
-name_len = 5
-min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-censor_thr = 0.9
-
-
-# country = 'Japan'
-# ERA_country = 'Japan'
-# country_save = 'Japan'
-# code_str = 'JP_'
-# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+# country = 'Germany' 
+# ERA_country = 'Germany'
+# country_save = 'Germany'
+# code_str = 'DE_'
+# minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
 # name_len = 5
 # min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 # censor_thr = 0.9
+
+
+country = 'Japan'
+ERA_country = 'Japan'
+country_save = 'Japan'
+code_str = 'JP_'
+minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+name_len = 5
+min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+censor_thr = 0.9
 
 
 name_col = 'ppt' 
@@ -153,10 +153,12 @@ else:
 
 save_name = f"{drive}:/outputs/{country_save}\\temp_FRMSE.csv"
 output_files = glob.glob(f"{drive}:/outputs/{country_save}/*")
+GOF_perc = 0.8
+
 
 if save_name not in output_files:
     print("temp FRMSE not calculated yet. here we gooooooo")
-    GOF_perc = 0.8
+    
 
     FRMSE_upper_perc = [0] * len(new_df)
     start_time = [0] * len(new_df)
@@ -185,72 +187,79 @@ if save_name not in output_files:
             
         data = S.remove_incomplete_years(G, name_col)
         
-        T_path = f"{drive}:/{country}_temp/{code_str}{df_parameters.station.iloc[i]}.nc" #TODO: nans case (not there in germany)
-        T_ERA = xr.load_dataarray(T_path)
-        t_data = (T_ERA-273.15).to_dataframe()
+        T_path = f"{drive}:/{country}_temp\\{code_str}{df_parameters.station.iloc[i]}.nc" #TODO: nans case (not there in germany)
         
-
-        df_arr = np.array(data[name_col])
-        df_dates = np.array(data.index)
-        
-        #extract indexes of ordinary events
-        #these are time-wise indexes =>returns list of np arrays with np.timeindex
-        idx_ordinary=S.get_ordinary_events(data=df_arr,dates=df_dates, name_col=name_col,  check_gaps=False)
-            
-        
-        #get ordinary events by removing too short events
-        #returns boolean array, dates of OE in TO, FROM format, and count of OE in each years
-        _,arr_dates,n_ordinary_per_year=S.remove_short(idx_ordinary)
-        
-        #assign ordinary events values by given durations, values are in depth per duration, NOT in intensity mm/h
-        dict_ordinary, _ = S.get_ordinary_events_values(data=df_arr,dates=df_dates, arr_dates_oe=arr_dates)
-        
-        
-        
-        df_arr_t_data = np.array(t_data[temp_name_col])
-        df_dates_t_data = np.array(t_data.index)
-        
-        if type(df_dates_t_data[0]) != np.datetime64:
-                
-            df_dates_t_data = pd.Series([item[0] for item in df_dates_t_data])
-            df_dates_t_data = np.array(df_dates_t_data)
+        if T_path not in glob.glob(f"{drive}:/{country}_temp\\*"): # dont do tenax if no T data saved
+            print('skip')
+            diff[i] = np.nan
+            FRMSE_upper_perc[i] = np.nan
+            FRMSE[i] = np.nan
         else:
-            pass
-        
-        dicts, _ , n_ordinary_per_year = S.associate_vars(dict_ordinary, df_arr_t_data, df_dates_t_data)
-        
-        g_phat = [df_parameters.mu.iloc[i],df_parameters.sigma.iloc[i]] 
-        
-        
-        # Your data (P, T arrays) and threshold thr=3.8
-        P = dicts["60"]["ordinary"].to_numpy() 
-        T = dicts["60"]["T"].to_numpy()  
-        
-        
-        
-        min_T_upper = np.quantile(T,GOF_perc)
-        
-        eT = np.arange(np.min(T),np.max(T)+4,0.1)
-        
-        kde  = gaussian_kde(T) #use kernel density to get probability
-        prob = kde(eT)
-        pdf_values = gen_norm_pdf(eT, g_phat[0], g_phat[1], 4)
-        
-        
-        diff[i] = pdf_values - prob
-        FRMSE[i] = np.sqrt(
-            np.sum(diff[i]**2)/len(diff[i]))/(np.sum(prob)/len(diff[i]))
-        
-        
-        eT_upper_perc = eT[eT>=min_T_upper]
-        
-        prob_upper_perc = prob[eT>=min_T_upper]
-        pdf_values_upper_perc = pdf_values[eT>=min_T_upper]
-        diff_upper_perc = pdf_values_upper_perc - prob_upper_perc
-        FRMSE_upper_perc[i] = np.sqrt(
-            np.sum(diff_upper_perc**2)/len(diff_upper_perc))/(np.sum(prob_upper_perc)/len(diff_upper_perc))
+            T_ERA = xr.load_dataarray(T_path)
+            t_data = (T_ERA-273.15).to_dataframe()
             
-          
+    
+            df_arr = np.array(data[name_col])
+            df_dates = np.array(data.index)
+            
+            #extract indexes of ordinary events
+            #these are time-wise indexes =>returns list of np arrays with np.timeindex
+            idx_ordinary=S.get_ordinary_events(data=df_arr,dates=df_dates, name_col=name_col,  check_gaps=False)
+                
+            
+            #get ordinary events by removing too short events
+            #returns boolean array, dates of OE in TO, FROM format, and count of OE in each years
+            _,arr_dates,n_ordinary_per_year=S.remove_short(idx_ordinary)
+            
+            #assign ordinary events values by given durations, values are in depth per duration, NOT in intensity mm/h
+            dict_ordinary, _ = S.get_ordinary_events_values(data=df_arr,dates=df_dates, arr_dates_oe=arr_dates)
+            
+            
+            
+            df_arr_t_data = np.array(t_data[temp_name_col])
+            df_dates_t_data = np.array(t_data.index)
+            
+            if type(df_dates_t_data[0]) != np.datetime64:
+                    
+                df_dates_t_data = pd.Series([item[0] for item in df_dates_t_data])
+                df_dates_t_data = np.array(df_dates_t_data)
+            else:
+                pass
+            
+            dicts, _ , n_ordinary_per_year = S.associate_vars(dict_ordinary, df_arr_t_data, df_dates_t_data)
+            
+            g_phat = [df_parameters.mu.iloc[i],df_parameters.sigma.iloc[i]] 
+            
+            
+            # Your data (P, T arrays) and threshold thr=3.8
+            P = dicts["60"]["ordinary"].to_numpy() 
+            T = dicts["60"]["T"].to_numpy()  
+            
+            
+            
+            min_T_upper = np.quantile(T,GOF_perc)
+            
+            eT = np.arange(np.min(T),np.max(T)+4,0.1)
+            
+            kde  = gaussian_kde(T) #use kernel density to get probability
+            prob = kde(eT)
+            pdf_values = gen_norm_pdf(eT, g_phat[0], g_phat[1], 4)
+            
+            
+            diff[i] = pdf_values - prob
+            FRMSE[i] = np.sqrt(
+                np.sum(diff[i]**2)/len(diff[i]))/(np.sum(prob)/len(diff[i]))
+            
+            
+            eT_upper_perc = eT[eT>=min_T_upper]
+            
+            prob_upper_perc = prob[eT>=min_T_upper]
+            pdf_values_upper_perc = pdf_values[eT>=min_T_upper]
+            diff_upper_perc = pdf_values_upper_perc - prob_upper_perc
+            FRMSE_upper_perc[i] = np.sqrt(
+                np.sum(diff_upper_perc**2)/len(diff_upper_perc))/(np.sum(prob_upper_perc)/len(diff_upper_perc))
+                
+              
         if i%50 == 0:    
             print(f"FRMSE {FRMSE[i]:.3f}. FRMSE upper {FRMSE_upper_perc[i]:.3f}")
             time_taken = (time.time()-start_time[i-9])/10
@@ -258,6 +267,7 @@ if save_name not in output_files:
             print(f"{i}/{len(new_df)}. Approx time left: {time_left:.0f} mins") #this is only correct after 50 loops
         else:
             pass
+        
     temp_FRMSE_df = pd.DataFrame({
         'station': df_parameters.station,
         "FRMSE_upper_perc": FRMSE_upper_perc,
@@ -279,8 +289,8 @@ s = 5
 
 
 fig = plt.figure(figsize=(10, 10))
-norm = mcolors.Normalize(vmin=0, vmax=np.max(temp_FRMSE_df.FRMSE_upper_perc))
-cmap = 'viridis'
+norm = mcolors.Normalize(vmin=np.min(temp_FRMSE_df.FRMSE), vmax=np.max(temp_FRMSE_df.FRMSE_upper_perc))
+cmap = 'plasma_r'
 
 
 proj = ccrs.PlateCarree()
@@ -296,7 +306,7 @@ sc = ax1.scatter(
     df_parameters.latitude,
     c = temp_FRMSE_df.FRMSE,
     cmap=cmap,
-    norm = norm,
+    norm = mcolors.Normalize(vmin=np.min(temp_FRMSE_df.FRMSE), vmax=np.max(temp_FRMSE_df.FRMSE)),
     s = s,
 )
 ax1.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
@@ -331,6 +341,73 @@ ax2.set_title("FRMSE upper_perc")
 plt.colorbar(sc)
 
 plt.show()
+###############################################################################
+#correlations
+FRMSE_df = pd.read_csv(f"{drive}:/outputs/{country_save}/FRMSE.csv", dtype={'station': str})
+liklihood_df = pd.read_csv(f"{drive}:/outputs/{country_save}/liklihood.csv",dtype={'station': str})
+
+
+def pearsonr_pval(x,y):
+    return pearsonr(x,y)[1]
+
+
+r_val = FRMSE_df.FRMSE.corr(temp_FRMSE_df.FRMSE_upper_perc)
+p_val = FRMSE_df.FRMSE.corr(temp_FRMSE_df.FRMSE_upper_perc,method=pearsonr_pval)
+
+coeffs=np.polyfit(FRMSE_df.FRMSE.dropna(),temp_FRMSE_df.FRMSE_upper_perc.dropna(),1)
+delt = (np.max(FRMSE_df.FRMSE)-np.min(FRMSE_df.FRMSE))/10
+x = np.arange(np.min(FRMSE_df.FRMSE),np.max(FRMSE_df.FRMSE)+delt,delt)
+y = coeffs[0]*x+coeffs[1]
+
+
+plt.scatter(FRMSE_df.FRMSE,temp_FRMSE_df.FRMSE_upper_perc,alpha = val_info.cleaned_years/np.max(val_info.cleaned_years))
+plt.plot(x,y,color = 'r',label = f'y={coeffs[0]:.3f}x+{coeffs[1]:.3f}')
+plt.xlabel("FRMSE on the return levels")
+plt.ylabel(f'FRMSE on the top {(1-GOF_perc)*100:.0f}% temperature')
+plt.text(np.min(FRMSE_df.FRMSE),np.min(temp_FRMSE_df.FRMSE_upper_perc),f'r = {r_val:.3f}\n p = {p_val:.5f}')
+
+plt.xlim(0,0.5)
+plt.legend()
+plt.show()
+
+
+
+
+
+r_val = np.log(liklihood_df.mult_prob).corr(temp_FRMSE_df.FRMSE_upper_perc)
+p_val = np.log(liklihood_df.mult_prob).corr(temp_FRMSE_df.FRMSE_upper_perc,method=pearsonr_pval)
+
+coeffs=np.polyfit(np.log(liklihood_df.mult_prob).dropna(),temp_FRMSE_df.FRMSE_upper_perc.dropna(),1)
+delt = (np.max(np.log(liklihood_df.mult_prob))-np.min(np.log(liklihood_df.mult_prob)))/10
+x = np.arange(np.min(np.log(liklihood_df.mult_prob)),np.max(np.log(liklihood_df.mult_prob))+delt,delt)
+y = coeffs[0]*x+coeffs[1]
+
+
+plt.scatter(np.log(liklihood_df.mult_prob),temp_FRMSE_df.FRMSE_upper_perc,alpha = val_info.cleaned_years/np.max(val_info.cleaned_years))
+plt.plot(x,y,color = 'r',label = f'y={coeffs[0]:.3f}x+{coeffs[1]:.3f}')
+plt.xlabel("log prob")
+plt.ylabel(f'FRMSE on the top {(1-GOF_perc)*100:.0f}% temperature')
+plt.text(np.min(np.log(liklihood_df.mult_prob)),np.min(temp_FRMSE_df.FRMSE_upper_perc),f'r = {r_val:.3f}\n p = {p_val:.5f}')
+
+plt.legend()
+plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
