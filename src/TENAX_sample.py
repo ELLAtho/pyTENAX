@@ -33,13 +33,13 @@ import time
 drive = 'D'
 
 
-choose = True #for selecting a specific file
+choose = False #for selecting a specific file
 chosen_stations = ['12441']
 
 
 country = 'Japan'
 code_str = 'JP' 
-n_stations = 1 #number of stations to sample
+n_stations = 2 #number of stations to sample
 min_yrs = 15 #atm this probably introduces a bug... need to put in if statement or something
 max_yrs = 1000 #if no max, set to very high
 name_col = 'ppt'
@@ -226,12 +226,14 @@ for i in np.arange(0,n_stations):
     #TENAX MODEL HERE
     #magnitude model
     F_phats[i], loglik, _, _ = S.magnitude_model(P, T, thr[i])
+    F_phat_exp, loglik_exp, _, _ = S.magnitude_model(P, T, thr[i],b_exp = True)
     #temperature model
     g_phats[i] = S.temperature_model(T)
     # M is mean n of ordinary events
     ns[i] = n_ordinary_per_year.sum() / len(n_ordinary_per_year)  
     #estimates return levels using MC samples
     RL[i], __, __ = S.model_inversion(F_phats[i], g_phats[i], ns[i], Ts)
+    RL_exp, __, __ = S.model_inversion(F_phat_exp, g_phats[i], ns[i], Ts, b_exp = True)
     
     S.n_monte_carlo = np.size(P)*S.niter_smev
     _, T_mc, P_mc = S.model_inversion(F_phats[i], g_phats[i], ns[i], Ts,gen_P_mc = True,gen_RL=False) 
@@ -249,6 +251,7 @@ for i in np.arange(0,n_stations):
     # fig 2a
     qs = [.85,.95,.99,.999]
     TNX_FIG_magn_model(P,T,F_phats[i],thr[i],eT,qs,xlimits = [eT[0],eT[-1]])
+    TNX_FIG_magn_model(P,T,F_phat_exp,thr[i],eT,qs,xlimits = [eT[0],eT[-1]],valcol='g',)
     plt.title(titles)
     plt.show()
     
@@ -260,6 +263,7 @@ for i in np.arange(0,n_stations):
     #fig 4 (without SMEV and uncertainty) 
     AMS = dict_AMS[i]['60'] # yet the annual maxima
     TNX_FIG_valid(AMS,S.return_period,RL[i],ylimits = [0,np.max(AMS.AMS)+3])
+    TNX_FIG_valid(AMS,S.return_period,RL_exp,ylimits = [0,np.max(AMS.AMS)+3],TENAXcol = "g")
     plt.title(titles)
     plt.show()
     
