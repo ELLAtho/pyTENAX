@@ -37,8 +37,8 @@ choose = False #for selecting a specific file
 chosen_stations = ['12441']
 
 
-country = 'Germany'
-code_str = 'DE' 
+country = 'Japan'
+code_str = 'JP' 
 n_stations = 5 #number of stations to sample
 min_yrs = 15 #atm this probably introduces a bug... need to put in if statement or something
 max_yrs = 1000 #if no max, set to very high
@@ -158,7 +158,7 @@ S = TENAX(
         return_period = [1.1,1.2,1.5,2,5,10,20,50,100, 200],
         durations = [60, 180, 360, 720, 1440],
         left_censoring = [0, 0.90],
-        alpha = 0.05,
+        alpha = 0,
         min_ev_dur = 60,
     )
 
@@ -256,9 +256,9 @@ for i in np.arange(0,n_stations):
     plt.show()
     
     #fig 2b
-    TNX_FIG_temp_model(T=T, g_phat=g_phats[i],beta=4,eT=eT,xlimits = [eT[0],eT[-1]])
-    plt.title(titles)
-    plt.show()
+    # TNX_FIG_temp_model(T=T, g_phat=g_phats[i],beta=4,eT=eT,xlimits = [eT[0],eT[-1]])
+    # plt.title(titles)
+    # plt.show()
     
     #fig 4 (without SMEV and uncertainty) 
     AMS = dict_AMS[i]['60'] # yet the annual maxima
@@ -268,86 +268,86 @@ for i in np.arange(0,n_stations):
     plt.show()
     
     #fig 5 
-    iTs = np.arange(-2.5,37.5,1.5) #idk why we need a different T range here 
+    # iTs = np.arange(-2.5,37.5,1.5) #idk why we need a different T range here 
     
-    TNX_FIG_scaling(P,T,P_mc,T_mc,F_phats[i],S.niter_smev,eT,iTs,xlimits = [eT[0],eT[-1]])
-    plt.title(titles)
-    plt.show()
+    # TNX_FIG_scaling(P,T,P_mc,T_mc,F_phats[i],S.niter_smev,eT,iTs,xlimits = [eT[0],eT[-1]])
+    # plt.title(titles)
+    # plt.show()
     
-    #TENAX MODEL VALIDATION
-    yrs = dicts[i]["60"]["oe_time"].dt.year
-    yrs_unique = np.unique(yrs)
-    midway = yrs_unique[int(np.ceil(np.size(yrs_unique)/2))]
+    # #TENAX MODEL VALIDATION
+    # yrs = dicts[i]["60"]["oe_time"].dt.year
+    # yrs_unique = np.unique(yrs)
+    # midway = yrs_unique[int(np.ceil(np.size(yrs_unique)/2))]
     
-    #DEFINE FIRST PERIOD
-    P1 = P[yrs<=midway]
-    T1 = T[yrs<=midway]
-    AMS1 = AMS[AMS['year']<=midway]
-    n_ordinary_per_year1 = n_ordinary_per_year[n_ordinary_per_year.index<=midway]
-    n1 = n_ordinary_per_year1.sum() / len(n_ordinary_per_year1)
+    # #DEFINE FIRST PERIOD
+    # P1 = P[yrs<=midway]
+    # T1 = T[yrs<=midway]
+    # AMS1 = AMS[AMS['year']<=midway]
+    # n_ordinary_per_year1 = n_ordinary_per_year[n_ordinary_per_year.index<=midway]
+    # n1 = n_ordinary_per_year1.sum() / len(n_ordinary_per_year1)
     
-    #DEFINE SECOND PERIOD
-    P2 = P[yrs>midway]
-    T2 = T[yrs>midway]
-    AMS2 = AMS[AMS['year']>midway]
-    n_ordinary_per_year2 = n_ordinary_per_year[n_ordinary_per_year.index>midway]
-    n2 = n_ordinary_per_year2.sum() / len(n_ordinary_per_year2)
-    
-    
-    g_phat1 = S.temperature_model(T1)
-    g_phat2 = S.temperature_model(T2)
+    # #DEFINE SECOND PERIOD
+    # P2 = P[yrs>midway]
+    # T2 = T[yrs>midway]
+    # AMS2 = AMS[AMS['year']>midway]
+    # n_ordinary_per_year2 = n_ordinary_per_year[n_ordinary_per_year.index>midway]
+    # n2 = n_ordinary_per_year2.sum() / len(n_ordinary_per_year2)
     
     
-    F_phat1, loglik1, _, _ = S.magnitude_model(P1, T1, thr[i])
-    F_phat2, loglik2, _, _ = S.magnitude_model(P2, T2, thr[i])
+    # g_phat1 = S.temperature_model(T1)
+    # g_phat2 = S.temperature_model(T2)
     
-    S.n_monte_carlo = 20000  #for RL, set to lower to be safe
-    RL1, __, __ = S.model_inversion(F_phat1, g_phat1, n1, Ts)
-    RL2, __, __ = S.model_inversion(F_phat2, g_phat2, n2, Ts)
     
-    S.n_monte_carlo = np.size(P1)*S.niter_smev #change n_montecarlo for binning
-    _, T_mc1, P_mc1 = S.model_inversion(F_phat1, g_phat1, n1, Ts,gen_P_mc = True,gen_RL=False) 
-    _, T_mc2, P_mc2 = S.model_inversion(F_phat2, g_phat2, n2, Ts,gen_P_mc = True,gen_RL=False) 
+    # F_phat1, loglik1, _, _ = S.magnitude_model(P1, T1, thr[i])
+    # F_phat2, loglik2, _, _ = S.magnitude_model(P2, T2, thr[i])
+    
+    # S.n_monte_carlo = 20000  #for RL, set to lower to be safe
+    # RL1, __, __ = S.model_inversion(F_phat1, g_phat1, n1, Ts)
+    # RL2, __, __ = S.model_inversion(F_phat2, g_phat2, n2, Ts)
+    
+    # S.n_monte_carlo = np.size(P1)*S.niter_smev #change n_montecarlo for binning
+    # _, T_mc1, P_mc1 = S.model_inversion(F_phat1, g_phat1, n1, Ts,gen_P_mc = True,gen_RL=False) 
+    # _, T_mc2, P_mc2 = S.model_inversion(F_phat2, g_phat2, n2, Ts,gen_P_mc = True,gen_RL=False) 
     
     
 
-    S.n_monte_carlo = 20000   
+    # S.n_monte_carlo = 20000   
     
-    if F_phats[i][2]==0:
-        dof=3
-        alpha1=1; # b parameter is not significantly different from 0; 3 degrees of freedom for the LR test
-    else: 
-        dof=4
-        alpha1=0  # b parameter is significantly different from 0; 4 degrees of freedom for the LR test
-    
-    
+    # if F_phats[i][2]==0:
+    #     dof=3
+    #     alpha1=1; # b parameter is not significantly different from 0; 3 degrees of freedom for the LR test
+    # else: 
+    #     dof=4
+    #     alpha1=0  # b parameter is significantly different from 0; 4 degrees of freedom for the LR test
     
     
-    #check magnitude model the same in both periods
-    lambda_LR = -2*( loglik - (loglik1+loglik2) )
-    pval = chi2.sf(lambda_LR, dof)
-    
-    #modelling second model based on first magnitude and changes in mean/std
-    mu_delta = np.mean(T2)-np.mean(T1)
-    sigma_factor = np.std(T2)/np.std(T1)
-    
-    g_phat2_predict = [g_phat1[0]+mu_delta, g_phat1[1]*sigma_factor]
-    RL2_predict, _,_ = S.model_inversion(F_phat1,g_phat2_predict,n2,Ts)
     
     
-    #fig 7a
+    # #check magnitude model the same in both periods
+    # lambda_LR = -2*( loglik - (loglik1+loglik2) )
+    # pval = chi2.sf(lambda_LR, dof)
     
-    TNX_FIG_temp_model(T=T1, g_phat=g_phat1,beta=4,eT=eT,obscol='b',valcol='b',obslabel = None,vallabel = 'Temperature model '+str(yrs_unique[0])+'-'+str(midway),xlimits = [eT[0],eT[-1]])
-    TNX_FIG_temp_model(T=T2, g_phat=g_phat2_predict,beta=4,eT=eT,obscol='r',valcol='r',obslabel = None,vallabel = 'Temperature model '+str(midway+1)+'-'+str(yrs_unique[-1]),xlimits = [eT[0],eT[-1]]) # model based on temp ave and std changes
-    plt.title('fig 7a')
-    plt.show() #this is slightly different in code and paper I think.. using predicted T vs fitted T
+    # #modelling second model based on first magnitude and changes in mean/std
+    # mu_delta = np.mean(T2)-np.mean(T1)
+    # sigma_factor = np.std(T2)/np.std(T1)
     
-    #fig 7b
+    # g_phat2_predict = [g_phat1[0]+mu_delta, g_phat1[1]*sigma_factor]
+    # RL2_predict, _,_ = S.model_inversion(F_phat1,g_phat2_predict,n2,Ts)
     
-    TNX_FIG_valid(AMS1,S.return_period,RL1,TENAXcol='b',obscol_shape = 'b+',TENAXlabel = 'The TENAX model '+str(yrs_unique[0])+'-'+str(midway),obslabel='Observed annual maxima '+str(yrs_unique[0])+'-'+str(midway))
-    TNX_FIG_valid(AMS2,S.return_period,RL2_predict,TENAXcol='r',obscol_shape = 'r+',TENAXlabel = 'The predicted TENAX model '+str(midway+1)+'-'+str(yrs_unique[-1]),obslabel='Observed annual maxima '+str(midway+1)+'-'+str(yrs_unique[-1]),ylimits = [0,np.max(AMS.AMS)+3])
-    plt.title('fig 7b')
-    plt.show()
+    
+    # #fig 7a
+    
+    # TNX_FIG_temp_model(T=T1, g_phat=g_phat1,beta=4,eT=eT,obscol='b',valcol='b',obslabel = None,vallabel = 'Temperature model '+str(yrs_unique[0])+'-'+str(midway),xlimits = [eT[0],eT[-1]])
+    # TNX_FIG_temp_model(T=T2, g_phat=g_phat2_predict,beta=4,eT=eT,obscol='r',valcol='r',obslabel = None,vallabel = 'Temperature model '+str(midway+1)+'-'+str(yrs_unique[-1]),xlimits = [eT[0],eT[-1]]) # model based on temp ave and std changes
+    # plt.title('fig 7a')
+    # plt.show() #this is slightly different in code and paper I think.. using predicted T vs fitted T
+    
+    # #fig 7b
+    
+    # TNX_FIG_valid(AMS1,S.return_period,RL1,TENAXcol='b',obscol_shape = 'b+',TENAXlabel = 'The TENAX model '+str(yrs_unique[0])+'-'+str(midway),obslabel='Observed annual maxima '+str(yrs_unique[0])+'-'+str(midway))
+    # TNX_FIG_valid(AMS2,S.return_period,RL2_predict,TENAXcol='r',obscol_shape = 'r+',TENAXlabel = 'The predicted TENAX model '+str(midway+1)+'-'+str(yrs_unique[-1]),obslabel='Observed annual maxima '+str(midway+1)+'-'+str(yrs_unique[-1]),ylimits = [0,np.max(AMS.AMS)+3])
+    # plt.title('fig 7b')
+    # plt.show()
     
     
     print('finished loop '+str(i+1)+' out of '+str(n_stations))
