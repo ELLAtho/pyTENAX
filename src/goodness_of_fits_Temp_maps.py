@@ -393,6 +393,27 @@ plt.legend()
 plt.show()
 
 
+r_val = np.log(liklihood_df.mult_prob).corr(new_df.b)
+p_val = np.log(liklihood_df.mult_prob).corr(new_df.b,method=pearsonr_pval)
+
+coeffs=np.polyfit(np.log(liklihood_df.mult_prob).dropna(),new_df.b.dropna(),1)
+delt = (np.max(np.log(liklihood_df.mult_prob))-np.min(np.log(liklihood_df.mult_prob)))/10
+x = np.arange(np.min(np.log(liklihood_df.mult_prob)),np.max(np.log(liklihood_df.mult_prob))+delt,delt)
+y = coeffs[0]*x+coeffs[1]
+
+
+plt.scatter(np.log(liklihood_df.mult_prob),new_df.b,alpha = val_info.cleaned_years/np.max(val_info.cleaned_years))
+plt.plot(x,y,color = 'r',label = f'y={coeffs[0]:.3f}x+{coeffs[1]:.3f}')
+plt.xlabel("log prob")
+plt.ylabel('b')
+plt.text(np.min(np.log(liklihood_df.mult_prob)),np.min(new_df.b),f'r = {r_val:.3f}\n p = {p_val:.5f}')
+
+plt.legend()
+plt.show()
+
+
+
+
 
 
 
