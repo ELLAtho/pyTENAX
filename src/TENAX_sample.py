@@ -37,9 +37,9 @@ choose = False #for selecting a specific file
 chosen_stations = ['12441']
 
 
-country = 'Japan'
-code_str = 'JP' 
-n_stations = 2 #number of stations to sample
+country = 'Germany'
+code_str = 'DE' 
+n_stations = 5 #number of stations to sample
 min_yrs = 15 #atm this probably introduces a bug... need to put in if statement or something
 max_yrs = 1000 #if no max, set to very high
 name_col = 'ppt'
@@ -273,36 +273,6 @@ for i in np.arange(0,n_stations):
     TNX_FIG_scaling(P,T,P_mc,T_mc,F_phats[i],S.niter_smev,eT,iTs,xlimits = [eT[0],eT[-1]])
     plt.title(titles)
     plt.show()
-    
-    # #SPLITTING INTO SUMMER/WINTER
-    # season_separations = [5, 10]
-    # months = dicts[i]["60"]["oe_time"].dt.month
-    # winter_inds = months.index[(months>season_separations[1]) | (months<season_separations[0])]
-    # summer_inds = months.index[(months<season_separations[1]+1)&(months>season_separations[0]-1)]
-    # T_winter = T[winter_inds]
-    # T_summer = T[summer_inds]
-    
-    
-    # g_phat_winter = S.temperature_model(T_winter, 2)
-    # g_phat_summer = S.temperature_model(T_summer, 2)
-    
-    
-    # winter_pdf = gen_norm_pdf(eT, g_phat_winter[0], g_phat_winter[1], 2)
-    # summer_pdf = gen_norm_pdf(eT, g_phat_summer[0], g_phat_summer[1], 2)
-    
-    # combined_pdf = (winter_pdf*np.size(T_winter)+summer_pdf*np.size(T_summer))/(np.size(T_winter)+np.size(T_summer))
-    
-    
-    # #fig 3
-    
-    
-    # TNX_FIG_temp_model(T=T_summer, g_phat=g_phat_summer,beta=2,eT=eT,obscol='r',valcol='r')
-    # TNX_FIG_temp_model(T=T_winter, g_phat=g_phat_winter,beta=2,eT=eT,obscol='b',valcol='b')
-    # TNX_FIG_temp_model(T=T, g_phat=g_phats[i],beta=4,eT=eT,obscol='k',valcol='k',xlimits = [eT[0],eT[-1]],ylimits = [0,0.1])
-    # plt.plot(eT,combined_pdf,'m',label = 'Combined summer and winter')
-    # plt.title(titles)
-    # plt.show()
-    
     
     #TENAX MODEL VALIDATION
     yrs = dicts[i]["60"]["oe_time"].dt.year
