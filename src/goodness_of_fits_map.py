@@ -87,6 +87,14 @@ info.enddate = pd.to_datetime(info.enddate)
 
 val_info = info[info['cleaned_years']>=min_yrs] #filter out stations that are less than min
 
+S = TENAX(
+        return_period = [1.1,1.2,1.5,2,5,10,20,50,100, 200],
+        durations = [60, 180, 360, 720, 1440],
+        left_censoring = [0, censor_thr],
+        alpha = alpha_set,
+        min_ev_dur = 60,
+        niter_smev = 1000, 
+    )
 
 #getting info of correct size
 if 'min_startdate' in locals():    
@@ -1793,7 +1801,7 @@ else:
 
 
 # CHECKS
-for j in np.arange(20,30):
+for j in np.arange(0,10):
     plot_pos = np.arange(1,np.size(RL_df.obs_AMS.iloc[j])+1)/(1+np.size(RL_df.obs_AMS.iloc[j]))
     
     eRP = 1/(1-plot_pos)
@@ -1807,12 +1815,16 @@ for j in np.arange(20,30):
         plt.plot(eRP,RL_df.return_levels_bexp.iloc[j],"m", label = f"b exp. FRMSE: {FRMSE_df.FRMSE_bexp.iloc[j]:.3f}. log: {np.log(liklihood_df.mult_prob_bexp.iloc[j]):.1f}")
     
     plt.fill_between(eRP,liklihood_df.mins_0.iloc[j],liklihood_df.maxes_0.iloc[j],color = "b", alpha = 0.1)
+    plt.fill_between(eRP,liklihood_df.mins.iloc[j],liklihood_df.maxes.iloc[j],color = "r", alpha = 0.1)
     
     plt.ylim(0,np.max(RL_df.return_levels.iloc[j])+5)
     plt.xlim(1,np.max(eRP)+2)
     
     plt.legend()
-    plt.title(f"station {j}: {FRMSE_df.station.iloc[j]}.b mean = {df_parameters_bset.b.iloc[0]:.3f}")
+    if "df_parameters_bset" in locals():
+        plt.title(f"station {j}: {FRMSE_df.station.iloc[j]}.b mean = {df_parameters_bset.b.iloc[0]:.3f}")
+    else:
+        plt.title(f"station {j}: {FRMSE_df.station.iloc[j]}.")
     plt.show()
     
     

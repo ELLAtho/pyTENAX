@@ -33,13 +33,13 @@ import time
 drive = 'D'
 
 
-choose = False #for selecting a specific file
-chosen_stations = ['12441']
+choose = True #for selecting a specific file
+chosen_stations = ['12041']
 
 
 country = 'Japan'
 code_str = 'JP' 
-n_stations = 5 #number of stations to sample
+n_stations = 1 #number of stations to sample
 min_yrs = 15 #atm this probably introduces a bug... need to put in if statement or something
 max_yrs = 1000 #if no max, set to very high
 name_col = 'ppt'
@@ -256,9 +256,9 @@ for i in np.arange(0,n_stations):
     plt.show()
     
     #fig 2b
-    # TNX_FIG_temp_model(T=T, g_phat=g_phats[i],beta=4,eT=eT,xlimits = [eT[0],eT[-1]])
-    # plt.title(titles)
-    # plt.show()
+    TNX_FIG_temp_model(T=T, g_phat=g_phats[i],beta=4,eT=eT,xlimits = [eT[0],eT[-1]])
+    plt.title(titles)
+    plt.show()
     
     #fig 4 (without SMEV and uncertainty) 
     AMS = dict_AMS[i]['60'] # yet the annual maxima
