@@ -499,8 +499,31 @@ if save_name_lik not in output_files:
     liklihood_df.to_csv(f"{drive}:/outputs/{country_save}/liklihood.csv",index=False)
 else:
     liklihood_df = pd.read_csv(f"{drive}:/outputs/{country_save}/liklihood.csv",dtype={'station': str})
-
-
+    
+    nan_locs = liklihood_df.mult_prob[liklihood_df.mult_prob.isna()].index
+    replace_range = np.arange(0,len(RL_df))
+    for k in range(len(nan_locs)):
+        replace_range = np.delete(replace_range, np.where(replace_range == nan_locs[k]))
+    for j in replace_range:
+        liklihood_df.at[j, "maxes"] = eval(liklihood_df.maxes.iloc[j], {"np": np, "nan": np.nan})
+        liklihood_df.at[j, "mins"] = eval(liklihood_df.mins.iloc[j], {"np": np, "nan": np.nan})
+        
+        liklihood_df.at[j, "maxes_0"] = eval(liklihood_df.maxes_0.iloc[j], {"np": np, "nan": np.nan})
+        liklihood_df.at[j, "mins_0"] = eval(liklihood_df.mins_0.iloc[j], {"np": np, "nan": np.nan})
+        
+        liklihood_df.at[j, "maxes_5"] = eval(liklihood_df.maxes_5.iloc[j], {"np": np, "nan": np.nan})
+        liklihood_df.at[j, "mins_5"] = eval(liklihood_df.mins_5.iloc[j], {"np": np, "nan": np.nan})
+        
+        
+        # if "mins_bset" in liklihood_df.columns:
+        #     liklihood_df.at[j, "maxes_bset"] = eval(liklihood_df.maxes_bset.iloc[j], {"np": np})
+        #     liklihood_df.at[j, "mins_bset"] = eval(liklihood_df.mins_bset.iloc[j], {"np": np})
+            
+        # if "mins_bexp" in liklihood_df.columns:
+        #     liklihood_df.at[j, "maxes_bexp"] = eval(liklihood_df.maxes_bexp.iloc[j], {"np": np})
+        #     liklihood_df.at[j, "mins_bexp"] = eval(liklihood_df.mins_bexp.iloc[j], {"np": np})
+    #TODO: mins_bexp etc are wrong. may need to reread    
+    
 ################################################################################
 # With set b
 
@@ -613,8 +636,8 @@ if save_bset in output_files:
                 
         liklihood_df["mult_prob_bset"] = mult_prob_bset
         liklihood_df["ave_prob_bset"] = ave_prob_bset
-        liklihood_df["mins_bset"] = ave_prob_bset
-        liklihood_df["maxes_bset"] = ave_prob_bset
+        liklihood_df["mins_bset"] = mins_bset
+        liklihood_df["maxes_bset"] = maxes_bset
         liklihood_df["n_bad_RL_bset"] = n_bad_RL_bset
         
         FRMSE_df["FRMSE_bset"] = FRMSE_bset
@@ -731,8 +754,8 @@ if save_bexp in output_files:
                 
         liklihood_df["mult_prob_bexp"] = mult_prob_bexp
         liklihood_df["ave_prob_bexp"] = ave_prob_bexp
-        liklihood_df["mins_bexp"] = ave_prob_bexp
-        liklihood_df["maxes_bexp"] = ave_prob_bexp
+        liklihood_df["mins_bexp"] = mins_bexp
+        liklihood_df["maxes_bexp"] = maxes_bexp
         liklihood_df["n_bad_RL_bexp"] = n_bad_RL_bexp
         
         FRMSE_df["FRMSE_bexp"] = FRMSE_bexp
@@ -1758,18 +1781,21 @@ for j in np.arange(20,30):
     
     eRP = 1/(1-plot_pos)
     
-    TNX_FIG_valid(RL_df.obs_AMS.iloc[j],eRP,RL_df.return_levels_b0.iloc[j],TENAXlabel = "b = 0")
-    plt.plot(eRP,RL_df.return_levels.iloc[j],"r", alpha = 0.5,label = "b = free")
-    plt.plot(eRP,RL_df.return_levels_5.iloc[j],"g",alpha = 0.5, label = "b = 5% sig")
+    TNX_FIG_valid(RL_df.obs_AMS.iloc[j],eRP,RL_df.return_levels_b0.iloc[j],TENAXlabel = f"b = 0. FRMSE: {FRMSE_df.FRMSE_0.iloc[j]:.3f}. log: {np.log(liklihood_df.mult_prob_0.iloc[j]):.1f}",obslabel='AMS')
+    plt.plot(eRP,RL_df.return_levels.iloc[j],"r",label = f"b = free. FRMSE: {FRMSE_df.FRMSE.iloc[j]:.3f}. log: {np.log(liklihood_df.mult_prob.iloc[j]):.1f}")
+    #plt.plot(eRP,RL_df.return_levels_5.iloc[j],"g",alpha = 0.5, label = "b = 5% sig")
     if "return_levels_bset" in RL_df.columns:
-        plt.plot(eRP,RL_df.return_levels_bset.iloc[j],"y",alpha = 0.5, label = f"b = {df_parameters_bset.b.iloc[0]:.3f}")
+        plt.plot(eRP,RL_df.return_levels_bset.iloc[j],"y", label = f"b = mean. FRMSE: {FRMSE_df.FRMSE_bset.iloc[j]:.3f}. log: {np.log(liklihood_df.mult_prob_bset.iloc[j]):.1f}")
     if "return_levels_bexp" in RL_df.columns:
-        plt.plot(eRP,RL_df.return_levels_bexp.iloc[j],"m",alpha = 0.5, label = f"b exp")
+        plt.plot(eRP,RL_df.return_levels_bexp.iloc[j],"m", label = f"b exp. FRMSE: {FRMSE_df.FRMSE_bexp.iloc[j]:.3f}. log: {np.log(liklihood_df.mult_prob_bexp.iloc[j]):.1f}")
     
+    plt.fill_between(eRP,liklihood_df.mins_0.iloc[j],liklihood_df.maxes_0.iloc[j],color = "b", alpha = 0.1)
     
+    plt.ylim(0,np.max(RL_df.return_levels.iloc[j])+5)
+    plt.xlim(0,np.max(eRP)+2)
     
     plt.legend()
-    plt.title(f"station {j}: {FRMSE_df.station.iloc[j]}. free FRMSE: {FRMSE_df.FRMSE.iloc[j]:.3f} \n 5% sig FRMSE: {FRMSE_df.FRMSE_5.iloc[j]:.3f} \n b always 0 FRMSE: {FRMSE_df.FRMSE_0.iloc[j]:.3f}")
+    plt.title(f"station {j}: {FRMSE_df.station.iloc[j]}.b mean = {df_parameters_bset.b.iloc[0]:.3f}")
     plt.show()
     
     
