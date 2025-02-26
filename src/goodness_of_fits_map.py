@@ -88,7 +88,7 @@ info.enddate = pd.to_datetime(info.enddate)
 val_info = info[info['cleaned_years']>=min_yrs] #filter out stations that are less than min
 
 
-
+#getting info of correct size
 if 'min_startdate' in locals():    
     val_info = val_info[val_info['startdate']>=min_startdate]
 else:
@@ -141,6 +141,7 @@ if np.size(glob.glob(save_path_neg)) != 0:
 else:
     new_df = df_parameters.copy()
 
+#merging the dataframes to ensure station consistency
 missing_rows = pd.merge(df_parameters.station, df_parameters_0.station, how='left', indicator=True).query('_merge == "left_only"').drop('_merge', axis=1)
 if len(missing_rows) != 0:
     print("miss-match, dropping")
@@ -153,6 +154,7 @@ else:
 save_name = f"{drive}:/outputs/{country_save}\\return_levels.csv"
 output_files = glob.glob(f"{drive}:/outputs/{country_save}/*")
 
+#calculating and saving return levels for 0, free, 5% sig
 if save_name not in output_files:
     print("levels not calculated yet, doing now.")
     S = TENAX(
@@ -299,8 +301,10 @@ else:
     
         
         if "return_levels_bset" in RL_df.columns:
-            
             RL_df.loc[j, "return_levels_bset"] = np.fromstring(RL_df.return_levels_bset.iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'), sep=' ')
+        
+        if "return_levels_bexp" in RL_df.columns:
+            RL_df.loc[j, "return_levels_bexp"] = np.fromstring(RL_df.return_levels_bexp.iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'), sep=' ')
         
        
     
@@ -1749,7 +1753,7 @@ else:
 
 
 # CHECKS
-for j in np.arange(15,17):
+for j in np.arange(20,30):
     plot_pos = np.arange(1,np.size(RL_df.obs_AMS.iloc[j])+1)/(1+np.size(RL_df.obs_AMS.iloc[j]))
     
     eRP = 1/(1-plot_pos)
@@ -1759,6 +1763,11 @@ for j in np.arange(15,17):
     plt.plot(eRP,RL_df.return_levels_5.iloc[j],"g",alpha = 0.5, label = "b = 5% sig")
     if "return_levels_bset" in RL_df.columns:
         plt.plot(eRP,RL_df.return_levels_bset.iloc[j],"y",alpha = 0.5, label = f"b = {df_parameters_bset.b.iloc[0]:.3f}")
+    if "return_levels_bexp" in RL_df.columns:
+        plt.plot(eRP,RL_df.return_levels_bexp.iloc[j],"m",alpha = 0.5, label = f"b exp")
+    
+    
+    
     plt.legend()
     plt.title(f"station {j}: {FRMSE_df.station.iloc[j]}. free FRMSE: {FRMSE_df.FRMSE.iloc[j]:.3f} \n 5% sig FRMSE: {FRMSE_df.FRMSE_5.iloc[j]:.3f} \n b always 0 FRMSE: {FRMSE_df.FRMSE_0.iloc[j]:.3f}")
     plt.show()
