@@ -505,7 +505,15 @@ save_bset = f"{drive}:/outputs/{country_save}\\parameters_bset.csv"
 if save_bset in output_files:
     print("hell yeah lets do some mean b liklihood")
     df_parameters_bset = pd.read_csv(save_bset,dtype={'station': str})
-        
+    S = TENAX(
+            return_period = [1.1,1.2,1.5,2,5,10,20,50,100, 200],
+            durations = [60, 180, 360, 720, 1440],
+            left_censoring = [0, censor_thr],
+            alpha = alpha_set,
+            min_ev_dur = 60,
+            niter_smev = 1000, 
+        )
+            
     
     if "mult_prob_bset" in liklihood_df.columns:
         print("you've already done it! bset data is ready")
@@ -1137,7 +1145,7 @@ if "mult_prob_bset" in liklihood_df.columns:
     sc = ax1.scatter(
         df_parameters.longitude,
         df_parameters.latitude,
-        c = liklihood_df.ave_prob - liklihood_df.ave_prob_bset,
+        c = liklihood_df.ave_prob_bexp - liklihood_df.ave_prob_0,
         cmap=cmap,
         norm = norm,
         s = s,
@@ -1148,7 +1156,7 @@ if "mult_prob_bset" in liklihood_df.columns:
     
     plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
     plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
-    ax1.set_title(f"b free - bset ({df_parameters_bset.b.iloc[0]:.3f})")
+    ax1.set_title(f"b exp - b 0")
     
     
     
@@ -1232,7 +1240,7 @@ if "mult_prob_bset" in liklihood_df.columns:
     
     
     #fig.tight_layout()
-    fig.suptitle(f'GSDR: {ERA_country}.', fontsize=16)
+    fig.suptitle(f'GSDR: {ERA_country}. \n average b: {df_parameters_bset.b.iloc[0]:.3f}', fontsize=16)
     plt.show()
     
     
@@ -1253,7 +1261,7 @@ if "mult_prob_bset" in liklihood_df.columns:
     sc = ax1.scatter(
         df_parameters.longitude,
         df_parameters.latitude,
-        c = np.log(liklihood_df.mult_prob) - np.log(liklihood_df.mult_prob_bset),
+        c = np.log(liklihood_df.mult_prob_bexp) - np.log(liklihood_df.mult_prob_0),
         cmap=cmap,
         norm = norm,
         s = s,
@@ -1264,8 +1272,8 @@ if "mult_prob_bset" in liklihood_df.columns:
     
     plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
     plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
-    ave = np.mean(np.log(liklihood_df.mult_prob) - np.log(liklihood_df.mult_prob_bset))
-    ax1.set_title(f"b free - bset ({df_parameters_bset.b.iloc[0]:.3f}). ave = {ave:.3f}")
+    ave = np.mean(np.log(liklihood_df.mult_prob_bexp) - np.log(liklihood_df.mult_prob_0))
+    ax1.set_title(f"b exp - b 0. ave = {ave:.3f}")
     
     
     
@@ -1706,14 +1714,14 @@ if "FRMSE_bset" in FRMSE_df.columns:
     plt.show()
     
     plt.boxplot([
-        np.log(liklihood_df.mult_prob) - np.log(liklihood_df.mult_prob_bset),
+        np.log(liklihood_df.mult_prob_bexp) - np.log(liklihood_df.mult_prob_0),
         np.log(liklihood_df.mult_prob) - np.log(liklihood_df.mult_prob_0),
         np.log(liklihood_df.mult_prob_bset) - np.log(liklihood_df.mult_prob_0)],
         vert=False)
     
     plt.xlabel('log products')
     #plt.xlim(-0.1,0.2)
-    plt.yticks([1,2,3],['bfree - bset','b free - b 0','bset - b 0'])
+    plt.yticks([1,2,3],['bexp - b 0','b free - b 0','bset - b 0'])
     plt.title(f'{ERA_country} log products difference')
     plt.grid()
     plt.show()
