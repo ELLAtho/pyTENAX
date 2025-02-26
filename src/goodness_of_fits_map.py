@@ -45,24 +45,24 @@ drive = 'D'
 alpha_set = 0.05
 
 
-country = 'Germany' 
-ERA_country = 'Germany'
-country_save = 'Germany'
-code_str = 'DE_'
-minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
-name_len = 5
-min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-censor_thr = 0.9
-
-
-# country = 'Japan'
-# ERA_country = 'Japan'
-# country_save = 'Japan'
-# code_str = 'JP_'
-# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+# country = 'Germany' 
+# ERA_country = 'Germany'
+# country_save = 'Germany'
+# code_str = 'DE_'
+# minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
 # name_len = 5
 # min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 # censor_thr = 0.9
+
+
+country = 'Japan'
+ERA_country = 'Japan'
+country_save = 'Japan'
+code_str = 'JP_'
+minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+name_len = 5
+min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+censor_thr = 0.9
 
 
 name_col = 'ppt' 
@@ -566,8 +566,10 @@ if save_bset in output_files:
             if np.any(np.isnan(g_phat[0])):
                 print(f"no gphat. {g_phat}")
                 
-                mult_prob[i] = np.nan
-                ave_prob[i] = np.nan
+                mult_prob_bset[i] = np.nan
+                ave_prob_bset[i] = np.nan
+                FRMSE_bset[i] = np.nan
+                n_bad_RL_bset[i] = np.nan
             else:
                 n = round(df_parameters.n_events_per_yr.iloc[i])
                 #free
@@ -684,8 +686,11 @@ if save_bexp in output_files:
             if np.any(np.isnan(g_phat[0])):
                 print(f"no gphat. {g_phat}")
                 
-                mult_prob[i] = np.nan
-                ave_prob[i] = np.nan
+                mult_prob_bexp[i] = np.nan
+                mult_prob_bexp[i] = np.nan
+                FRMSE_bexp[i] = np.nan
+                n_bad_RL_bexp[i] = np.nan 
+                
             else:
                 n = round(df_parameters.n_events_per_yr.iloc[i])
                 #free
@@ -1752,7 +1757,19 @@ if "FRMSE_bset" in FRMSE_df.columns:
     plt.title(f'{ERA_country} log products difference')
     plt.grid()
     plt.show()
-
+elif "FRMSE_bexp" in FRMSE_df.columns:
+    
+    plt.boxplot([
+        np.log(liklihood_df.mult_prob_bexp) - np.log(liklihood_df.mult_prob_0),
+        np.log(liklihood_df.mult_prob) - np.log(liklihood_df.mult_prob_0)],
+        vert=False)
+    
+    plt.xlabel('log products')
+    #plt.xlim(-0.1,0.2)
+    plt.yticks([1,2],['bexp - b 0','b free - b 0'])
+    plt.title(f'{ERA_country} log products difference')
+    plt.grid()
+    plt.show()
 
 else:
     plt.boxplot([FRMSE_df.FRMSE.copy().dropna(),FRMSE_df.FRMSE_0.copy().dropna(),FRMSE_df.FRMSE_5.copy().dropna()],vert=False)
@@ -1792,7 +1809,7 @@ for j in np.arange(20,30):
     plt.fill_between(eRP,liklihood_df.mins_0.iloc[j],liklihood_df.maxes_0.iloc[j],color = "b", alpha = 0.1)
     
     plt.ylim(0,np.max(RL_df.return_levels.iloc[j])+5)
-    plt.xlim(0,np.max(eRP)+2)
+    plt.xlim(1,np.max(eRP)+2)
     
     plt.legend()
     plt.title(f"station {j}: {FRMSE_df.station.iloc[j]}.b mean = {df_parameters_bset.b.iloc[0]:.3f}")

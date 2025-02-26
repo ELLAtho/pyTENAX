@@ -477,13 +477,13 @@ else:
 ##########################################################################
 # # RUN WITH AVERAGE b
 #TODO: this with different regions 
-# new_df = df_parameters[['latitude','longitude','b']].copy()
-# mask = new_df['b'] == 0
+new_df = df_parameters[['latitude','longitude','b']].copy()
+mask = new_df['b'] == 0
 
-# if 'df_parameters_neg' in locals():
-#     new_df.loc[mask, 'b'] = df_parameters_neg['b2'].to_numpy()
-# else:
-#     pass
+if 'df_parameters_neg' in locals():
+    new_df.loc[mask, 'b'] = df_parameters_neg['b2'].to_numpy()
+else:
+    pass
 
 # b_set = np.mean(new_df.b)
 
