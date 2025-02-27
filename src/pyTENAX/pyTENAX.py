@@ -1347,7 +1347,7 @@ def TNX_FIG_temp_model(T, g_phat, beta, eT, obscol='r',valcol='b',
     return hist, pdf_values
 
     
-def inverse_magnitude_model(F_phat,eT,qs):
+def inverse_magnitude_model(F_phat,eT,qs,b_exp=False):
     """
     Calculate percentiles from the Weibell magnitude model
 
@@ -1368,11 +1368,13 @@ def inverse_magnitude_model(F_phat,eT,qs):
     """
     
     percentile_lines = np.zeros((len(qs), len(eT)))
-    for iq, q in enumerate(qs):
-        
-        
-        percentile_lines[iq,:] = F_phat[2]*np.exp(F_phat[3] * eT)*(-np.log(1-q))**(1/(F_phat[0]+F_phat[1]*eT))
-   
+    if b_exp:
+        for iq, q in enumerate(qs):
+            percentile_lines[iq,:] = F_phat[2]*np.exp(F_phat[3] * eT)*(-np.log(1-q))**(1/(F_phat[0]*np.exp(F_phat[1]*eT)))
+    else:   
+        for iq, q in enumerate(qs):
+            percentile_lines[iq,:] = F_phat[2]*np.exp(F_phat[3] * eT)*(-np.log(1-q))**(1/(F_phat[0]+F_phat[1]*eT))
+       
     return percentile_lines
 
 def TNX_obs_scaling_rate(P,T,qs,niter):
@@ -1409,7 +1411,7 @@ def TNX_obs_scaling_rate(P,T,qs,niter):
 
 
 
-def TNX_FIG_magn_model(P,T,F_phat,thr,eT,qs,obscol='r',valcol='b',xlimits = [-12,30],ylimits = [0.1,1000]):
+def TNX_FIG_magn_model(P,T,F_phat,thr,eT,qs,obscol='r',valcol='b',xlimits = [-12,30],ylimits = [0.1,1000],b_exp = False):
     """
     Plots figure 2a. the observed T-P pairs and the W model percentiles.
 
@@ -1443,7 +1445,7 @@ def TNX_FIG_magn_model(P,T,F_phat,thr,eT,qs,obscol='r',valcol='b',xlimits = [-12
     """
     # TO DO: documentation, adjustable axes, line labels instead of legend, axis labels
     
-    percentile_lines = inverse_magnitude_model(F_phat,eT,qs)
+    percentile_lines = inverse_magnitude_model(F_phat,eT,qs,b_exp=b_exp)
     plt.scatter(T,P,s=1,color=obscol,label = 'observations')
     plt.plot(eT,[thr]*np.size(eT),'--',alpha = 0.5,color = 'k',label = 'Left censoring threshold') #plot threshold
     
