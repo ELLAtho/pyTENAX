@@ -285,7 +285,12 @@ eT = np.arange(np.min(T),np.max(T)+4,1) # define T values to calculate distribut
  # fig 2a
 qs = [.85,.95,.99,.999]
 TNX_FIG_magn_model(P,T,F_phat,thr,eT,qs,xlimits = [eT[0],eT[-1]])
-TNX_FIG_magn_model(P,T,F_phat_exp,thr,eT,qs,xlimits = [eT[0],eT[-1]],valcol='g')
+TNX_FIG_magn_model(P,T,F_phat_exp,thr,eT,qs,xlimits = [eT[0],eT[-1]],valcol='g',b_exp = True)
+plt.show()
+ 
+ # fig 2a
+qs = [.85,.95,.99,.999]
+TNX_FIG_magn_model(P,T,F_phat,thr,eT,qs,xlimits = [eT[0],eT[-1]])
 plt.show()
  
  #fig 2b
@@ -343,10 +348,21 @@ print(RL_filter )
  
 eT = np.arange(np.min(T),np.max(T)+4,1) # define T values to calculate distributions. +4 to go beyond graph end
  
+
+
+# fig 2a
+qs = [.85,.95,.99,.999]
+TNX_FIG_magn_model(P_filter,T_filter,F_phat_filter ,thr,eT,qs,xlimits = [eT[0],eT[-1]])
+
+plt.scatter(T_bad,P_bad,alpha = 0.3)
+plt.title("Visual outlier removed")
+plt.show()
+
+
  # fig 2a
 qs = [.85,.95,.99,.999]
 TNX_FIG_magn_model(P_filter,T_filter,F_phat_filter ,thr,eT,qs,xlimits = [eT[0],eT[-1]])
-TNX_FIG_magn_model(P_filter ,T_filter ,F_phat_exp_filter ,thr,eT,qs,xlimits = [eT[0],eT[-1]],valcol='g')
+TNX_FIG_magn_model(P_filter ,T_filter ,F_phat_exp_filter ,thr,eT,qs,xlimits = [eT[0],eT[-1]],valcol='g',b_exp = True)
 plt.title("Visual outlier removed")
 plt.show()
  
@@ -364,9 +380,16 @@ plt.show()
 
 
 
+###############################################################################
+
+T_mc = T_mc.reshape(-1)
+W_log_transform = np.log((F_phat[0]+F_phat[1]*T)*(np.log(P)-np.log(F_phat[2]*np.exp(F_phat[3]*T)))) #log(log(1/(1-W)))
 
 
-
+plt.plot(W_log_transform,P)
+plt.yscale('log')
+plt.ylim(1,100)
+plt.show()
 
 
 
