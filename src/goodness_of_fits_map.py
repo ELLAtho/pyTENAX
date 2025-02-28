@@ -55,23 +55,23 @@ alpha_set = 0
 # censor_thr = 0.9
 
 
-# country = 'Japan'
-# ERA_country = 'Japan'
-# country_save = 'Japan'
-# code_str = 'JP_'
-# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
-# name_len = 5
-# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-# censor_thr = 0.9
-
-country = 'US' 
-ERA_country = 'US'
-country_save = 'US_main'
-code_str = 'US_'
-minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
-name_len = 6
-min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+country = 'Japan'
+ERA_country = 'Japan'
+country_save = 'Japan'
+code_str = 'JP_'
+minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+name_len = 5
+min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 censor_thr = 0.9
+
+# country = 'US' 
+# ERA_country = 'US'
+# country_save = 'US_main'
+# code_str = 'US_'
+# minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
+# name_len = 6
+# min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+# censor_thr = 0.9
 
 
 
@@ -1413,7 +1413,79 @@ if "mult_prob_bset" in liklihood_df.columns:
     fig.suptitle(f'GSDR: {ERA_country}.', fontsize=16)
     plt.show()
 
+elif "mult_prob_bexp" in liklihood_df.columns:
+    #mult logs
+    fig = plt.figure(figsize=(20, 10))
+    norm = mcolors.Normalize(vmin=-5, vmax=5)
+    cmap = 'seismic'
     
+    
+    proj = ccrs.PlateCarree()
+    ax1 = fig.add_subplot(1, 2, 1, projection=proj)
+    
+    # Add map features
+    ax1.coastlines()
+    ax1.add_feature(cfeature.BORDERS, linestyle=':')
+    
+    
+    sc = ax1.scatter(
+        df_parameters.longitude,
+        df_parameters.latitude,
+        c = np.log(liklihood_df.mult_prob_bexp) - np.log(liklihood_df.mult_prob_0),
+        cmap=cmap,
+        norm = norm,
+        s = s,
+    )
+    ax1.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+    ax1.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
+    ax1.tick_params(labelsize=12)  
+    
+    plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+    plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+    ave = np.mean(np.log(liklihood_df.mult_prob_bexp) - np.log(liklihood_df.mult_prob_0))
+    ax1.set_title(f"b exp - b 0. ave = {ave:.3f}")
+    
+    
+    
+    ax2 = fig.add_subplot(1, 2, 2, projection=proj)
+    ax2.coastlines()
+    ax2.add_feature(cfeature.BORDERS, linestyle=':')
+    
+    
+    sc = ax2.scatter(
+        df_parameters.longitude,
+        df_parameters.latitude,
+        c=np.log(liklihood_df.mult_prob) - np.log(liklihood_df.mult_prob_0),
+        cmap=cmap,
+        norm = norm,
+        s = s,
+    )
+    
+    ave = np.mean(np.log(liklihood_df.mult_prob) - np.log(liklihood_df.mult_prob_0))
+    
+    ax2.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+    ax2.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
+    ax2.tick_params(labelsize=12)  
+    plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+    plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+    ax2.set_title(f"free - 0. ave = {ave:.3f}")
+    
+    
+    
+    fig.subplots_adjust(right=0.85)
+    
+    
+    
+    # Add a colorbar at the bottom
+    cbar_ax = fig.add_subplot([0.15, 0.02, 0.7, 0.03])  # Position for the colorbar
+    cb = plt.colorbar(sc, cax=cbar_ax, orientation='horizontal')
+    cb.set_label('difference in logs', fontsize=14)
+    cb.ax.tick_params(labelsize=12)
+    
+    
+    #fig.tight_layout()
+    fig.suptitle(f'GSDR: {ERA_country}.', fontsize=16)
+    plt.show()
     
 else:
     print("sorry can't plot that graph :(")
@@ -1764,9 +1836,9 @@ if "FRMSE_bset" in FRMSE_df.columns:
     plt.show()
     
     plt.boxplot([
-        np.log(liklihood_df.mult_prob_bexp) - np.log(liklihood_df.mult_prob_0),
-        np.log(liklihood_df.mult_prob) - np.log(liklihood_df.mult_prob_0),
-        np.log(liklihood_df.mult_prob_bset) - np.log(liklihood_df.mult_prob_0)],
+        np.log(liklihood_df.copy().dropna().mult_prob_bexp) - np.log(liklihood_df.copy().dropna().mult_prob_0),
+        np.log(liklihood_df.copy().dropna().mult_prob) - np.log(liklihood_df.copy().dropna().mult_prob_0),
+        np.log(liklihood_df.copy().dropna().mult_prob_bset) - np.log(liklihood_df.copy().dropna().mult_prob_0)],
         vert=False)
     
     plt.xlabel('log products')
@@ -1778,8 +1850,8 @@ if "FRMSE_bset" in FRMSE_df.columns:
 elif "FRMSE_bexp" in FRMSE_df.columns:
     
     plt.boxplot([
-        np.log(liklihood_df.mult_prob_bexp) - np.log(liklihood_df.mult_prob_0),
-        np.log(liklihood_df.mult_prob) - np.log(liklihood_df.mult_prob_0)],
+        np.log(liklihood_df.copy().dropna().mult_prob_bexp) - np.log(liklihood_df.copy().dropna().mult_prob_0),
+        np.log(liklihood_df.copy().dropna().mult_prob) - np.log(liklihood_df.copy().dropna().mult_prob_0)],
         vert=False)
     
     plt.xlabel('log products')
