@@ -394,7 +394,7 @@ plt.show()
 
 ###############################################################################
 #non power n plotsp = 0
-S.return_period = S.return_period *29
+S.return_period = S.return_period * len(n_ordinary_per_year)
 RL_all, __, __ = S.model_inversion(F_phat, g_phat, 1.0, Ts)
 
 plot_pos_full = np.arange(1,np.size(P)+1)/(1+np.size(P))
@@ -403,7 +403,7 @@ eRP_full = 1/(1-plot_pos_full)/n.to_numpy()
 
 plt.scatter(eRP_full,np.sort(P))
 plt.xscale("log")
-plt.plot(S.return_period/29,RL_all)
+plt.plot(S.return_period/len(n_ordinary_per_year),RL_all)
 plt.show()
 
 
