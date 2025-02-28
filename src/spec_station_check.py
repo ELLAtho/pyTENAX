@@ -51,7 +51,7 @@ comb.enddate = pd.to_datetime(comb.enddate)
 selected = comb[comb.station.isin(chosen_station)]
 
 
-#PLOT SELECTED STATIONS LOCATIONS
+#PLOT SELECTED STATION LOCATION
 
 fig = plt.figure(figsize=(10, 10))
 proj = ccrs.PlateCarree()
@@ -386,10 +386,32 @@ T_mc = T_mc.reshape(-1)
 W_log_transform = np.log((F_phat[0]+F_phat[1]*T)*(np.log(P)-np.log(F_phat[2]*np.exp(F_phat[3]*T)))) #log(log(1/(1-W)))
 
 
-plt.plot(W_log_transform,P)
+plt.scatter(W_log_transform,P)
 plt.yscale('log')
 plt.ylim(1,100)
 plt.show()
+
+
+###############################################################################
+#non power n plotsp = 0
+S.return_period = S.return_period *29
+RL_all, __, __ = S.model_inversion(F_phat, g_phat, 1.0, Ts)
+
+plot_pos_full = np.arange(1,np.size(P)+1)/(1+np.size(P))
+eRP_full = 1/(1-plot_pos_full)/n.to_numpy()
+
+
+plt.scatter(eRP_full,np.sort(P))
+plt.xscale("log")
+plt.plot(S.return_period/29,RL_all)
+plt.show()
+
+
+
+
+
+
+
 
 
 
