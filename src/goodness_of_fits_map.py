@@ -1850,8 +1850,8 @@ if "FRMSE_bset" in FRMSE_df.columns:
 elif "FRMSE_bexp" in FRMSE_df.columns:
     
     plt.boxplot([
-        np.log(liklihood_df.copy().dropna().mult_prob_bexp) - np.log(liklihood_df.copy().dropna().mult_prob_0),
-        np.log(liklihood_df.copy().dropna().mult_prob) - np.log(liklihood_df.copy().dropna().mult_prob_0)],
+        (np.log(liklihood_df.copy().dropna().mult_prob_bexp) - np.log(liklihood_df.copy().dropna().mult_prob_0)).copy().dropna(),
+        (np.log(liklihood_df.copy().dropna().mult_prob) - np.log(liklihood_df.copy().dropna().mult_prob_0)).copy().dropna()],
         vert=False)
     
     plt.xlabel('log products')
