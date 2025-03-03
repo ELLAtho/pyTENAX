@@ -1860,6 +1860,20 @@ elif "FRMSE_bexp" in FRMSE_df.columns:
     plt.title(f'{ERA_country} log products difference')
     plt.grid()
     plt.show()
+    
+    plt.boxplot([
+        (np.log(liklihood_df.copy().dropna().mult_prob_bexp) - np.log(liklihood_df.copy().dropna().mult_prob_0)).copy().dropna(),
+        (np.log(liklihood_df.copy().dropna().mult_prob) - np.log(liklihood_df.copy().dropna().mult_prob_0)).copy().dropna()],
+        vert=False)
+    
+    lw_q = (np.log(liklihood_df.copy().dropna().mult_prob_bexp) - np.log(liklihood_df.copy().dropna().mult_prob_0)).quantile(0.25)
+    
+    plt.xlabel('log products')
+    plt.xlim(lw_q*3,-lw_q*3)
+    plt.yticks([1,2],['bexp - b 0','b free - b 0'])
+    plt.title(f'{ERA_country} log products difference')
+    plt.grid()
+    plt.show()
 
 else:
     plt.boxplot([FRMSE_df.FRMSE.copy().dropna(),FRMSE_df.FRMSE_0.copy().dropna(),FRMSE_df.FRMSE_5.copy().dropna()],vert=False)
