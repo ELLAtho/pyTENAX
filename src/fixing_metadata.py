@@ -20,7 +20,7 @@ import pandas as pd
 
 
 
-drive='F' #name of drive
+drive='D' #name of drive
 countries = ['Belgium','Germany','Japan','US']
 name_lens = [8,5,5,6]
 
@@ -34,7 +34,7 @@ for n in np.arange(0,4):
     dd.station = dd.station.astype(str)
     dd.startdate = pd.to_datetime(dd.startdate)
     dd.enddate = pd.to_datetime(dd.enddate)
-    dd.to_csv(drive+':/metadata/'+countries[n]+'_fulldata.csv',index=False)
+    #dd.to_csv(drive+':/metadata/'+countries[n]+'_fulldata.csv',index=False)
     info.append(dd)
     
 #for Finland, Ireland, Norway,Portugal number = number

@@ -96,7 +96,7 @@ for c in countries:
     info.append(dd)
     
 
-colors_map = dict({"alpine":"grey", #Dwc added by me.. might not be here
+colors_map = dict({"alpine":"grey", 
                     "arid_cold":"pink",
                     "arid_hot": "r",
                     "humid_continental": "c",
@@ -315,10 +315,11 @@ if df_savename not in saved_output_files: #read in files and create t time serie
         ######################################################################
         #read in T data
         if 'code_str' in locals():
-            save_path = drive + ':/'+country+'_temp\\'+code_str + str(df_parameters.station[val_info.index[i]]) + '.nc'
+            save_path = f"{drive}:/{country}_temp\\{code_str}{new_df.station.iloc[i]}.nc"
         else:
             save_path = drive + ':/'+country+'_temp\\'+str(df_parameters.station[val_info.index[i]]) + '.nc'
-        
+        print(save_path)
+        print(f"{drive}:/{country}\\{code_str}{new_df.station.iloc[i]}.txt")
         
         # Check if file already exists before saving
         
@@ -424,7 +425,169 @@ else:
     df_parameters_kgb = pd.read_csv(df_savename) 
 
 
+lon_lims = [truncate_neg(np.min(df_parameters_kgb.longitude),2.5),np.ceil(np.max(df_parameters_kgb.longitude/2.5))*2.5]
+lat_lims = [truncate_neg(np.min(df_parameters_kgb.latitude),2.5),np.ceil(np.max(df_parameters_kgb.latitude/2.5))*2.5]
 
+s=3
+############################################
+## PLOT ALL b 2
+fig = plt.figure(figsize=(10, 10))
+proj = ccrs.PlateCarree()
+ax1 = fig.add_subplot(1, 1, 1, projection=proj)
+
+# Add map features
+ax1.coastlines()
+ax1.add_feature(cfeature.BORDERS, linestyle=':')
+
+# Choosing cmap
+if df_parameters_kgb.b.min() == 0:
+    norm = mcolors.TwoSlopeNorm(vmin=-0.06, vcenter=0, vmax=0.06)
+else:
+    norm = mcolors.TwoSlopeNorm(vmin=df_parameters_kgb.b.min(),vcenter =df_parameters_kgb.b.min()/2, vmax=0)
+
+sc = ax1.scatter( #plot the negligable at 5% lvl points
+    new_df.longitude,
+    new_df.latitude,
+    c = df_parameters_kgb.b,
+    s = s,
+    cmap = 'rainbow',
+)
+
+
+
+# Add a colorbar at the bottom
+cb = plt.colorbar(sc, orientation='horizontal', pad=0.05)
+cb.set_label('b', fontsize=14)  
+cb.ax.tick_params(labelsize=12)
+
+# Set x and y ticks
+ax1.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+ax1.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
+ax1.tick_params(labelsize=12)  
+
+plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+
+
+plt.title(f'GSDR: {ERA_country}. b ', fontsize=16)
+plt.show()
+#THIS SHOWS THE LOCATION OF THE STATION, NOT THE ERA DATA
+
+###############################################################
+#scale param
+fig = plt.figure(figsize=(10, 10))
+proj = ccrs.PlateCarree()
+ax1 = fig.add_subplot(1, 1, 1, projection=proj)
+
+# Add map features
+ax1.coastlines()
+ax1.add_feature(cfeature.BORDERS, linestyle=':')
+
+norm = mcolors.TwoSlopeNorm(vmin=0,vcenter = (df_parameters_kgb["lambda"].max()/2) , vmax=df_parameters_kgb["lambda"].max())
+sc = ax1.scatter(
+    df_parameters_kgb.longitude,
+    df_parameters_kgb.latitude,
+    c=df_parameters_kgb["lambda"],
+    s = s,
+    cmap='YlGnBu',  
+    norm=norm
+)
+
+
+
+
+# Add a colorbar at the bottom
+cb = plt.colorbar(sc, orientation='horizontal', pad=0.05)
+cb.set_label('λ (mm/hr)', fontsize=14)  
+cb.ax.tick_params(labelsize=12)
+
+# Set x and y ticks
+ax1.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+ax1.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
+ax1.tick_params(labelsize=12)  
+
+plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+
+
+plt.title(f'GSDR: {ERA_country}. λ', fontsize=16)
+plt.show()
+
+#######################################################
+#scale param
+fig = plt.figure(figsize=(10, 10))
+proj = ccrs.PlateCarree()
+ax1 = fig.add_subplot(1, 1, 1, projection=proj)
+
+# Add map features
+ax1.coastlines()
+ax1.add_feature(cfeature.BORDERS, linestyle=':')
+
+norm = mcolors.TwoSlopeNorm(vmin=0,vcenter = (df_parameters_kgb.kappa.max()/2) , vmax=df_parameters_kgb.kappa.max())
+sc = ax1.scatter(
+    df_parameters_kgb.longitude,
+    df_parameters_kgb.latitude,
+    c=df_parameters_kgb.kappa,
+    s = s,
+    cmap='hsv',
+)
+
+
+
+
+# Add a colorbar at the bottom
+cb = plt.colorbar(sc, orientation='horizontal', pad=0.05)
+cb.set_label('κ', fontsize=14)  
+cb.ax.tick_params(labelsize=12)
+
+# Set x and y ticks
+ax1.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+ax1.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
+ax1.tick_params(labelsize=12)  
+
+plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+
+
+plt.title(f'GSDR: {ERA_country}. κ', fontsize=16)
+plt.show()
+
+#######################################################
+fig = plt.figure(figsize=(10, 10))
+proj = ccrs.PlateCarree()
+ax1 = fig.add_subplot(1, 1, 1, projection=proj)
+
+# Add map features
+ax1.coastlines()
+ax1.add_feature(cfeature.BORDERS, linestyle=':')
+
+sc = ax1.scatter(
+    df_parameters_kgb.longitude,
+    df_parameters_kgb.latitude,
+    c=df_parameters_kgb.a,
+    s = s,
+    cmap='hsv',  
+)
+
+
+
+
+# Add a colorbar at the bottom
+cb = plt.colorbar(sc, orientation='horizontal', pad=0.05)
+cb.set_label('a', fontsize=14)  
+cb.ax.tick_params(labelsize=12)
+
+# Set x and y ticks
+ax1.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+ax1.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
+ax1.tick_params(labelsize=12)  
+
+plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+
+
+plt.title(f'GSDR: {ERA_country}. a', fontsize=16)
+plt.show()
 
 
 

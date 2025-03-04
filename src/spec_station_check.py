@@ -33,9 +33,10 @@ import time
 drive = 'D'
 
 
-chosen_station = ['12041']
+chosen_station = ['12041'] #[ 0.7        -0.02373429  2.          0.        ]
 
 country = 'Japan'
+country_save = 'Japan'
 code_str = 'JP' 
 n_stations = 1 #number of stations to sample
 min_yrs = 15 #atm this probably introduces a bug... need to put in if statement or something
@@ -65,14 +66,14 @@ plt.show()
 
 ###############################################################################
 # Look at plots from df arrays
-output_files = glob.glob(f"{drive}:/outputs/{country}/*")
+output_files = glob.glob(f"{drive}:/outputs/{country_save}/*")
 
-save_path_neg = drive + ':/outputs/'+country+'\\parameters_neg.csv'
-df_savename = drive + ':/outputs/'+country+'\\parameters.csv'
+save_path_neg = drive + ':/outputs/'+country_save+'\\parameters_neg.csv'
+df_savename = drive + ':/outputs/'+country_save+'\\parameters.csv'
 
 
 df_parameters = pd.read_csv(df_savename, dtype={'station': str}) 
-df_parameters_0 = pd.read_csv(f"{drive}:/outputs/{country}_b0/parameters.csv", dtype={'station': str})
+df_parameters_0 = pd.read_csv(f"{drive}:/outputs/{country_save}_b0/parameters.csv", dtype={'station': str})
 
 
 
@@ -101,7 +102,7 @@ if len(missing_rows) != 0:
 else:
     pass
 
-save_bset = f"{drive}:/outputs/{country}\\parameters_bset.csv"
+save_bset = f"{drive}:/outputs/{country_save}\\parameters_bset.csv"
 
 if save_bset in output_files:
     df_parameters_bset = pd.read_csv(save_bset,dtype={'station': str})
@@ -109,7 +110,7 @@ else:
     pass
 
 
-liklihood_df = pd.read_csv(f"{drive}:/outputs/{country}/liklihood.csv",dtype={'station': str})
+liklihood_df = pd.read_csv(f"{drive}:/outputs/{country_save}/liklihood.csv",dtype={'station': str})
 
 nan_locs = liklihood_df.mult_prob[liklihood_df.mult_prob.isna()].index
 replace_range = np.arange(0,len(liklihood_df))
@@ -127,7 +128,7 @@ for j in replace_range:
     
     
 
-RL_df = pd.read_csv(f"{drive}:/outputs/{country}/return_levels.csv", dtype={'station': str})
+RL_df = pd.read_csv(f"{drive}:/outputs/{country_save}/return_levels.csv", dtype={'station': str})
 nan_locs = RL_df.return_levels[RL_df.return_levels.isna()].index
 replace_range = np.arange(0,len(RL_df))
 for k in range(len(nan_locs)):
@@ -146,7 +147,7 @@ for j in replace_range:
         RL_df.loc[j, "return_levels_bexp"] = np.fromstring(RL_df.return_levels_bexp.iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'), sep=' ')
 
 
-FRMSE_df = pd.read_csv(f"{drive}:/outputs/{country}/FRMSE.csv", dtype={'station': str})
+FRMSE_df = pd.read_csv(f"{drive}:/outputs/{country_save}/FRMSE.csv", dtype={'station': str})
 
 
 
@@ -401,7 +402,7 @@ plot_pos_full = np.arange(1,np.size(P)+1)/(1+np.size(P))
 eRP_full = 1/(1-plot_pos_full)/n.to_numpy()
 
 
-plt.scatter(eRP_full,np.sort(P))
+plt.scatter(eRP_full,np.sort(P),s=5)
 plt.xscale("log")
 plt.plot(S.return_period/len(n_ordinary_per_year),RL_all)
 plt.show()
