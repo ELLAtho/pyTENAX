@@ -55,23 +55,23 @@ alpha_set = 0
 # censor_thr = 0.9
 
 
-# country = 'Japan'
-# ERA_country = 'Japan'
-# country_save = 'Japan'
-# code_str = 'JP_'
-# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
-# name_len = 5
-# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-# censor_thr = 0.9
-
-country = 'US' 
-ERA_country = 'US'
-country_save = 'US_main'
-code_str = 'US_'
-minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
-name_len = 6
-min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+country = 'Japan'
+ERA_country = 'Japan'
+country_save = 'Japan'
+code_str = 'JP_'
+minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+name_len = 5
+min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 censor_thr = 0.9
+
+# country = 'US' 
+# ERA_country = 'US'
+# country_save = 'US_main'
+# code_str = 'US_'
+# minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
+# name_len = 6
+# min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+# censor_thr = 0.9
 
 
 
@@ -1649,12 +1649,13 @@ for i in np.arange(0,len(new_df)):
 
 # Define the boundaries and number of bins for the discrete colormap
 num_bins = 12
-cmap = plt.cm.rainbow  # You can still use 'rainbow' or any other cmap
-norm = mcolors.Normalize(vmin=10, vmax=70)
+cmap = plt.cm.rainbow  # You can use 'rainbow' or any other colormap
+norm = mcolors.BoundaryNorm(boundaries=np.linspace(10, 70, num_bins + 1), ncolors=num_bins)
 
-# Create a discrete colormap
-discrete_cmap = cm.colors.ListedColormap(cmap(np.linspace(0, 1.01, num_bins)))
-
+# Create a discrete colormap and add black for values above 70
+colors = cmap(np.linspace(0, 1, num_bins))
+colors = np.vstack([colors, [0, 0, 0, 1]])  # Add black as the last color
+discrete_cmap = mcolors.ListedColormap(colors)
 # Create the figure
 fig = plt.figure(figsize=(10, 10))
 
@@ -1672,7 +1673,7 @@ sc = ax1.scatter(
     norm=norm,
     s=s,
 )
-ax1.set_xticks(np.arange(lon_lims[0], lon_lims[1] + 1, 2.5), crs=proj)
+ax1.set_xticks(np.arange(lon_lims[0], lon_lims[1] + 1, 5), crs=proj)
 ax1.set_yticks(np.arange(lat_lims[0], lat_lims[1] + 1, 2.5), crs=proj)
 ax1.tick_params(labelsize=12)
 plt.xlim(lon_lims[0] - 1, lon_lims[1] + 1)
@@ -1691,7 +1692,7 @@ sc = ax2.scatter(
     norm=norm,
     s=s,
 )
-ax2.set_xticks(np.arange(lon_lims[0], lon_lims[1] + 1, 2.5), crs=proj)
+ax2.set_xticks(np.arange(lon_lims[0], lon_lims[1] + 1, 5), crs=proj)
 ax2.set_yticks(np.arange(lat_lims[0], lat_lims[1] + 1, 2.5), crs=proj)
 ax2.tick_params(labelsize=12)
 plt.xlim(lon_lims[0] - 1, lon_lims[1] + 1)
@@ -1710,7 +1711,7 @@ sc = ax3.scatter(
     norm = norm,
     s=s,
 )
-ax3.set_xticks(np.arange(lon_lims[0], lon_lims[1] + 1, 2.5), crs=proj)
+ax3.set_xticks(np.arange(lon_lims[0], lon_lims[1] + 1, 5), crs=proj)
 ax3.set_yticks(np.arange(lat_lims[0], lat_lims[1] + 1, 2.5), crs=proj)
 ax3.tick_params(labelsize=12)
 plt.xlim(lon_lims[0] - 1, lon_lims[1] + 1)
@@ -1728,7 +1729,7 @@ sc4 = ax4.scatter(
     cmap="viridis",  # You can use discrete colormap here if desired
     s=s,
 )
-ax4.set_xticks(np.arange(lon_lims[0], lon_lims[1] + 1, 2.5), crs=proj)
+ax4.set_xticks(np.arange(lon_lims[0], lon_lims[1] + 1, 5), crs=proj)
 ax4.set_yticks(np.arange(lat_lims[0], lat_lims[1] + 1, 2.5), crs=proj)
 ax4.tick_params(labelsize=12)
 plt.xlim(lon_lims[0] - 1, lon_lims[1] + 1)
@@ -1744,7 +1745,15 @@ ax4.set_title("cleaned years")
 
 # Colorbar for the first three subplots
 cbar_ax = fig.add_axes([0.15, 0.02, 0.7, 0.03])  # Position for the colorbar
-cb = plt.colorbar(sc, cax=cbar_ax, orientation='horizontal')
+#cb = plt.colorbar(sc, cax=cbar_ax, orientation='horizontal')
+#cb = mcolors.colorbarbase(sc,cax=cbar_ax, cmap=discrete_cmap, norm=norm, orientation='horizontal')
+cb = plt.colorbar(
+    plt.cm.ScalarMappable(norm=norm, cmap=discrete_cmap),
+    cax=cbar_ax,
+    orientation='horizontal',
+    extend='max'
+)
+
 cb.set_label('10 year 1 hour return level (mm)', fontsize=14)
 cb.ax.tick_params(labelsize=12)
 
