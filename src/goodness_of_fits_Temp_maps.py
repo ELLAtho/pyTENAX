@@ -54,10 +54,19 @@ alpha_set = 0.05
 # censor_thr = 0.9
 
 
-country = 'Japan'
-ERA_country = 'Japan'
-country_save = 'Japan'
-code_str = 'JP_'
+# country = 'Japan'
+# ERA_country = 'Japan'
+# country_save = 'Japan'
+# code_str = 'JP_'
+# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+# name_len = 5
+# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+# censor_thr = 0.9
+
+country = 'US'
+ERA_country = 'US'
+country_save = 'US_main'
+code_str = 'US_'
 minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
 name_len = 5
 min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
@@ -196,7 +205,7 @@ if save_name not in output_files:
             FRMSE[i] = np.nan
         else:
             T_ERA = xr.load_dataarray(T_path)
-            t_data = (T_ERA-273.15).to_dataframe()
+            t_data = (T_ERA.squeeze()-273.15).to_dataframe()
             
     
             df_arr = np.array(data[name_col])

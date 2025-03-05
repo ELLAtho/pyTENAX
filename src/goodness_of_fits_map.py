@@ -794,7 +794,6 @@ else:
 
 
 
-
 ###############################################################################
 #maps
 significants = df_parameters[df_parameters.b != 0]
@@ -807,7 +806,7 @@ s = 5
 cmap = 'magma_r'
 
 
-fig = plt.figure(figsize=(20, 20))
+fig = plt.figure(figsize=(15, 10))
 norm = mcolors.Normalize(vmin=0, vmax=1)
 
 
@@ -934,7 +933,7 @@ plt.show()
 
 #differences
 
-fig = plt.figure(figsize=(20, 20))
+fig = plt.figure(figsize=(15, 10))
 norm = mcolors.Normalize(vmin=-0.2, vmax=0.2)
 cmap = 'seismic'
 
@@ -1055,7 +1054,7 @@ plt.show()
 #############################################################################
 #probabilities
 
-fig = plt.figure(figsize=(20, 20))
+fig = plt.figure(figsize=(15, 10))
 norm = mcolors.Normalize(vmin=0, vmax=0.5)
 cmap = 'hsv'
 
@@ -1415,7 +1414,7 @@ if "mult_prob_bset" in liklihood_df.columns:
 
 elif "mult_prob_bexp" in liklihood_df.columns:
     #mult logs
-    fig = plt.figure(figsize=(20, 10))
+    fig = plt.figure(figsize=(15, 7))
     norm = mcolors.Normalize(vmin=-5, vmax=5)
     cmap = 'seismic'
     
@@ -1442,7 +1441,7 @@ elif "mult_prob_bexp" in liklihood_df.columns:
     
     plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
     plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
-    ave = np.mean(np.log(liklihood_df.mult_prob_bexp) - np.log(liklihood_df.mult_prob_0))
+    ave = np.nanmean(np.log(liklihood_df.mult_prob_bexp.replace(0, np.nan)) - np.log(liklihood_df.mult_prob_0.replace(0, np.nan)))
     ax1.set_title(f"b exp - b 0. ave = {ave:.3f}")
     
     
@@ -1461,7 +1460,8 @@ elif "mult_prob_bexp" in liklihood_df.columns:
         s = s,
     )
     
-    ave = np.mean(np.log(liklihood_df.mult_prob) - np.log(liklihood_df.mult_prob_0))
+    to_mean = (np.log(liklihood_df.mult_prob.replace(0, np.nan)) - np.log(liklihood_df.mult_prob_0.replace(0, np.nan)))
+    ave = np.nanmean(to_mean)
     
     ax2.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
     ax2.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
@@ -1897,7 +1897,7 @@ else:
 
 
 # CHECKS
-for j in np.arange(0,10):
+for j in np.arange(197,200):
     plot_pos = np.arange(1,np.size(RL_df.obs_AMS.iloc[j])+1)/(1+np.size(RL_df.obs_AMS.iloc[j]))
     
     eRP = 1/(1-plot_pos)

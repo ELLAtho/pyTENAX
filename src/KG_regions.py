@@ -422,7 +422,15 @@ if df_savename not in saved_output_files: #read in files and create t time serie
 
 else:
     print('TENAX already done! reading in data')
-    df_parameters_kgb = pd.read_csv(df_savename) 
+    df_parameters_kgb = pd.read_csv(df_savename,dtype={'station': str}) 
+    nan_locs = df_parameters_kgb.return_levels[df_parameters_kgb.return_levels.isna()].index
+    replace_range = np.arange(0,len(df_parameters_kgb))
+    for k in range(len(nan_locs)):
+        replace_range = np.delete(replace_range, np.where(replace_range == nan_locs[k]))
+    
+    for j in replace_range:
+        RL_now = np.fromstring(df_parameters_kgb.return_levels.iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'), sep=' ')
+        df_parameters_kgb.at[j, "return_levels"] = RL_now
 
 
 lon_lims = [truncate_neg(np.min(df_parameters_kgb.longitude),2.5),np.ceil(np.max(df_parameters_kgb.longitude/2.5))*2.5]
@@ -590,6 +598,44 @@ plt.title(f'GSDR: {ERA_country}. a', fontsize=16)
 plt.show()
 
 
+
+RL_df = pd.read_csv(f"{drive}:/outputs/{country_save}/return_levels.csv", dtype={'station': str})
+nan_locs = RL_df.return_levels[RL_df.return_levels.isna()].index
+replace_range = np.arange(0,len(RL_df))
+for k in range(len(nan_locs)):
+    replace_range = np.delete(replace_range, np.where(replace_range == nan_locs[k]))
+for j in replace_range:
+    RL_df.loc[j, "return_levels"] = np.fromstring(RL_df.return_levels.iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'), sep=' ')
+    RL_df.loc[j, "return_levels_5"] = np.fromstring(RL_df["return_levels_5"].iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'), sep=' ')
+    RL_df.loc[j, "return_levels_b0"] = np.fromstring(RL_df.return_levels_b0.iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'), sep=' ')
+    RL_df.loc[j, "obs_AMS"] = np.fromstring(RL_df.obs_AMS.iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'), sep=' ')
+
+    
+    if "return_levels_bset" in RL_df.columns:
+        RL_df.loc[j, "return_levels_bset"] = np.fromstring(RL_df.return_levels_bset.iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'), sep=' ')
+    
+    if "return_levels_bexp" in RL_df.columns:
+        RL_df.loc[j, "return_levels_bexp"] = np.fromstring(RL_df.return_levels_bexp.iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'), sep=' ')
+    
+
+
+# CHECKS
+for j in np.arange(0,10):
+    plot_pos = np.arange(1,np.size(RL_df.obs_AMS.iloc[j])+1)/(1+np.size(RL_df.obs_AMS.iloc[j]))
+    
+    eRP = 1/(1-plot_pos)
+    
+    TNX_FIG_valid(RL_df.obs_AMS.iloc[j],eRP,df_parameters_kgb.return_levels.iloc[j],TENAXlabel = "regional b mean",obslabel='AMS')
+    plt.plot(eRP,RL_df.return_levels.iloc[j],label = "free b",color = 'r')
+    plt.plot(eRP,RL_df.return_levels_b0.iloc[j],label = "b = 0",color = 'g')
+    
+    plt.ylim(0,np.max(df_parameters_kgb.return_levels.iloc[j])+5)
+    plt.xlim(1,np.max(eRP)+2)
+    
+    plt.legend()
+    plt.show()
+    
+    
 
 
 
