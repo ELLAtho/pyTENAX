@@ -194,6 +194,10 @@ else:
 #calculate b as average
 b2 = [0]*len(new_df.latitude)
 n_stations_in_group = [0]*len(new_df.latitude)
+b_median = [0]*len(new_df.latitude)
+max_in_group = [0]*len(new_df.latitude)
+min_in_group = [0]*len(new_df.latitude)
+std_group = [0]*len(new_df.latitude)
 
 for i in range(len(new_df.latitude)):
     if pd.isna(new_df.b.iloc[i]):
@@ -206,6 +210,11 @@ for i in range(len(new_df.latitude)):
         b2[i] = np.mean(new_df.b.iloc[close_locs])
         n_stations_in_group[i] = len(close_locs[0])
         
+        b_median[i] = np.median(new_df.b.iloc[close_locs])
+        max_in_group[i] = np.max(new_df.b.iloc[close_locs])
+        min_in_group[i] = np.min(new_df.b.iloc[close_locs])
+        std_group[i] = np.std(new_df.b.iloc[close_locs])
+        
 plt.hist(n_stations_in_group)
 plt.xlabel("number of stations within radius")
 plt.title(f"{country_save}. radius = {radius}km")
@@ -217,9 +226,9 @@ lon_lims = [truncate_neg(np.min(df_parameters.longitude),2.5),np.ceil(np.max(df_
 lat_lims = [truncate_neg(np.min(df_parameters.latitude),2.5),np.ceil(np.max(df_parameters.latitude/2.5))*2.5]
 
 
-fig = plt.figure(figsize=(20, 10))
+fig = plt.figure(figsize=(30, 10))
 proj = ccrs.PlateCarree()
-ax1 = fig.add_subplot(1, 2, 1, projection=proj)
+ax1 = fig.add_subplot(1, 3, 1, projection=proj)
 
 # Add map features
 ax1.coastlines()
@@ -260,7 +269,7 @@ plt.title(f'GSDR: {ERA_country}. b at 0 sig level', fontsize=16)
 
 
 
-ax2 = fig.add_subplot(1, 2, 2, projection=proj)
+ax2 = fig.add_subplot(1, 3, 2, projection=proj)
 
 # Add map features
 ax2.coastlines()
@@ -298,7 +307,130 @@ plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
 
 
 plt.title(f'b moving average. radius = {radius}km', fontsize=16)
+
+
+
+ax3 = fig.add_subplot(1, 3, 3, projection=proj)
+
+# Add map features
+ax3.coastlines()
+ax3.add_feature(cfeature.BORDERS, linestyle=':')
+
+# Choosing cmap
+if df_parameters.b.min() == 0:
+    norm = mcolors.TwoSlopeNorm(vmin=-0.06, vcenter=0, vmax=0.06)
+else:
+    norm = mcolors.TwoSlopeNorm(vmin=df_parameters.b.min(), vcenter=0, vmax=-1*df_parameters.b.min())
+
+sc = ax3.scatter( #plot the negligable at 5% lvl points
+    new_df.longitude,
+    new_df.latitude,
+    c = b_median,
+    s = s,
+    cmap = 'seismic',
+    norm = norm
+)
+
+
+
+# Add a colorbar at the bottom
+cb = plt.colorbar(sc, orientation='horizontal', pad=0.05)
+cb.set_label('b', fontsize=14)  
+cb.ax.tick_params(labelsize=12)
+
+# Set x and y ticks
+ax3.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+ax3.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
+ax3.tick_params(labelsize=12)  
+
+plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+
+
+plt.title(f'b moving median. radius = {radius}km', fontsize=16)
 plt.show()
+###############################################################################
+fig = plt.figure(figsize=(20, 10))
+proj = ccrs.PlateCarree()
+ax1 = fig.add_subplot(1, 2, 1, projection=proj)
+
+# Add map features
+ax1.coastlines()
+ax1.add_feature(cfeature.BORDERS, linestyle=':')
+
+# Choosing cmap
+if df_parameters.b.min() == 0:
+    norm = mcolors.TwoSlopeNorm(vmin=-0.06, vcenter=0, vmax=0.06)
+else:
+    norm = mcolors.TwoSlopeNorm(vmin=df_parameters.b.min(), vcenter=0, vmax=-1*df_parameters.b.min())
+
+sc = ax1.scatter( #plot the negligable at 5% lvl points
+    new_df.longitude,
+    new_df.latitude,
+    c = std_group,
+    s = s,
+    cmap = 'cool',
+)
+
+
+
+# Add a colorbar at the bottom
+cb = plt.colorbar(sc, orientation='horizontal', pad=0.05)
+cb.set_label('b', fontsize=14)  
+cb.ax.tick_params(labelsize=12)
+
+# Set x and y ticks
+ax1.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+ax1.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
+ax1.tick_params(labelsize=12)  
+
+plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+
+
+plt.title('standard deviation', fontsize=16)
+
+
+
+ax2 = fig.add_subplot(1, 2, 2, projection=proj)
+
+# Add map features
+ax2.coastlines()
+ax2.add_feature(cfeature.BORDERS, linestyle=':')
+
+# Choosing cmap
+if df_parameters.b.min() == 0:
+    norm = mcolors.TwoSlopeNorm(vmin=-0.06, vcenter=0, vmax=0.06)
+else:
+    norm = mcolors.TwoSlopeNorm(vmin=df_parameters.b.min(), vcenter=0, vmax=-1*df_parameters.b.min())
+
+sc = ax2.scatter( #plot the negligable at 5% lvl points
+    new_df.longitude,
+    new_df.latitude,
+    c = n_stations_in_group,
+    s = s,
+    cmap = 'viridis_r',
+)
+
+
+
+# Add a colorbar at the bottom
+cb = plt.colorbar(sc, orientation='horizontal', pad=0.05)
+cb.set_label('b', fontsize=14)  
+cb.ax.tick_params(labelsize=12)
+
+# Set x and y ticks
+ax2.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+ax2.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
+ax2.tick_params(labelsize=12)  
+
+plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+
+
+plt.title(f'number of stations in group. radius = {radius}km', fontsize=16)
+plt.show()
+###############################################################################
 
 
 
@@ -414,7 +546,7 @@ if df_savename not in saved_output_files: #read in files and create t time serie
             time_left = (len(files_sel)-i)*time_taken/60
             print(save_path)
             print(files_sel[i])
-            print(f"b exp: {F_phats[i]}. normal {F_phats_norm}")
+            print(f"b rolled: {F_phats[i]}. normal {F_phats_norm}")
             print(RL[i])
             print(f"{i}/{len(files_sel)}. Current average time to complete one {time_taken:.0f}s. Approx time left: {time_left:.0f} mins") #this is only correct after 50 loops
         
@@ -457,6 +589,45 @@ for j in replace_range:
         RL_df.loc[j, "return_levels_bexp"] = np.fromstring(RL_df.return_levels_bexp.iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'), sep=' ')
     
 
+
+
+nans_mask = [np.all(np.isnan(df_parameters_rolling.return_levels.iloc[ind])) for ind in range(len(df_parameters))]
+fig = plt.figure(figsize=(10, 10))
+proj = ccrs.PlateCarree()
+ax1 = fig.add_subplot(1, 1, 1, projection=proj)
+
+# Add map features
+ax1.coastlines()
+ax1.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc = ax1.scatter( #plot the negligable at 5% lvl points
+    new_df.longitude,
+    new_df.latitude,
+    c = nans_mask,
+    s = s,
+    cmap = 'cool',
+)
+
+
+
+# Add a colorbar at the bottom
+cb = plt.colorbar(sc, orientation='horizontal', pad=0.05)
+cb.set_label('b', fontsize=14)  
+cb.ax.tick_params(labelsize=12)
+
+# Set x and y ticks
+ax1.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+ax1.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
+ax1.tick_params(labelsize=12)  
+
+plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+
+
+plt.title(f'Where it breaks {radius}km', fontsize=16)
+
+plt.show()
 
 
 # CHECKS
