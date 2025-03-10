@@ -42,6 +42,7 @@ from scipy.stats import kendalltau, pearsonr, spearmanr
 
 drive = 'D'
 alpha_set = 0.05
+beta_set = 6
 
 
 # country = 'Germany' 
@@ -54,23 +55,23 @@ alpha_set = 0.05
 # censor_thr = 0.9
 
 
-# country = 'Japan'
-# ERA_country = 'Japan'
-# country_save = 'Japan'
-# code_str = 'JP_'
-# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
-# name_len = 5
-# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-# censor_thr = 0.9
-
-country = 'US'
-ERA_country = 'US'
-country_save = 'US_main'
-code_str = 'US_'
+country = 'Japan'
+ERA_country = 'Japan'
+country_save = 'Japan'
+code_str = 'JP_'
 minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
 name_len = 5
 min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 censor_thr = 0.9
+
+# country = 'US'
+# ERA_country = 'US'
+# country_save = 'US_main'
+# code_str = 'US_'
+# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+# name_len = 5
+# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+# censor_thr = 0.9
 
 
 name_col = 'ppt' 
@@ -160,7 +161,7 @@ else:
 
 
 
-save_name = f"{drive}:/outputs/{country_save}\\temp_FRMSE.csv"
+save_name = f"{drive}:/outputs/{country_save}\\temp_FRMSE{beta_set}.csv"
 output_files = glob.glob(f"{drive}:/outputs/{country_save}/*")
 GOF_perc = 0.8
 
