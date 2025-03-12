@@ -42,6 +42,8 @@ from scipy.stats import kendalltau, pearsonr, spearmanr
 
 drive = 'D'
 alpha_set = 0.05
+
+#FOR BETA = 4, USE beta_set = ""
 beta_set = 6
 
 
@@ -175,12 +177,17 @@ if save_name not in output_files:
     FRMSE = [0] * len(new_df)
     diff = [0] * len(new_df)
     
+    if beta_set == "":
+        beta_set2 = 4
+    else:
+        beta_set2 = beta_set
     S = TENAX(
             return_period = [1.1,1.2,1.5,2,5,10,20,50,100, 200],
             durations = [60, 180, 360, 720, 1440],
             left_censoring = [0, 0.90],
             alpha = 0.05,
             min_ev_dur = 60,
+            beta = beta_set2
         )
     
     for i in np.arange(0, len(new_df)):
@@ -253,7 +260,7 @@ if save_name not in output_files:
             
             kde  = gaussian_kde(T) #use kernel density to get probability
             prob = kde(eT)
-            pdf_values = gen_norm_pdf(eT, g_phat[0], g_phat[1], 4)
+            pdf_values = gen_norm_pdf(eT, g_phat[0], g_phat[1], S.beta)
             
             
             diff[i] = pdf_values - prob
@@ -272,6 +279,7 @@ if save_name not in output_files:
               
         if i%50 == 0:    
             print(f"FRMSE {FRMSE[i]:.3f}. FRMSE upper {FRMSE_upper_perc[i]:.3f}")
+            print(S.beta)
             time_taken = (time.time()-start_time[i-9])/10
             time_left = (len(new_df)-i)*time_taken/60
             print(f"{i}/{len(new_df)}. Approx time left: {time_left:.0f} mins") #this is only correct after 50 loops
@@ -325,7 +333,7 @@ ax1.tick_params(labelsize=12)
 
 plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
 plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
-ax1.set_title("FRMSE")
+ax1.set_title(f"FRMSE beta = {S.beta}")
 plt.colorbar(sc)
 
 

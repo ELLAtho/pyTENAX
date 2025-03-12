@@ -43,6 +43,12 @@ from matplotlib import cm
 
 drive = 'D'
 alpha_set = 0
+beta_set = 6
+if beta_set == "":
+    beta_set2 = 4
+else:
+    beta_set2 = beta_set
+
 
 
 # country = 'Germany' 
@@ -104,6 +110,7 @@ S = TENAX(
         alpha = alpha_set,
         min_ev_dur = 60,
         niter_smev = 1000, 
+        beta = beta_set2
     )
 
 #getting info of correct size
@@ -168,21 +175,23 @@ if len(missing_rows) != 0:
 else:
     pass
 
+S = TENAX(
+        return_period = [1.1,1.2,1.5,2,5,10,20,50,100, 200],
+        durations = [60, 180, 360, 720, 1440],
+        left_censoring = [0, censor_thr],
+        alpha = alpha_set,
+        min_ev_dur = 60,
+        niter_smev = 1000, 
+        beta = beta_set2
+    )
 
-save_name = f"{drive}:/outputs/{country_save}\\return_levels.csv"
+save_name = f"{drive}:/outputs/{country_save}\\return_levels{beta_set}.csv"
 output_files = glob.glob(f"{drive}:/outputs/{country_save}/*")
 
 #calculating and saving return levels for 0, free, 5% sig
 if save_name not in output_files:
     print("levels not calculated yet, doing now.")
-    S = TENAX(
-            return_period = [1.1,1.2,1.5,2,5,10,20,50,100, 200],
-            durations = [60, 180, 360, 720, 1440],
-            left_censoring = [0, censor_thr],
-            alpha = alpha_set,
-            min_ev_dur = 60,
-            niter_smev = 1000, 
-        )
+    
     
     RL = [0] * len(new_df)
     RL_0 = [0] * len(new_df)
@@ -230,7 +239,49 @@ if save_name not in output_files:
         AMS = dict_AMS['60']
         
         # Define the model parameters by reading in those already saved
-        g_phat = [df_parameters.mu.iloc[i],df_parameters.sigma.iloc[i]]
+        if S.beta == 4:
+            g_phat = [df_parameters.mu.iloc[i],df_parameters.sigma.iloc[i]]
+        else:
+            T_path = f"{drive}:/{country}_temp\\{code_str}{df_parameters.station.iloc[i]}.nc" #TODO: nans case (not there in germany)
+            
+            if T_path not in glob.glob(f"{drive}:/{country}_temp\\*"): # dont do tenax if no T data saved
+                print('skip')
+                g_phat = [np.nan,np.nan]
+            else:
+                T_ERA = xr.load_dataarray(T_path)
+                t_data = (T_ERA.squeeze()-273.15).to_dataframe()
+                df_arr = np.array(data[name_col])
+                df_dates = np.array(data.index)
+                
+                #extract indexes of ordinary events
+                #these are time-wise indexes =>returns list of np arrays with np.timeindex
+                idx_ordinary=S.get_ordinary_events(data=df_arr,dates=df_dates, name_col=name_col,  check_gaps=False)
+                    
+                
+                #get ordinary events by removing too short events
+                #returns boolean array, dates of OE in TO, FROM format, and count of OE in each years
+                arr_vals,arr_dates,n_ordinary_per_year=S.remove_short(idx_ordinary)
+                
+                #assign ordinary events values by given durations, values are in depth per duration, NOT in intensity mm/h
+                dict_ordinary, dict_AMS = S.get_ordinary_events_values(data=df_arr,dates=df_dates, arr_dates_oe=arr_dates)
+                
+                AMS = dict_AMS['60']
+                
+                
+                df_arr_t_data = np.array(t_data[temp_name_col])
+                df_dates_t_data = np.array(t_data.index)
+                
+                dict_ordinary, _ , n_ordinary_per_year = S.associate_vars(dict_ordinary, df_arr_t_data, df_dates_t_data)
+                
+                
+                
+                # Your data (P, T arrays) and threshold thr=3.8
+                P = dict_ordinary["60"]["ordinary"].to_numpy() 
+                T = dict_ordinary["60"]["T"].to_numpy()  
+                g_phat = S.temperature_model(T)
+        
+        
+        
         if np.any(np.isnan(g_phat[0])):
             print(f"no gphat. {g_phat}")
             RL[i] = np.nan
@@ -282,6 +333,7 @@ if save_name not in output_files:
                 pass
             
         print(f"Free {FRMSE[i]}, 5% sig {FRMSE_5[i]}, b always 0 {FRMSE_0[i]}")
+        print(f"normal gphat: {[df_parameters.mu.iloc[i],df_parameters.sigma.iloc[i]]}, beta = {S.beta}: {g_phat}")
         time_taken = (time.time()-start_time[i-9])/10
         time_left = (len(new_df)-i)*time_taken/60
         print(f"{i}/{len(new_df)}. Approx time left: {time_left:.0f} mins") #this is only correct after 50 loops
@@ -296,17 +348,17 @@ if save_name not in output_files:
         AMS_sort_save[j] = AMS_sort[j].to_numpy()
     
     RL_df = pd.DataFrame({'station': df_parameters.station, 'obs_AMS': AMS_sort_save, 'return_levels': RL, 'return_levels_5': RL_5, 'return_levels_b0': RL_0})
-    RL_df.to_csv(f"{drive}:/outputs/{country_save}/return_levels.csv",index=False)
+    RL_df.to_csv(f"{drive}:/outputs/{country_save}/return_levels{beta_set}.csv",index=False)
     
     FRMSE_df = pd.DataFrame({'station': df_parameters.station,
                              'FRMSE': FRMSE,
                              'FRMSE_5': FRMSE_5,
                              'FRMSE_0': FRMSE_0})
     
-    FRMSE_df.to_csv(f"{drive}:/outputs/{country_save}/FRMSE.csv",index=False)
+    FRMSE_df.to_csv(f"{drive}:/outputs/{country_save}/FRMSE{beta_set}.csv",index=False)
 else:
     print("Files already saved, reading")
-    RL_df = pd.read_csv(f"{drive}:/outputs/{country_save}/return_levels.csv", dtype={'station': str})
+    RL_df = pd.read_csv(save_name, dtype={'station': str})
     nan_locs = RL_df.return_levels[RL_df.return_levels.isna()].index
     replace_range = np.arange(0,len(RL_df))
     for k in range(len(nan_locs)):
@@ -326,7 +378,7 @@ else:
         
        
     
-    FRMSE_df = pd.read_csv(f"{drive}:/outputs/{country_save}/FRMSE.csv", dtype={'station': str})
+    FRMSE_df = pd.read_csv(f"{drive}:/outputs/{country_save}/FRMSE{beta_set}.csv", dtype={'station': str})
 
 
 
@@ -334,7 +386,7 @@ else:
 # Probs and stuff
 
 
-save_name_lik = f"{drive}:/outputs/{country_save}\\liklihood.csv"
+save_name_lik = f"{drive}:/outputs/{country_save}\\liklihood{beta_set}.csv"
 
 if save_name_lik not in output_files:
         
@@ -364,8 +416,72 @@ if save_name_lik not in output_files:
         start_time[i] = time.time()
         n_itn = 1000
         percentages = [0.05,0.95]
-        
-        g_phat = [df_parameters.mu.iloc[i],df_parameters.sigma.iloc[i]]
+        if S.beta == 4:
+            g_phat = [df_parameters.mu.iloc[i],df_parameters.sigma.iloc[i]]
+        else:
+            T_path = f"{drive}:/{country}_temp\\{code_str}{df_parameters.station.iloc[i]}.nc" #TODO: nans case (not there in germany)
+            
+            if T_path not in glob.glob(f"{drive}:/{country}_temp\\*"): # dont do tenax if no T data saved
+                print('skip')
+                g_phat = [np.nan,np.nan]
+            else:
+                
+                file_name = f"{drive}:/{country}/{code_str}{df_parameters.station.iloc[i]}"
+                
+                if 'code_str' in locals():
+                    G,data_meta = read_GSDR_file(f"{file_name}.txt",name_col)
+                else:
+                    G = pd.read_csv(f"{file_name}.csv")
+                    G['prec_time'] = pd.to_datetime(G['prec_time'])
+                    G.set_index('prec_time', inplace=True)
+                    
+                ######################################################################
+                #TENAX  AMS
+            
+                data = G 
+                data = S.remove_incomplete_years(data, name_col)
+                
+                T_ERA = xr.load_dataarray(T_path)
+                t_data = (T_ERA.squeeze()-273.15).to_dataframe()
+                df_arr = np.array(data[name_col])
+                df_dates = np.array(data.index)
+                
+                #extract indexes of ordinary events
+                #these are time-wise indexes =>returns list of np arrays with np.timeindex
+                idx_ordinary=S.get_ordinary_events(data=df_arr,dates=df_dates, name_col=name_col,  check_gaps=False)
+                    
+                
+                #get ordinary events by removing too short events
+                #returns boolean array, dates of OE in TO, FROM format, and count of OE in each years
+                arr_vals,arr_dates,n_ordinary_per_year=S.remove_short(idx_ordinary)
+                
+                #assign ordinary events values by given durations, values are in depth per duration, NOT in intensity mm/h
+                dict_ordinary, dict_AMS = S.get_ordinary_events_values(data=df_arr,dates=df_dates, arr_dates_oe=arr_dates)
+                
+                AMS = dict_AMS['60']
+                
+                
+                df_arr_t_data = np.array(t_data[temp_name_col])
+                df_dates_t_data = np.array(t_data.index)
+                
+                dict_ordinary, _ , n_ordinary_per_year = S.associate_vars(dict_ordinary, df_arr_t_data, df_dates_t_data)
+                
+                
+                
+                # Your data (P, T arrays) and threshold thr=3.8
+                P = dict_ordinary["60"]["ordinary"].to_numpy() 
+                T = dict_ordinary["60"]["T"].to_numpy()  
+                
+                g_phat = S.temperature_model(T)
+                
+                
+                T_min = g_phat[0] - 2.5 * g_phat[1]
+                T_max = g_phat[0] + 2.5 * g_phat[1]
+                Ts = np.arange(T_min - S.temp_delta, T_max + S.temp_delta, S.temp_res_monte_carlo)
+                
+                
+                
+                
         if np.any(np.isnan(g_phat[0])):
             print(f"no gphat. {g_phat}")
             
@@ -514,9 +630,9 @@ if save_name_lik not in output_files:
                                  "n_bad_RL_5": n_bad_RL_5,
                                  })
     
-    liklihood_df.to_csv(f"{drive}:/outputs/{country_save}/liklihood.csv",index=False)
+    liklihood_df.to_csv(f"{drive}:/outputs/{country_save}/liklihood{beta_set}.csv",index=False)
 else:
-    liklihood_df = pd.read_csv(f"{drive}:/outputs/{country_save}/liklihood.csv",dtype={'station': str})
+    liklihood_df = pd.read_csv(f"{drive}:/outputs/{country_save}/liklihood{beta_set}.csv",dtype={'station': str})
     
     nan_locs = liklihood_df.mult_prob[liklihood_df.mult_prob.isna()].index
     replace_range = np.arange(0,len(RL_df))
@@ -545,7 +661,7 @@ else:
 ################################################################################
 # With set b
 
-save_bset = f"{drive}:/outputs/{country_save}\\parameters_bset.csv"
+save_bset = f"{drive}:/outputs/{country_save}\\parameters_bset{beta_set}.csv"
 
 if save_bset in output_files:
     print("hell yeah lets do some mean b liklihood")
@@ -557,6 +673,7 @@ if save_bset in output_files:
             alpha = alpha_set,
             min_ev_dur = 60,
             niter_smev = 1000, 
+            beta = beta_set2
         )
             
     
@@ -580,9 +697,50 @@ if save_bset in output_files:
             n_itn = 1000
             percentages = [0.05,0.95]
             
-            g_phat = [df_parameters.mu.iloc[i],df_parameters.sigma.iloc[i]]
+            if S.beta == 4:
+                g_phat = [df_parameters.mu.iloc[i],df_parameters.sigma.iloc[i]]
+            else:
+                T_path = f"{drive}:/{country}_temp\\{code_str}{df_parameters.station.iloc[i]}.nc" #TODO: nans case (not there in germany)
+                
+                if T_path not in glob.glob(f"{drive}:/{country}_temp\\*"): # dont do tenax if no T data saved
+                    print('skip')
+                    g_phat = [np.nan,np.nan]
+                else:
+                    T_ERA = xr.load_dataarray(T_path)
+                    t_data = (T_ERA.squeeze()-273.15).to_dataframe()
+                    df_arr = np.array(data[name_col])
+                    df_dates = np.array(data.index)
+                    
+                    #extract indexes of ordinary events
+                    #these are time-wise indexes =>returns list of np arrays with np.timeindex
+                    idx_ordinary=S.get_ordinary_events(data=df_arr,dates=df_dates, name_col=name_col,  check_gaps=False)
+                        
+                    
+                    #get ordinary events by removing too short events
+                    #returns boolean array, dates of OE in TO, FROM format, and count of OE in each years
+                    arr_vals,arr_dates,n_ordinary_per_year=S.remove_short(idx_ordinary)
+                    
+                    #assign ordinary events values by given durations, values are in depth per duration, NOT in intensity mm/h
+                    dict_ordinary, dict_AMS = S.get_ordinary_events_values(data=df_arr,dates=df_dates, arr_dates_oe=arr_dates)
+                    
+                    AMS = dict_AMS['60']
+                    
+                    
+                    df_arr_t_data = np.array(t_data[temp_name_col])
+                    df_dates_t_data = np.array(t_data.index)
+                    
+                    dict_ordinary, _ , n_ordinary_per_year = S.associate_vars(dict_ordinary, df_arr_t_data, df_dates_t_data)
+                    
+                    
+                    
+                    # Your data (P, T arrays) and threshold thr=3.8
+                    P = dict_ordinary["60"]["ordinary"].to_numpy() 
+                    T = dict_ordinary["60"]["T"].to_numpy()  
+                    g_phat = S.temperature_model(T)
+                    
+                    
             if np.any(np.isnan(g_phat[0])):
-                print(f"no gphat. {g_phat}")
+                print(f" {i} no gphat. {g_phat}")
                 
                 mult_prob_bset[i] = np.nan
                 ave_prob_bset[i] = np.nan
@@ -608,7 +766,7 @@ if save_bset in output_files:
                 
                 AMS_sim = np.zeros([n_itn,n_years])
                 for itn in np.arange(0,n_itn):
-                    _, _, P_mc = S.model_inversion(F_phat, g_phat, n, Ts,gen_P_mc = True,gen_RL=False,method_root_scalar="secant") 
+                    _, _, P_mc = S.model_inversion(F_phat, g_phat, n, Ts, gen_P_mc = True,gen_RL=False,method_root_scalar="secant") 
                     AMS_sim[itn,:] = [np.max(P_mc[j:j+n]) for j in np.arange(0,int(n_years*n),int(n))]
                     AMS_sim[itn,:].sort()
                 
@@ -663,9 +821,9 @@ if save_bset in output_files:
         FRMSE_df["FRMSE_bset"] = FRMSE_bset
         RL_df["return_levels_bset"] = RL
         
-        liklihood_df.to_csv(f"{drive}:/outputs/{country_save}/liklihood.csv",index=False)
-        RL_df.to_csv(f"{drive}:/outputs/{country_save}/return_levels.csv",index=False)
-        FRMSE_df.to_csv(f"{drive}:/outputs/{country_save}/FRMSE.csv",index=False)
+        liklihood_df.to_csv(f"{drive}:/outputs/{country_save}/liklihood{beta_set}.csv",index=False)
+        RL_df.to_csv(f"{drive}:/outputs/{country_save}/return_levels{beta_set}.csv",index=False)
+        FRMSE_df.to_csv(f"{drive}:/outputs/{country_save}/FRMSE{beta_set}.csv",index=False)
 
 else:
     print("go to Calc_b if you want to look at b mean")
@@ -673,7 +831,7 @@ else:
 ###############################################################################
 # With exp b
 
-save_bexp = f"{drive}:/outputs/{country_save}\\parameters_exp.csv"
+save_bexp = f"{drive}:/outputs/{country_save}\\parameters_exp{beta_set}.csv"
 
 if save_bexp in output_files:
     print("hell yeah lets do some exponential b liklihood")
@@ -700,7 +858,48 @@ if save_bexp in output_files:
             n_itn = 1000
             percentages = [0.05,0.95]
             
-            g_phat = [df_parameters.mu.iloc[i],df_parameters.sigma.iloc[i]]
+            if S.beta == 4:
+                g_phat = [df_parameters.mu.iloc[i],df_parameters.sigma.iloc[i]]
+            else:
+                T_path = f"{drive}:/{country}_temp\\{code_str}{df_parameters.station.iloc[i]}.nc" #TODO: nans case (not there in germany)
+                
+                if T_path not in glob.glob(f"{drive}:/{country}_temp\\*"): # dont do tenax if no T data saved
+                    print('skip')
+                    g_phat = [np.nan,np.nan]
+                else:
+                    T_ERA = xr.load_dataarray(T_path)
+                    t_data = (T_ERA.squeeze()-273.15).to_dataframe()
+                    df_arr = np.array(data[name_col])
+                    df_dates = np.array(data.index)
+                    
+                    #extract indexes of ordinary events
+                    #these are time-wise indexes =>returns list of np arrays with np.timeindex
+                    idx_ordinary=S.get_ordinary_events(data=df_arr,dates=df_dates, name_col=name_col,  check_gaps=False)
+                        
+                    
+                    #get ordinary events by removing too short events
+                    #returns boolean array, dates of OE in TO, FROM format, and count of OE in each years
+                    arr_vals,arr_dates,n_ordinary_per_year=S.remove_short(idx_ordinary)
+                    
+                    #assign ordinary events values by given durations, values are in depth per duration, NOT in intensity mm/h
+                    dict_ordinary, dict_AMS = S.get_ordinary_events_values(data=df_arr,dates=df_dates, arr_dates_oe=arr_dates)
+                    
+                    AMS = dict_AMS['60']
+                    
+                    
+                    df_arr_t_data = np.array(t_data[temp_name_col])
+                    df_dates_t_data = np.array(t_data.index)
+                    
+                    dict_ordinary, _ , n_ordinary_per_year = S.associate_vars(dict_ordinary, df_arr_t_data, df_dates_t_data)
+                    
+                    
+                    
+                    # Your data (P, T arrays) and threshold thr=3.8
+                    P = dict_ordinary["60"]["ordinary"].to_numpy() 
+                    T = dict_ordinary["60"]["T"].to_numpy()  
+                    g_phat = S.temperature_model(T)
+                    
+                    
             if np.any(np.isnan(g_phat[0])):
                 print(f"no gphat. {g_phat}")
                 
@@ -784,9 +983,9 @@ if save_bexp in output_files:
         FRMSE_df["FRMSE_bexp"] = FRMSE_bexp
         RL_df["return_levels_bexp"] = RL
         
-        liklihood_df.to_csv(f"{drive}:/outputs/{country_save}/liklihood.csv",index=False)
-        RL_df.to_csv(f"{drive}:/outputs/{country_save}/return_levels.csv",index=False)
-        FRMSE_df.to_csv(f"{drive}:/outputs/{country_save}/FRMSE.csv",index=False)
+        liklihood_df.to_csv(f"{drive}:/outputs/{country_save}/liklihood{beta_set}.csv",index=False)
+        RL_df.to_csv(f"{drive}:/outputs/{country_save}/return_levels{beta_set}.csv",index=False)
+        FRMSE_df.to_csv(f"{drive}:/outputs/{country_save}/FRMSE{beta_set}.csv",index=False)
 
 else:
     print("go to Calc_b if you want to look at b exp")

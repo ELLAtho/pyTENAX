@@ -831,7 +831,7 @@ plt.title(f'Where it breaks median {radius}km', fontsize=16)
 plt.show()
 
 # CHECKS
-for j in np.arange(0,10):
+for j in np.arange(40,50):
     plot_pos = np.arange(1,np.size(RL_df.obs_AMS.iloc[j])+1)/(1+np.size(RL_df.obs_AMS.iloc[j]))
     
     eRP = 1/(1-plot_pos)
