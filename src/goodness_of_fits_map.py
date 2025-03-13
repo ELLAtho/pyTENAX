@@ -1683,7 +1683,7 @@ elif "mult_prob_bexp" in liklihood_df.columns:
     
     
     #fig.tight_layout()
-    fig.suptitle(f'GSDR: {ERA_country}.', fontsize=16)
+    fig.suptitle(f'GSDR: {ERA_country}. beta = {S.beta}', fontsize=16)
     plt.show()
     
 else:
@@ -1800,7 +1800,7 @@ else:
     
     
     #fig.tight_layout()
-    fig.suptitle(f'GSDR: {ERA_country}.', fontsize=16)
+    fig.suptitle(f'GSDR: {ERA_country}. beta = {S.beta}', fontsize=16)
     plt.show()
 
 ##############################################################################
@@ -1956,7 +1956,7 @@ cb = plt.colorbar(
 cb.set_label('10 year 1 hour return level (mm)', fontsize=14)
 cb.ax.tick_params(labelsize=12)
 
-fig.suptitle(f'{ERA_country} 10 year return levels.', fontsize=16)
+fig.suptitle(f'{ERA_country} 10 year return levels. beta = {S.beta}', fontsize=16)
 plt.show()
 
 
@@ -2033,14 +2033,14 @@ if "FRMSE_bset" in FRMSE_df.columns:
     plt.xlabel('FRMSE')
     #plt.xlim(-0.1,0.2)
     plt.yticks([1,2,3],['free','b = 0','b set'])
-    plt.title(f'{ERA_country} FRMSE')
+    plt.title(f'{ERA_country} FRMSE. beta = {S.beta}')
     plt.show()
     
     plt.boxplot([liklihood_df.ave_prob.copy().dropna(),liklihood_df.ave_prob_0.copy().dropna(),liklihood_df.ave_prob_bset.copy().dropna()],vert=False)
     plt.xlabel('Average probability')
     #plt.xlim(-0.1,0.2)
     plt.yticks([1,2,3],['free','b = 0','b set'])
-    plt.title(f'{ERA_country} average probability')
+    plt.title(f'{ERA_country} average probability. beta = {S.beta}')
     plt.show()
     
     plt.boxplot([
@@ -2052,7 +2052,7 @@ if "FRMSE_bset" in FRMSE_df.columns:
     plt.xlabel('log products')
     #plt.xlim(-0.1,0.2)
     plt.yticks([1,2,3],['bexp - b 0','b free - b 0','bset - b 0'])
-    plt.title(f'{ERA_country} log products difference')
+    plt.title(f'{ERA_country} log products difference. beta = {S.beta}')
     plt.grid()
     plt.show()
 elif "FRMSE_bexp" in FRMSE_df.columns:
@@ -2065,7 +2065,7 @@ elif "FRMSE_bexp" in FRMSE_df.columns:
     plt.xlabel('log products')
     #plt.xlim(-0.1,0.2)
     plt.yticks([1,2],['bexp - b 0','b free - b 0'])
-    plt.title(f'{ERA_country} log products difference')
+    plt.title(f'{ERA_country} log products difference. beta = {S.beta}')
     plt.grid()
     plt.show()
     
@@ -2079,7 +2079,7 @@ elif "FRMSE_bexp" in FRMSE_df.columns:
     plt.xlabel('log products')
     plt.xlim(lw_q*3,-lw_q*3)
     plt.yticks([1,2],['bexp - b 0','b free - b 0'])
-    plt.title(f'{ERA_country} log products difference')
+    plt.title(f'{ERA_country} log products difference. beta = {S.beta}')
     plt.grid()
     plt.show()
 
@@ -2088,14 +2088,14 @@ else:
     plt.xlabel('FRMSE')
     #plt.xlim(-0.1,0.2)
     plt.yticks([1,2,3],['free','b = 0','5% sig'])
-    plt.title(f'{ERA_country} FRMSE')
+    plt.title(f'{ERA_country} FRMSE. beta = {S.beta}')
     plt.show()
     
     plt.boxplot([liklihood_df.ave_prob.copy().dropna(),liklihood_df.ave_prob_0.copy().dropna(),liklihood_df.ave_prob_5.copy().dropna()],vert=False)
     plt.xlabel('Average probability')
     #plt.xlim(-0.1,0.2)
     plt.yticks([1,2,3],['free','b = 0','5% sig'])
-    plt.title(f'{ERA_country} average probability')
+    plt.title(f'{ERA_country} average probability. beta = {S.beta}')
     plt.show()
 
 
