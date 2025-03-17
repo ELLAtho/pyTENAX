@@ -118,7 +118,7 @@ FRMSE_df = FRMSE_df.drop("FRMSE_5",axis=1)
 
 save_name6 = f"{drive}:/outputs/{country_save}\\return_levels6.csv"
 
-RL_df6 = pd.read_csv(save_name, dtype={'station': str})
+RL_df6 = pd.read_csv(save_name6, dtype={'station': str})
 nan_locs = RL_df6.return_levels[RL_df6.return_levels.isna()].index
 replace_range = np.arange(0,len(RL_df6))
 for k in range(len(nan_locs)):
@@ -130,10 +130,10 @@ for j in replace_range:
     RL_df6.loc[j, "obs_AMS"] = np.fromstring(RL_df6.obs_AMS.iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'), sep=' ')
 
     
-    if "return_levels_bset" in RL_df.columns:
+    if "return_levels_bset" in RL_df6.columns:
         RL_df6.loc[j, "return_levels_bset"] = np.fromstring(RL_df6.return_levels_bset.iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'), sep=' ')
     
-    if "return_levels_bexp" in RL_df.columns:
+    if "return_levels_bexp" in RL_df6.columns:
         RL_df6.loc[j, "return_levels_bexp"] = np.fromstring(RL_df6.return_levels_bexp.iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'), sep=' ')
     
    
@@ -660,7 +660,8 @@ plt.show()
 ###############################################################################
 # TEMP
 
-temp_output_files = glob.glob(f"{drive}:/outputs/{country_save}/temp_FRMSE*")
+temp_output_files_path = f"{drive}:/outputs/{country_save}/temp_FRMSE*"
+temp_output_files = glob.glob(temp_output_files_path)
 df = [0]*len(temp_output_files)
 label = [0]*len(temp_output_files)
 df_parameters = pd.read_csv(f"{drive}:/outputs/{country_save}\\parameters.csv", dtype={'station': str}) 
@@ -789,6 +790,22 @@ cb = plt.colorbar(sc,extend = "both")
 cb.set_label('FRMSE', fontsize=10)
 plt.show()
 
+rolling_parameter_files_path = f"{drive}:/outputs/Japan\\parameters_rolling*.csv"
+rolling_parameter_files = glob.glob(rolling_parameter_files_path)
+
+rolling_parameters = [pd.read_csv(f) for f in rolling_parameter_files]
+
+radii = [rolling_parameter_files[num][35:-4] for num in np.arange(0,len(rolling_parameters))]
+
+for i in np.arange(0,len(rolling_parameters)):
+    nan_locs = rolling_parameters[i].return_levels[rolling_parameters[i].return_levels.isna()].index
+    replace_range = np.arange(0,len(rolling_parameters[i]))
+    for k in range(len(nan_locs)):
+        replace_range = np.delete(replace_range, np.where(replace_range == nan_locs[k]))
+    for j in replace_range:
+        rolling_parameters[i].at[j, "return_levels"] = np.fromstring(rolling_parameters[i].return_levels.iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'), sep=' ')
+
+        
 ###############################################################################
 
 S = TENAX(
@@ -802,7 +819,7 @@ S = TENAX(
     )
 
 
-g_phats6 = pd.read_csv(f"{drive}:\outputs\{country_save}\g_phat6", dtype={'station': str})
+g_phats6 = pd.read_csv(f"{drive}:/outputs/{country_save}\\g_phat6", dtype={'station': str})
 
 # LOOK AT SOME STATIONS
 for j in np.arange(0,5):
@@ -818,8 +835,9 @@ for j in np.arange(0,5):
     if "return_levels_bexp" in RL_df.columns:
         plt.plot(eRP,RL_df.return_levels_bexp.iloc[j],"m", label = f"b exp. FRMSE: {FRMSE_df.FRMSE_bexp.iloc[j]:.3f}. log: {np.log(liklihood_df.mult_prob_bexp.iloc[j]):.1f}")
     
-    plt.plot(eRP,RL_df6.return_levels.iloc[j],"g", label = f"b free, beta = 6. FRMSE: {FRMSE_df6.FRMSE.iloc[j]:.3f}. log: {np.log(liklihood_df6.mult_prob.iloc[j]):.1f}")
-
+    for rads in np.arange(0,len(rolling_parameters)):
+        plt.plot(eRP,rolling_parameters[rads].return_levels.iloc[j],label = f"rolling ave, radius {radii[rads]}km. ")
+    
     plt.fill_between(eRP,liklihood_df.mins_0.iloc[j],liklihood_df.maxes_0.iloc[j],color = "b", alpha = 0.1)
     plt.fill_between(eRP,liklihood_df.mins.iloc[j],liklihood_df.maxes.iloc[j],color = "r", alpha = 0.1)
     
@@ -832,6 +850,28 @@ for j in np.arange(0,5):
     else:
         plt.title(f"station {j}: {FRMSE_df.station.iloc[j]}.")
     plt.show()
+    
+    
+    #plot for beta compares
+    
+    TNX_FIG_valid(RL_df.obs_AMS.iloc[j],eRP,RL_df.return_levels_b0.iloc[j],TENAXlabel = f"b = 0. FRMSE: {FRMSE_df.FRMSE_0.iloc[j]:.3f}. log: {np.log(liklihood_df.mult_prob_0.iloc[j]):.1f}",obslabel='AMS')
+    plt.plot(eRP,RL_df6.return_levels_b0.iloc[j],"b--",label = f"b = 0, beta = 6. FRMSE: {FRMSE_df6.FRMSE_0.iloc[j]:.3f}. log: {np.log(liklihood_df6.mult_prob_0.iloc[j]):.1f}")
+    
+    
+    plt.plot(eRP,RL_df.return_levels.iloc[j],"r",label = f"b = free, beta = 4. FRMSE: {FRMSE_df.FRMSE.iloc[j]:.3f}. log: {np.log(liklihood_df.mult_prob.iloc[j]):.1f}")
+    #plt.plot(eRP,RL_df.return_levels_5.iloc[j],"g",alpha = 0.5, label = "b = 5% sig")
+    
+    plt.plot(eRP,RL_df6.return_levels.iloc[j],"r--", label = f"b free, beta = 6. FRMSE: {FRMSE_df6.FRMSE.iloc[j]:.3f}. log: {np.log(liklihood_df6.mult_prob.iloc[j]):.1f}")
+    
+    
+    plt.ylim(0,np.max(RL_df.return_levels.iloc[j])+5)
+    plt.xlim(1,np.max(eRP)+2)
+    
+    plt.legend()
+    plt.title(f"station {j}: {FRMSE_df.station.iloc[j]}.")
+    plt.show()
+    
+    
     
     #temperature model plot
     file_name = f"{drive}:/{country}/{code_str}{df_parameters.station.iloc[j]}"
