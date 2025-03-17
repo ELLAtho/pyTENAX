@@ -43,7 +43,7 @@ from matplotlib import cm
 
 drive = 'D'
 alpha_set = 0
-beta_set = 6
+beta_set = 6 # for beta = 4, use ""
 if beta_set == "":
     beta_set2 = 4
 else:
@@ -61,23 +61,23 @@ else:
 # censor_thr = 0.9
 
 
-country = 'Japan'
-ERA_country = 'Japan'
-country_save = 'Japan'
-code_str = 'JP_'
-minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
-name_len = 5
-min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-censor_thr = 0.9
-
-# country = 'US' 
-# ERA_country = 'US'
-# country_save = 'US_main'
-# code_str = 'US_'
-# minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
-# name_len = 6
-# min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+# country = 'Japan'
+# ERA_country = 'Japan'
+# country_save = 'Japan'
+# code_str = 'JP_'
+# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+# name_len = 5
+# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 # censor_thr = 0.9
+
+country = 'US' 
+ERA_country = 'US'
+country_save = 'US_main'
+code_str = 'US_'
+minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
+name_len = 6
+min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+censor_thr = 0.9
 
 
 
@@ -409,6 +409,7 @@ if save_name_lik not in output_files:
     mins_0 = [0] * len(new_df)
     maxes_0 = [0] * len(new_df)
     n_bad_RL_0 = [0] * len(new_df)
+    g_phats = [0] * len(new_df)
     
     start_time = [0] * len(new_df)
     
@@ -472,7 +473,8 @@ if save_name_lik not in output_files:
                 P = dict_ordinary["60"]["ordinary"].to_numpy() 
                 T = dict_ordinary["60"]["T"].to_numpy()  
                 
-                g_phat = S.temperature_model(T)
+                g_phats[i] = S.temperature_model(T)
+                g_phat = g_phats[i]
                 
                 
                 T_min = g_phat[0] - 2.5 * g_phat[1]
@@ -631,6 +633,15 @@ if save_name_lik not in output_files:
                                  })
     
     liklihood_df.to_csv(f"{drive}:/outputs/{country_save}/liklihood{beta_set}.csv",index=False)
+    
+    if beta_set2 != 4:
+        g_phat_df = pd.DataFrame({"station" : df_parameters.station,
+                                  "mu": np.array(g_phats)[:,0],
+                                  "sigma": np.array(g_phats)[:,1]})
+        g_phat_df.to_csv(f"{drive}:/outputs/{country_save}/g_phat{beta_set}",index= False)
+    
+    
+    
 else:
     liklihood_df = pd.read_csv(f"{drive}:/outputs/{country_save}/liklihood{beta_set}.csv",dtype={'station': str})
     
@@ -706,6 +717,20 @@ if save_bset in output_files:
                     print('skip')
                     g_phat = [np.nan,np.nan]
                 else:
+                    file_name = f"{drive}:/{country}/{code_str}{df_parameters.station.iloc[i]}"
+                    
+                    if 'code_str' in locals():
+                        G,data_meta = read_GSDR_file(f"{file_name}.txt",name_col)
+                    else:
+                        G = pd.read_csv(f"{file_name}.csv")
+                        G['prec_time'] = pd.to_datetime(G['prec_time'])
+                        G.set_index('prec_time', inplace=True)
+                        
+                    ######################################################################
+                    #TENAX  AMS
+                
+                    data = G 
+                    data = S.remove_incomplete_years(data, name_col)
                     T_ERA = xr.load_dataarray(T_path)
                     t_data = (T_ERA.squeeze()-273.15).to_dataframe()
                     df_arr = np.array(data[name_col])
@@ -2105,7 +2130,7 @@ else:
 
 
 # CHECKS
-for j in np.arange(197,200):
+for j in np.arange(0,5):
     plot_pos = np.arange(1,np.size(RL_df.obs_AMS.iloc[j])+1)/(1+np.size(RL_df.obs_AMS.iloc[j]))
     
     eRP = 1/(1-plot_pos)
