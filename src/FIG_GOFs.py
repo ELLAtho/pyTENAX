@@ -55,6 +55,26 @@ min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data 
 censor_thr = 0.9
 
 
+# country = 'Germany' 
+# ERA_country = 'Germany'
+# country_save = 'Germany'
+# code_str = 'DE_'
+# minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
+# name_len = 5
+# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+# censor_thr = 0.9
+
+
+# country = 'US' 
+# ERA_country = 'US'
+# country_save = 'US_main'
+# code_str = 'US_'
+# minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
+# name_len = 6
+# min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+# censor_thr = 0.9
+
+
 name_col = 'ppt' 
 temp_name_col = "t2m"
 
@@ -116,30 +136,33 @@ for j in replace_range:
 FRMSE_df = pd.read_csv(f"{drive}:/outputs/{country_save}/FRMSE.csv", dtype={'station': str})
 FRMSE_df = FRMSE_df.drop("FRMSE_5",axis=1) 
 
-save_name6 = f"{drive}:/outputs/{country_save}\\return_levels6.csv"
-
-RL_df6 = pd.read_csv(save_name6, dtype={'station': str})
-nan_locs = RL_df6.return_levels[RL_df6.return_levels.isna()].index
-replace_range = np.arange(0,len(RL_df6))
-for k in range(len(nan_locs)):
-    replace_range = np.delete(replace_range, np.where(replace_range == nan_locs[k]))
-for j in replace_range:
-    RL_df6.loc[j, "return_levels"] = np.fromstring(RL_df6.return_levels.iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'), sep=' ')
-    RL_df6.loc[j, "return_levels_5"] = np.fromstring(RL_df6["return_levels_5"].iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'), sep=' ')
-    RL_df6.loc[j, "return_levels_b0"] = np.fromstring(RL_df6.return_levels_b0.iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'), sep=' ')
-    RL_df6.loc[j, "obs_AMS"] = np.fromstring(RL_df6.obs_AMS.iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'), sep=' ')
-
+save_name6 = f"{drive}:/outputs/{country_save}\\liklihood6.csv"
+if save_name6 in glob.glob(f"{drive}:/outputs/{country_save}\\*"):
     
-    if "return_levels_bset" in RL_df6.columns:
-        RL_df6.loc[j, "return_levels_bset"] = np.fromstring(RL_df6.return_levels_bset.iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'), sep=' ')
+    RL_df6 = pd.read_csv(f"{drive}:/outputs/{country_save}\\return_levels6.csv", dtype={'station': str})
+    nan_locs = RL_df6.return_levels[RL_df6.return_levels.isna()].index
+    replace_range = np.arange(0,len(RL_df6))
+    for k in range(len(nan_locs)):
+        replace_range = np.delete(replace_range, np.where(replace_range == nan_locs[k]))
+    for j in replace_range:
+        RL_df6.loc[j, "return_levels"] = np.fromstring(RL_df6.return_levels.iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'), sep=' ')
+        RL_df6.loc[j, "return_levels_5"] = np.fromstring(RL_df6["return_levels_5"].iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'), sep=' ')
+        RL_df6.loc[j, "return_levels_b0"] = np.fromstring(RL_df6.return_levels_b0.iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'), sep=' ')
+        RL_df6.loc[j, "obs_AMS"] = np.fromstring(RL_df6.obs_AMS.iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'), sep=' ')
     
-    if "return_levels_bexp" in RL_df6.columns:
-        RL_df6.loc[j, "return_levels_bexp"] = np.fromstring(RL_df6.return_levels_bexp.iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'), sep=' ')
+        
+        if "return_levels_bset" in RL_df6.columns:
+            RL_df6.loc[j, "return_levels_bset"] = np.fromstring(RL_df6.return_levels_bset.iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'), sep=' ')
+        
+        if "return_levels_bexp" in RL_df6.columns:
+            RL_df6.loc[j, "return_levels_bexp"] = np.fromstring(RL_df6.return_levels_bexp.iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'), sep=' ')
+        
+       
     
-   
-
-FRMSE_df6 = pd.read_csv(f"{drive}:/outputs/{country_save}/FRMSE6.csv", dtype={'station': str})
-FRMSE_df6 = FRMSE_df6.drop("FRMSE_5",axis=1) 
+    FRMSE_df6 = pd.read_csv(f"{drive}:/outputs/{country_save}/FRMSE6.csv", dtype={'station': str})
+    FRMSE_df6 = FRMSE_df6.drop("FRMSE_5",axis=1) 
+else:
+    print("havent calculated with beta = 6 yet")
 
 
 liklihood_df = pd.read_csv(f"{drive}:/outputs/{country_save}/liklihood.csv",dtype={'station': str})
@@ -161,322 +184,330 @@ for j in replace_range:
 #drop the 5% sig ones  
 liklihood_df = liklihood_df.drop([s for s in liklihood_df.columns if "_5" in s],axis = 1)
 
-
-liklihood_df6 = pd.read_csv(f"{drive}:/outputs/{country_save}/liklihood6.csv",dtype={'station': str})
-
-nan_locs = liklihood_df6.mult_prob[liklihood_df6.mult_prob.isna()].index
-replace_range = np.arange(0,len(RL_df))
-for k in range(len(nan_locs)):
-    replace_range = np.delete(replace_range, np.where(replace_range == nan_locs[k]))
-for j in replace_range:
-    liklihood_df6.at[j, "maxes"] = eval(liklihood_df6.maxes.iloc[j], {"np": np, "nan": np.nan})
-    liklihood_df6.at[j, "mins"] = eval(liklihood_df6.mins.iloc[j], {"np": np, "nan": np.nan})
+if save_name6 in glob.glob(f"{drive}:/outputs/{country_save}\\*"):
+    liklihood_df6 = pd.read_csv(f"{drive}:/outputs/{country_save}/liklihood6.csv",dtype={'station': str})
     
-    liklihood_df6.at[j, "maxes_0"] = eval(liklihood_df6.maxes_0.iloc[j], {"np": np, "nan": np.nan})
-    liklihood_df6.at[j, "mins_0"] = eval(liklihood_df6.mins_0.iloc[j], {"np": np, "nan": np.nan})
+    nan_locs = liklihood_df6.mult_prob[liklihood_df6.mult_prob.isna()].index
+    replace_range = np.arange(0,len(RL_df))
+    for k in range(len(nan_locs)):
+        replace_range = np.delete(replace_range, np.where(replace_range == nan_locs[k]))
+    for j in replace_range:
+        liklihood_df6.at[j, "maxes"] = eval(liklihood_df6.maxes.iloc[j], {"np": np, "nan": np.nan})
+        liklihood_df6.at[j, "mins"] = eval(liklihood_df6.mins.iloc[j], {"np": np, "nan": np.nan})
+        
+        liklihood_df6.at[j, "maxes_0"] = eval(liklihood_df6.maxes_0.iloc[j], {"np": np, "nan": np.nan})
+        liklihood_df6.at[j, "mins_0"] = eval(liklihood_df6.mins_0.iloc[j], {"np": np, "nan": np.nan})
+        
+        liklihood_df6.at[j, "maxes_5"] = eval(liklihood_df6.maxes_5.iloc[j], {"np": np, "nan": np.nan})
+        liklihood_df6.at[j, "mins_5"] = eval(liklihood_df6.mins_5.iloc[j], {"np": np, "nan": np.nan})
+        
+    #drop the 5% sig ones
+    liklihood_df6 = liklihood_df6.drop([s for s in liklihood_df6.columns if "_5" in s],axis = 1)
+
+    ###############################################################################
+    #BETA COMP
     
-    liklihood_df6.at[j, "maxes_5"] = eval(liklihood_df6.maxes_5.iloc[j], {"np": np, "nan": np.nan})
-    liklihood_df6.at[j, "mins_5"] = eval(liklihood_df6.mins_5.iloc[j], {"np": np, "nan": np.nan})
+    box_list_fr = [FRMSE_df6.copy().dropna().FRMSE - FRMSE_df.copy().dropna().FRMSE, FRMSE_df6.copy().dropna().FRMSE_0 - FRMSE_df.copy().dropna().FRMSE_0]
+    labels_list = ["b free", "b = 0"]
     
-#drop the 5% sig ones
-liklihood_df6 = liklihood_df6.drop([s for s in liklihood_df6.columns if "_5" in s],axis = 1)
-
-###############################################################################
-#BETA COMP
-
-box_list_fr = [FRMSE_df6.copy().dropna().FRMSE - FRMSE_df.copy().dropna().FRMSE, FRMSE_df6.copy().dropna().FRMSE_0 - FRMSE_df.copy().dropna().FRMSE_0]
-labels_list = ["b free", "b = 0"]
-
-fig = plt.figure(figsize = (10,15))
-ax1 = fig.add_subplot(3,2,1)
-
-ax1.boxplot(box_list_fr,vert=False)
-plt.xlabel('FRMSE')
-#plt.xlim(-0.1,0.2)
-plt.yticks([1,2],labels_list)
-ax1.set_title('FRMSE beta = 6 - beta = 4')
-
-ax2 = fig.add_subplot(3,2,2)
-ax2.boxplot(box_list_fr,vert=False)
-plt.xlabel('FRMSE')
-#plt.xlim(-0.1,0.2)
-plt.yticks([1,2],labels_list)
-ax2.set_title('FRMSE beta = 6 - beta = 4')
-plt.xlim(-0.05,0.05)
-
-box_list_lik = [np.log(liklihood_df6.copy().dropna().mult_prob) - np.log(liklihood_df.copy().dropna().mult_prob),
-            np.log(liklihood_df6.copy().dropna().mult_prob_0) - np.log(liklihood_df.copy().dropna().mult_prob_0)]
-
-labels_list = ["b free", "b = 0"]
-
-
-ax3 = fig.add_subplot(3,2,3)
-ax3.boxplot(box_list_lik,vert=False)
-plt.xlabel('log(liklihood)')
-#plt.xlim(-0.1,0.2)
-plt.yticks([1,2],labels_list)
-ax3.set_title('liklihood beta = 6 - beta = 4')
-
-
-ax4 = fig.add_subplot(3,2,4)
-ax4.boxplot(box_list_lik,vert=False)
-plt.xlabel('log(liklihood)')
-#plt.xlim(-0.1,0.2)
-plt.yticks([1,2],labels_list)
-ax4.set_title('liklihood beta = 6 - beta = 4')
-plt.xlim(-10,10)
-
-
-box_list_ave = [np.log(liklihood_df6.ave_prob) - np.log(liklihood_df.ave_prob),
-            np.log(liklihood_df6.ave_prob_0) - np.log(liklihood_df.ave_prob_0)]
-
-ax3 = fig.add_subplot(3,2,5)
-ax3.boxplot([box.copy().dropna() for box in box_list_ave],vert=False)
-plt.xlabel('average probability')
-#plt.xlim(-0.1,0.2)
-plt.yticks([1,2],labels_list)
-ax3.set_title('liklihood beta = 6 - beta = 4')
-
-
-ax4 = fig.add_subplot(3,2,6)
-ax4.boxplot([box.copy().dropna() for box in box_list_ave],vert=False)
-plt.xlabel('average probability')
-#plt.xlim(-0.1,0.2)
-plt.yticks([1,2],labels_list)
-ax4.set_title('liklihood beta = 6 - beta = 4')
-plt.xlim(-0.2,0.2)
-
-
-plt.show()
-
-
-#map
-lon_lims = [truncate_neg(np.min(df_parameters.longitude),2.5),np.ceil(np.max(df_parameters.longitude/2.5))*2.5]
-lat_lims = [truncate_neg(np.min(df_parameters.latitude),2.5),np.ceil(np.max(df_parameters.latitude/2.5))*2.5]
-s = 3
-
-
-fig = plt.figure(figsize=(10, 15))
-norm = mcolors.Normalize(vmin=-0.3, vmax=0.3)
-cmap = 'seismic'
-
-
-proj = ccrs.PlateCarree()
-ax1 = fig.add_subplot(3, 2, 1, projection=proj)
-
-# Add map features
-ax1.coastlines()
-ax1.add_feature(cfeature.BORDERS, linestyle=':')
-
-
-sc = ax1.scatter(
-    df_parameters.longitude,
-    df_parameters.latitude,
-    c = FRMSE_df6.FRMSE - FRMSE_df.FRMSE,
-    cmap=cmap,
-    norm = norm,
-    s = s,
-)
-ax1.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
-ax1.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
-ax1.tick_params(labelsize=12)  
-
-plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
-plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
-ax1.set_title("b=free. beta = 6 - beta = 4")
-cb = plt.colorbar(sc,extend = "both")
-cb.set_label('FRMSE', fontsize=10)
-
-
-ax2 = fig.add_subplot(3, 2, 2, projection=proj)
-ax2.coastlines()
-ax2.add_feature(cfeature.BORDERS, linestyle=':')
-
-
-sc = ax2.scatter(
-    df_parameters.longitude,
-    df_parameters.latitude,
-    c=FRMSE_df6.FRMSE_0 - FRMSE_df.FRMSE_0,
-    cmap=cmap,
-    norm = norm,
-    s = s,
-)
-ax2.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
-ax2.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
-ax2.tick_params(labelsize=12)  
-plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
-plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
-ax2.set_title("b=0. beta = 6 - beta = 4")
-cb = plt.colorbar(sc,extend = "both")
-cb.set_label('FRMSE', fontsize=10)
-
-
-norm = mcolors.Normalize(vmin=np.min(box_list_lik[0]), vmax=-1 * np.min(box_list_lik[0]))
-cmap = 'seismic_r'
-
-ax1 = fig.add_subplot(3, 2, 3, projection=proj)
-
-# Add map features
-ax1.coastlines()
-ax1.add_feature(cfeature.BORDERS, linestyle=':')
-
-
-sc = ax1.scatter(
-    df_parameters.longitude,
-    df_parameters.latitude,
-    c = (np.log(liklihood_df6.mult_prob) - np.log(liklihood_df.mult_prob)),
-    cmap=cmap,
-    norm = norm,
-    s = s,
-)
-ax1.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
-ax1.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
-ax1.tick_params(labelsize=12)  
-
-plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
-plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
-ax1.set_title("b=free. beta = 6 - beta = 4")
-cb = plt.colorbar(sc,extend = "both")
-cb.set_label('log(liklihood)', fontsize=10)
-
-
-ax2 = fig.add_subplot(3, 2, 4, projection=proj)
-ax2.coastlines()
-ax2.add_feature(cfeature.BORDERS, linestyle=':')
-
-
-sc = ax2.scatter(
-    df_parameters.longitude,
-    df_parameters.latitude,
-    c = (np.log(liklihood_df6.mult_prob_0) - np.log(liklihood_df.mult_prob_0)),
-    cmap=cmap,
-    norm = norm,
-    s = s,
-)
-ax2.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
-ax2.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
-ax2.tick_params(labelsize=12)  
-plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
-plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
-ax2.set_title("b=0. beta = 6 - beta = 4")
-cb = plt.colorbar(sc,extend = "both")
-cb.set_label('log(liklihood)', fontsize=10)
-
-
-norm = mcolors.Normalize(vmin=-1, vmax=1)
-cmap = 'seismic_r'
-
-ax1 = fig.add_subplot(3, 2, 5, projection=proj)
-
-# Add map features
-ax1.coastlines()
-ax1.add_feature(cfeature.BORDERS, linestyle=':')
-
-
-sc = ax1.scatter(
-    df_parameters.longitude,
-    df_parameters.latitude,
-    c = box_list_ave[0],
-    cmap=cmap,
-    norm = norm,
-    s = s,
-)
-ax1.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
-ax1.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
-ax1.tick_params(labelsize=12)  
-
-plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
-plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
-ax1.set_title("b=free. beta = 6 - beta = 4")
-cb = plt.colorbar(sc,extend = "both")
-cb.set_label('average probability', fontsize=10)
-
-
-ax2 = fig.add_subplot(3, 2, 6, projection=proj)
-ax2.coastlines()
-ax2.add_feature(cfeature.BORDERS, linestyle=':')
-
-
-sc = ax2.scatter(
-    df_parameters.longitude,
-    df_parameters.latitude,
-    c = box_list_ave[1],
-    cmap=cmap,
-    norm = norm,
-    s = s,
-)
-ax2.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
-ax2.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
-ax2.tick_params(labelsize=12)  
-plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
-plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
-ax2.set_title("b=0. beta = 6 - beta = 4")
-cb = plt.colorbar(sc,extend = "both")
-cb.set_label('average probability', fontsize=10)
-
-
-plt.suptitle("red means beta = 6 is worse")
-fig.tight_layout()
-plt.show()
-
+    fig = plt.figure(figsize = (10,15))
+    ax1 = fig.add_subplot(3,2,1)
+    
+    ax1.boxplot(box_list_fr,vert=False)
+    plt.xlabel('FRMSE')
+    #plt.xlim(-0.1,0.2)
+    plt.yticks([1,2],labels_list)
+    ax1.set_title('FRMSE beta = 6 - beta = 4')
+    
+    ax2 = fig.add_subplot(3,2,2)
+    ax2.boxplot(box_list_fr,vert=False)
+    plt.xlabel('FRMSE')
+    #plt.xlim(-0.1,0.2)
+    plt.yticks([1,2],labels_list)
+    ax2.set_title('FRMSE beta = 6 - beta = 4')
+    plt.xlim(-0.05,0.05)
+    
+    box_list_lik = [np.log(liklihood_df6.copy().dropna().mult_prob) - np.log(liklihood_df.copy().dropna().mult_prob),
+                np.log(liklihood_df6.copy().dropna().mult_prob_0) - np.log(liklihood_df.copy().dropna().mult_prob_0)]
+    
+    labels_list = ["b free", "b = 0"]
+    
+    
+    ax3 = fig.add_subplot(3,2,3)
+    ax3.boxplot(box_list_lik,vert=False)
+    plt.xlabel('log(liklihood)')
+    #plt.xlim(-0.1,0.2)
+    plt.yticks([1,2],labels_list)
+    ax3.set_title('liklihood beta = 6 - beta = 4')
+    
+    
+    ax4 = fig.add_subplot(3,2,4)
+    ax4.boxplot(box_list_lik,vert=False)
+    plt.xlabel('log(liklihood)')
+    #plt.xlim(-0.1,0.2)
+    plt.yticks([1,2],labels_list)
+    ax4.set_title('liklihood beta = 6 - beta = 4')
+    plt.xlim(-10,10)
+    
+    
+    box_list_ave = [np.log(liklihood_df6.ave_prob) - np.log(liklihood_df.ave_prob),
+                np.log(liklihood_df6.ave_prob_0) - np.log(liklihood_df.ave_prob_0)]
+    
+    ax3 = fig.add_subplot(3,2,5)
+    ax3.boxplot([box.copy().dropna() for box in box_list_ave],vert=False)
+    plt.xlabel('average probability')
+    #plt.xlim(-0.1,0.2)
+    plt.yticks([1,2],labels_list)
+    ax3.set_title('liklihood beta = 6 - beta = 4')
+    
+    
+    ax4 = fig.add_subplot(3,2,6)
+    ax4.boxplot([box.copy().dropna() for box in box_list_ave],vert=False)
+    plt.xlabel('average probability')
+    #plt.xlim(-0.1,0.2)
+    plt.yticks([1,2],labels_list)
+    ax4.set_title('liklihood beta = 6 - beta = 4')
+    plt.xlim(-0.2,0.2)
+    
+    
+    plt.show()
+    
+    
+    #map
+    lon_lims = [truncate_neg(np.min(df_parameters.longitude),2.5),np.ceil(np.max(df_parameters.longitude/2.5))*2.5]
+    lat_lims = [truncate_neg(np.min(df_parameters.latitude),2.5),np.ceil(np.max(df_parameters.latitude/2.5))*2.5]
+    s = 3
+    
+    
+    fig = plt.figure(figsize=(10, 15))
+    norm = mcolors.Normalize(vmin=-0.3, vmax=0.3)
+    cmap = 'seismic'
+    
+    
+    proj = ccrs.PlateCarree()
+    ax1 = fig.add_subplot(3, 2, 1, projection=proj)
+    
+    # Add map features
+    ax1.coastlines()
+    ax1.add_feature(cfeature.BORDERS, linestyle=':')
+    
+    
+    sc = ax1.scatter(
+        df_parameters.longitude,
+        df_parameters.latitude,
+        c = FRMSE_df6.FRMSE - FRMSE_df.FRMSE,
+        cmap=cmap,
+        norm = norm,
+        s = s,
+    )
+    ax1.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+    ax1.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
+    ax1.tick_params(labelsize=12)  
+    
+    plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+    plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+    ax1.set_title("b=free. beta = 6 - beta = 4")
+    cb = plt.colorbar(sc,extend = "both")
+    cb.set_label('FRMSE', fontsize=10)
+    
+    
+    ax2 = fig.add_subplot(3, 2, 2, projection=proj)
+    ax2.coastlines()
+    ax2.add_feature(cfeature.BORDERS, linestyle=':')
+    
+    
+    sc = ax2.scatter(
+        df_parameters.longitude,
+        df_parameters.latitude,
+        c=FRMSE_df6.FRMSE_0 - FRMSE_df.FRMSE_0,
+        cmap=cmap,
+        norm = norm,
+        s = s,
+    )
+    ax2.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+    ax2.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
+    ax2.tick_params(labelsize=12)  
+    plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+    plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+    ax2.set_title("b=0. beta = 6 - beta = 4")
+    cb = plt.colorbar(sc,extend = "both")
+    cb.set_label('FRMSE', fontsize=10)
+    
+    
+    norm = mcolors.Normalize(vmin=np.min(box_list_lik[0]), vmax=-1 * np.min(box_list_lik[0]))
+    cmap = 'seismic_r'
+    
+    ax1 = fig.add_subplot(3, 2, 3, projection=proj)
+    
+    # Add map features
+    ax1.coastlines()
+    ax1.add_feature(cfeature.BORDERS, linestyle=':')
+    
+    
+    sc = ax1.scatter(
+        df_parameters.longitude,
+        df_parameters.latitude,
+        c = (np.log(liklihood_df6.mult_prob) - np.log(liklihood_df.mult_prob)),
+        cmap=cmap,
+        norm = norm,
+        s = s,
+    )
+    ax1.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+    ax1.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
+    ax1.tick_params(labelsize=12)  
+    
+    plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+    plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+    ax1.set_title("b=free. beta = 6 - beta = 4")
+    cb = plt.colorbar(sc,extend = "both")
+    cb.set_label('log(liklihood)', fontsize=10)
+    
+    
+    ax2 = fig.add_subplot(3, 2, 4, projection=proj)
+    ax2.coastlines()
+    ax2.add_feature(cfeature.BORDERS, linestyle=':')
+    
+    
+    sc = ax2.scatter(
+        df_parameters.longitude,
+        df_parameters.latitude,
+        c = (np.log(liklihood_df6.mult_prob_0) - np.log(liklihood_df.mult_prob_0)),
+        cmap=cmap,
+        norm = norm,
+        s = s,
+    )
+    ax2.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+    ax2.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
+    ax2.tick_params(labelsize=12)  
+    plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+    plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+    ax2.set_title("b=0. beta = 6 - beta = 4")
+    cb = plt.colorbar(sc,extend = "both")
+    cb.set_label('log(liklihood)', fontsize=10)
+    
+    
+    norm = mcolors.Normalize(vmin=-1, vmax=1)
+    cmap = 'seismic_r'
+    
+    ax1 = fig.add_subplot(3, 2, 5, projection=proj)
+    
+    # Add map features
+    ax1.coastlines()
+    ax1.add_feature(cfeature.BORDERS, linestyle=':')
+    
+    
+    sc = ax1.scatter(
+        df_parameters.longitude,
+        df_parameters.latitude,
+        c = box_list_ave[0],
+        cmap=cmap,
+        norm = norm,
+        s = s,
+    )
+    ax1.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+    ax1.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
+    ax1.tick_params(labelsize=12)  
+    
+    plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+    plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+    ax1.set_title("b=free. beta = 6 - beta = 4")
+    cb = plt.colorbar(sc,extend = "both")
+    cb.set_label('average probability', fontsize=10)
+    
+    
+    ax2 = fig.add_subplot(3, 2, 6, projection=proj)
+    ax2.coastlines()
+    ax2.add_feature(cfeature.BORDERS, linestyle=':')
+    
+    
+    sc = ax2.scatter(
+        df_parameters.longitude,
+        df_parameters.latitude,
+        c = box_list_ave[1],
+        cmap=cmap,
+        norm = norm,
+        s = s,
+    )
+    ax2.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+    ax2.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
+    ax2.tick_params(labelsize=12)  
+    plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+    plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+    ax2.set_title("b=0. beta = 6 - beta = 4")
+    cb = plt.colorbar(sc,extend = "both")
+    cb.set_label('average probability', fontsize=10)
+    
+    
+    plt.suptitle("red means beta = 6 is worse")
+    fig.tight_layout()
+    plt.show()
+    
 
 ###############################################################################
 # b comp
-box_list_fr = [FRMSE_df.FRMSE - FRMSE_df.FRMSE_0, FRMSE_df.FRMSE_bexp - FRMSE_df.FRMSE_0]
-labels_list = ["b = free - b = 0", "b = exp - b = 0"]
+box_list_fr = [FRMSE_df.FRMSE - FRMSE_df.FRMSE_0, FRMSE_df.FRMSE_bexp - FRMSE_df.FRMSE_0, FRMSE_df.FRMSE_roll - FRMSE_df.FRMSE_0]
+labels_list = ["b = free - b = 0", "b = exp - b = 0", "b = rolling mean - b = 0"]
 
-fig = plt.figure(figsize = (10,15))
-ax1 = fig.add_subplot(3,2,1)
+fig = plt.figure(figsize = (15,15))
+ax1 = fig.add_subplot(3,3,1)
 
 ax1.boxplot([box.copy().dropna() for box in box_list_fr],vert=False)
 plt.xlabel('FRMSE')
+plt.grid()
 #plt.xlim(-0.1,0.2)
-plt.yticks([1,2],labels_list)
+plt.yticks([1,2,3],labels_list)
 
-ax2 = fig.add_subplot(3,2,2)
+ax2 = fig.add_subplot(3,3,2)
 ax2.boxplot([box.copy().dropna() for box in box_list_fr],vert=False)
 plt.xlabel('FRMSE')
 #plt.xlim(-0.1,0.2)
-plt.yticks([1,2],labels_list)
-plt.xlim(-0.05,0.05)
-
+minlim = np.quantile(box_list_fr[0].copy().dropna(),0.25)*2
+plt.xlim(minlim,minlim*-1)
+plt.grid()
 box_list_lik = [np.log(liklihood_df.mult_prob) - np.log(liklihood_df.mult_prob_0),
-            np.log(liklihood_df.mult_prob_bexp) - np.log(liklihood_df.mult_prob_0)]
+            np.log(liklihood_df.mult_prob_bexp) - np.log(liklihood_df.mult_prob_0),
+            np.log(liklihood_df.mult_prob_roll) - np.log(liklihood_df.mult_prob_0)
+            ]
 
 
 
-ax3 = fig.add_subplot(3,2,3)
+ax3 = fig.add_subplot(3,3,4)
 ax3.boxplot([box.copy().dropna() for box in box_list_lik],vert=False)
 plt.xlabel('log(liklihood)')
+plt.grid()
 #plt.xlim(-0.1,0.2)
-plt.yticks([1,2],labels_list)
+plt.yticks([1,2,3],labels_list)
 
 
-ax4 = fig.add_subplot(3,2,4)
+ax4 = fig.add_subplot(3,3,5)
 ax4.boxplot([box.copy().dropna() for box in box_list_lik],vert=False)
 plt.xlabel('log(liklihood)')
+plt.grid()
 #plt.xlim(-0.1,0.2)
-plt.yticks([1,2],labels_list)
-plt.xlim(-10,10)
+minlim = np.quantile(box_list_lik[0].copy().dropna(),0.25)*2
+plt.xlim(minlim,minlim*-1)
 
 
 box_list_ave = [liklihood_df.ave_prob - liklihood_df.ave_prob_0,
-            liklihood_df.ave_prob_bexp - liklihood_df.ave_prob_0]
+            liklihood_df.ave_prob_bexp - liklihood_df.ave_prob_0,
+            liklihood_df.ave_prob_roll - liklihood_df.ave_prob_0]
 
 
 
-ax3 = fig.add_subplot(3,2,5)
+ax3 = fig.add_subplot(3,3,7)
 ax3.boxplot([box.copy().dropna() for box in box_list_ave],vert=False)
+plt.grid()
 plt.xlabel('average probability')
 #plt.xlim(-0.1,0.2)
-plt.yticks([1,2],labels_list)
+plt.yticks([1,2,3],labels_list)
 
 
-ax4 = fig.add_subplot(3,2,6)
+ax4 = fig.add_subplot(3,3,8)
 ax4.boxplot([box.copy().dropna() for box in box_list_ave],vert=False)
+plt.grid()
 plt.xlabel('average probability')
-plt.yticks([1,2],labels_list)
-plt.xlim(-0.05,0.05)
+minlim = np.quantile(box_list_ave[0].copy().dropna(),0.25)*2
+plt.xlim(minlim,minlim*-1)
 
 
 plt.show()
@@ -488,13 +519,13 @@ lat_lims = [truncate_neg(np.min(df_parameters.latitude),2.5),np.ceil(np.max(df_p
 s = 3
 
 
-fig = plt.figure(figsize=(10, 15))
+fig = plt.figure(figsize=(15, 15))
 norm = mcolors.Normalize(vmin=-0.3, vmax=0.3)
 cmap = 'seismic'
 
 
 proj = ccrs.PlateCarree()
-ax1 = fig.add_subplot(3, 2, 1, projection=proj)
+ax1 = fig.add_subplot(3, 3, 1, projection=proj)
 
 # Add map features
 ax1.coastlines()
@@ -521,7 +552,7 @@ cb = plt.colorbar(sc,extend = "both")
 cb.set_label('FRMSE', fontsize=10)
 
 
-ax2 = fig.add_subplot(3, 2, 2, projection=proj)
+ax2 = fig.add_subplot(3, 3, 2, projection=proj)
 ax2.coastlines()
 ax2.add_feature(cfeature.BORDERS, linestyle=':')
 
@@ -544,10 +575,35 @@ cb = plt.colorbar(sc,extend = "both")
 cb.set_label('FRMSE', fontsize=10)
 
 
-norm = mcolors.Normalize(vmin=np.min(box_list_lik[0]), vmax=-1 * np.min(box_list_lik[0]))
+ax3 = fig.add_subplot(3, 3, 3, projection=proj)
+ax3.coastlines()
+ax3.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc = ax3.scatter(
+    df_parameters.longitude,
+    df_parameters.latitude,
+    c=box_list_fr[2],
+    cmap=cmap,
+    norm = norm,
+    s = s,
+)
+ax3.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+ax3.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
+ax3.tick_params(labelsize=12)  
+plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+ax3.set_title("b = rolling - b = 0")
+cb = plt.colorbar(sc,extend = "both")
+cb.set_label('FRMSE', fontsize=10)
+
+
+
+
+norm = mcolors.Normalize(vmin=0.8*np.min(box_list_lik[0].replace([np.inf, -np.inf], np.nan).dropna()), vmax=-0.8 * np.min(box_list_lik[0].replace([np.inf, -np.inf], np.nan).dropna()))
 cmap = 'seismic_r'
 
-ax1 = fig.add_subplot(3, 2, 3, projection=proj)
+ax1 = fig.add_subplot(3, 3, 4, projection=proj)
 
 # Add map features
 ax1.coastlines()
@@ -573,7 +629,7 @@ cb = plt.colorbar(sc,extend = "both")
 cb.set_label('log(liklihood)', fontsize=10)
 
 
-ax2 = fig.add_subplot(3, 2, 4, projection=proj)
+ax2 = fig.add_subplot(3, 3, 5, projection=proj)
 ax2.coastlines()
 ax2.add_feature(cfeature.BORDERS, linestyle=':')
 
@@ -596,9 +652,32 @@ cb = plt.colorbar(sc,extend = "both")
 cb.set_label('log(liklihood)', fontsize=10)
 
 
+ax3 = fig.add_subplot(3, 3, 6, projection=proj)
+ax3.coastlines()
+ax3.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc = ax3.scatter(
+    df_parameters.longitude,
+    df_parameters.latitude,
+    c=box_list_lik[2],
+    cmap=cmap,
+    norm = norm,
+    s = s,
+)
+ax3.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+ax3.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
+ax3.tick_params(labelsize=12)  
+plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+ax3.set_title("b = rolling - b = 0")
+cb = plt.colorbar(sc,extend = "both")
+cb.set_label('log(liklihood)', fontsize=10)
+
+
 
 norm = mcolors.Normalize(vmin=-np.max(box_list_ave[0]), vmax=np.max(box_list_ave[0]))
-ax1 = fig.add_subplot(3, 2, 5, projection=proj)
+ax1 = fig.add_subplot(3, 3, 7, projection=proj)
 
 # Add map features
 ax1.coastlines()
@@ -624,7 +703,7 @@ cb = plt.colorbar(sc,extend = "both")
 cb.set_label('average probability', fontsize=10)
 
 
-ax2 = fig.add_subplot(3, 2, 6, projection=proj)
+ax2 = fig.add_subplot(3, 3, 8, projection=proj)
 ax2.coastlines()
 ax2.add_feature(cfeature.BORDERS, linestyle=':')
 
@@ -645,6 +724,31 @@ plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
 ax2.set_title("b = exp - b = 0")
 cb = plt.colorbar(sc,extend = "both")
 cb.set_label('average probability', fontsize=10)
+
+
+ax3 = fig.add_subplot(3, 3, 9, projection=proj)
+ax3.coastlines()
+ax3.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc = ax3.scatter(
+    df_parameters.longitude,
+    df_parameters.latitude,
+    c = box_list_ave[2],
+    cmap=cmap,
+    norm = norm,
+    s = s,
+)
+ax3.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+ax3.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
+ax3.tick_params(labelsize=12)  
+plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+ax3.set_title("b = rolling - b = 0")
+cb = plt.colorbar(sc,extend = "both")
+cb.set_label('average probability', fontsize=10)
+
+
 
 plt.suptitle("blue means b = 0 is worse")
 fig.tight_layout()
@@ -704,98 +808,101 @@ plt.yticks(range(1,number_betas+1),label)
 plt.title(f'{country} FRMSE upper 20%')
 plt.show()  
     
+if "temp_FRMSE6" in all_temp_FRMSE.columns:
+    #differences
+    box_list = [all_temp_FRMSE.temp_FRMSE6.copy().dropna() - all_temp_FRMSE.temp_FRMSE.copy().dropna()]
     
-#differences
-box_list = [all_temp_FRMSE.temp_FRMSE6.copy().dropna() - all_temp_FRMSE.temp_FRMSE.copy().dropna()]
-
-plt.boxplot(box_list,vert=False)
-plt.xlabel('FRMSE')
-#plt.xlim(-0.1,0.2)
-plt.yticks([1],["beta = 6 - beta = 4"])
-plt.title(f'{country} FRMSE')
-plt.show()  
+    plt.boxplot(box_list,vert=False)
+    plt.xlabel('FRMSE')
+    #plt.xlim(-0.1,0.2)
+    plt.yticks([1],["beta = 6 - beta = 4"])
+    plt.title(f'{country} FRMSE')
+    plt.show()  
+        
+        
+    #differences 20%
+    box_list = [all_temp_FRMSE.temp_FRMSE6_upper_perc.copy().dropna() - all_temp_FRMSE.temp_FRMSE_upper_perc.copy().dropna()]
     
-    
-#differences 20%
-box_list = [all_temp_FRMSE.temp_FRMSE6_upper_perc.copy().dropna() - all_temp_FRMSE.temp_FRMSE_upper_perc.copy().dropna()]
-
-plt.boxplot(box_list,vert=False)
-plt.xlabel('FRMSE')
-#plt.xlim(-0.1,0.2)
-plt.yticks([1],["beta = 6 - beta = 4"])
-plt.title(f'{country} FRMSE upper 20%')
-plt.show()  
+    plt.boxplot(box_list,vert=False)
+    plt.xlabel('FRMSE')
+    #plt.xlim(-0.1,0.2)
+    plt.yticks([1],["beta = 6 - beta = 4"])
+    plt.title(f'{country} FRMSE upper 20%')
+    plt.show()  
     
 
 
 
-#plots
-lon_lims = [truncate_neg(np.min(df_parameters.longitude),2.5),np.ceil(np.max(df_parameters.longitude/2.5))*2.5]
-lat_lims = [truncate_neg(np.min(df_parameters.latitude),2.5),np.ceil(np.max(df_parameters.latitude/2.5))*2.5]
-s = 3
+    #plots
+    lon_lims = [truncate_neg(np.min(df_parameters.longitude),2.5),np.ceil(np.max(df_parameters.longitude/2.5))*2.5]
+    lat_lims = [truncate_neg(np.min(df_parameters.latitude),2.5),np.ceil(np.max(df_parameters.latitude/2.5))*2.5]
+    s = 3
+    
+    
+    fig = plt.figure(figsize=(10, 10))
+    norm = mcolors.Normalize(vmin=-0.3, vmax=0.3)
+    cmap = 'seismic'
+    
+    
+    proj = ccrs.PlateCarree()
+    ax1 = fig.add_subplot(2, 2, 1, projection=proj)
+    
+    # Add map features
+    ax1.coastlines()
+    ax1.add_feature(cfeature.BORDERS, linestyle=':')
+    
+    
+    sc = ax1.scatter(
+        df_parameters.longitude,
+        df_parameters.latitude,
+        c = all_temp_FRMSE.temp_FRMSE6 - all_temp_FRMSE.temp_FRMSE,
+        cmap=cmap,
+        norm = norm,
+        s = s,
+    )
+    ax1.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+    ax1.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
+    ax1.tick_params(labelsize=12)  
+    
+    plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+    plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+    ax1.set_title("beta = 6 - beta = 4. full")
+    cb = plt.colorbar(sc,extend = "both")
+    cb.set_label('FRMSE', fontsize=10)
+    
+    
+    ax2 = fig.add_subplot(2, 2, 2, projection=proj)
+    ax2.coastlines()
+    ax2.add_feature(cfeature.BORDERS, linestyle=':')
+    
+    
+    sc = ax2.scatter(
+        df_parameters.longitude,
+        df_parameters.latitude,
+        c=all_temp_FRMSE.temp_FRMSE6_upper_perc - all_temp_FRMSE.temp_FRMSE_upper_perc,
+        cmap=cmap,
+        norm = norm,
+        s = s,
+    )
+    ax2.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+    ax2.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
+    ax2.tick_params(labelsize=12)  
+    plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+    plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+    ax2.set_title("beta = 6 - beta = 4. Upper 20%")
+    cb = plt.colorbar(sc,extend = "both")
+    cb.set_label('FRMSE', fontsize=10)
+    plt.show()
+else:
+    pass
 
 
-fig = plt.figure(figsize=(10, 10))
-norm = mcolors.Normalize(vmin=-0.3, vmax=0.3)
-cmap = 'seismic'
-
-
-proj = ccrs.PlateCarree()
-ax1 = fig.add_subplot(2, 2, 1, projection=proj)
-
-# Add map features
-ax1.coastlines()
-ax1.add_feature(cfeature.BORDERS, linestyle=':')
-
-
-sc = ax1.scatter(
-    df_parameters.longitude,
-    df_parameters.latitude,
-    c = all_temp_FRMSE.temp_FRMSE6 - all_temp_FRMSE.temp_FRMSE,
-    cmap=cmap,
-    norm = norm,
-    s = s,
-)
-ax1.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
-ax1.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
-ax1.tick_params(labelsize=12)  
-
-plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
-plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
-ax1.set_title("beta = 6 - beta = 4. full")
-cb = plt.colorbar(sc,extend = "both")
-cb.set_label('FRMSE', fontsize=10)
-
-
-ax2 = fig.add_subplot(2, 2, 2, projection=proj)
-ax2.coastlines()
-ax2.add_feature(cfeature.BORDERS, linestyle=':')
-
-
-sc = ax2.scatter(
-    df_parameters.longitude,
-    df_parameters.latitude,
-    c=all_temp_FRMSE.temp_FRMSE6_upper_perc - all_temp_FRMSE.temp_FRMSE_upper_perc,
-    cmap=cmap,
-    norm = norm,
-    s = s,
-)
-ax2.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
-ax2.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
-ax2.tick_params(labelsize=12)  
-plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
-plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
-ax2.set_title("beta = 6 - beta = 4. Upper 20%")
-cb = plt.colorbar(sc,extend = "both")
-cb.set_label('FRMSE', fontsize=10)
-plt.show()
-
-rolling_parameter_files_path = f"{drive}:/outputs/Japan\\parameters_rolling*.csv"
+rolling_parameter_files_path = f"{drive}:/outputs/{country_save}\\parameters_rolling*.csv"
 rolling_parameter_files = glob.glob(rolling_parameter_files_path)
 
 rolling_parameters = [pd.read_csv(f) for f in rolling_parameter_files]
 
-radii = [rolling_parameter_files[num][35:-4] for num in np.arange(0,len(rolling_parameters))]
+radii = [rolling_parameter_files[num][30+len(country_save):-4] for num in np.arange(0,len(rolling_parameters))]
 
 for i in np.arange(0,len(rolling_parameters)):
     nan_locs = rolling_parameters[i].return_levels[rolling_parameters[i].return_levels.isna()].index
@@ -818,8 +925,11 @@ S = TENAX(
         beta = 4
     )
 
-
-g_phats6 = pd.read_csv(f"{drive}:/outputs/{country_save}\\g_phat6", dtype={'station': str})
+g_phats6_name = f"{drive}:/outputs/{country_save}\\g_phat6"
+if g_phats6_name in glob.glob(f"{drive}:/outputs/{country_save}\\*"):
+    g_phats6 = pd.read_csv(g_phats6_name, dtype={'station': str})
+else:
+    print("go calculate the g_phats if you want to compare")
 
 # LOOK AT SOME STATIONS
 for j in np.arange(0,5):
@@ -853,24 +963,26 @@ for j in np.arange(0,5):
     
     
     #plot for beta compares
-    
-    TNX_FIG_valid(RL_df.obs_AMS.iloc[j],eRP,RL_df.return_levels_b0.iloc[j],TENAXlabel = f"b = 0. FRMSE: {FRMSE_df.FRMSE_0.iloc[j]:.3f}. log: {np.log(liklihood_df.mult_prob_0.iloc[j]):.1f}",obslabel='AMS')
-    plt.plot(eRP,RL_df6.return_levels_b0.iloc[j],"b--",label = f"b = 0, beta = 6. FRMSE: {FRMSE_df6.FRMSE_0.iloc[j]:.3f}. log: {np.log(liklihood_df6.mult_prob_0.iloc[j]):.1f}")
-    
-    
-    plt.plot(eRP,RL_df.return_levels.iloc[j],"r",label = f"b = free, beta = 4. FRMSE: {FRMSE_df.FRMSE.iloc[j]:.3f}. log: {np.log(liklihood_df.mult_prob.iloc[j]):.1f}")
-    #plt.plot(eRP,RL_df.return_levels_5.iloc[j],"g",alpha = 0.5, label = "b = 5% sig")
-    
-    plt.plot(eRP,RL_df6.return_levels.iloc[j],"r--", label = f"b free, beta = 6. FRMSE: {FRMSE_df6.FRMSE.iloc[j]:.3f}. log: {np.log(liklihood_df6.mult_prob.iloc[j]):.1f}")
-    
-    
-    plt.ylim(0,np.max(RL_df.return_levels.iloc[j])+5)
-    plt.xlim(1,np.max(eRP)+2)
-    
-    plt.legend()
-    plt.title(f"station {j}: {FRMSE_df.station.iloc[j]}.")
-    plt.show()
-    
+    if "RL_df6" in locals():
+        TNX_FIG_valid(RL_df.obs_AMS.iloc[j],eRP,RL_df.return_levels_b0.iloc[j],TENAXlabel = f"b = 0. FRMSE: {FRMSE_df.FRMSE_0.iloc[j]:.3f}. log: {np.log(liklihood_df.mult_prob_0.iloc[j]):.1f}",obslabel='AMS')
+        plt.plot(eRP,RL_df6.return_levels_b0.iloc[j],"b--",label = f"b = 0, beta = 6. FRMSE: {FRMSE_df6.FRMSE_0.iloc[j]:.3f}. log: {np.log(liklihood_df6.mult_prob_0.iloc[j]):.1f}")
+        
+        
+        plt.plot(eRP,RL_df.return_levels.iloc[j],"r",label = f"b = free, beta = 4. FRMSE: {FRMSE_df.FRMSE.iloc[j]:.3f}. log: {np.log(liklihood_df.mult_prob.iloc[j]):.1f}")
+        #plt.plot(eRP,RL_df.return_levels_5.iloc[j],"g",alpha = 0.5, label = "b = 5% sig")
+        
+        plt.plot(eRP,RL_df6.return_levels.iloc[j],"r--", label = f"b free, beta = 6. FRMSE: {FRMSE_df6.FRMSE.iloc[j]:.3f}. log: {np.log(liklihood_df6.mult_prob.iloc[j]):.1f}")
+        
+        
+        plt.ylim(0,np.max(RL_df.return_levels.iloc[j])+5)
+        plt.xlim(1,np.max(eRP)+2)
+        
+        plt.legend()
+        plt.title(f"station {j}: {FRMSE_df.station.iloc[j]}.")
+        plt.show()
+        
+    else:
+        pass
     
     
     #temperature model plot
@@ -920,19 +1032,23 @@ for j in np.arange(0,5):
     T = dict_ordinary["60"]["T"].to_numpy() 
     
     g_phat = [df_parameters.mu.iloc[j], df_parameters.sigma.iloc[j]]
-    g_phat6 = [g_phats6.mu.iloc[j],g_phats6.sigma.iloc[j]]
+    
     
     eT = np.arange(np.min(T),np.max(T)+4,1) # define T values to calculate distributions. +4 to go beyond graph end
     
     _,_ =TNX_FIG_temp_model(T, g_phat, 4, eT, obscol='r',valcol='b',
                            obslabel = 'observations',
                            vallabel = 'beta = 4')
-    
-    pdf_values = gen_norm_pdf(eT, g_phat6[0], g_phat6[1], 6)
-    plt.plot(eT, pdf_values, '-', color="g", label="beta = 6")
+    if "g_phats6" in locals():
+        g_phat6 = [g_phats6.mu.iloc[j],g_phats6.sigma.iloc[j]]
+        pdf_values = gen_norm_pdf(eT, g_phat6[0], g_phat6[1], 6)
+        plt.plot(eT, pdf_values, '-', color="g", label="beta = 6")
+        plt.title(f"({df_parameters.latitude.iloc[j]:.2f},{df_parameters.longitude.iloc[j]:.2f}) \n Beta = 4: FRMSE = {all_temp_FRMSE.temp_FRMSE.iloc[j]:.2f}. FRMSE_20 = {all_temp_FRMSE.temp_FRMSE_upper_perc.iloc[j]:.2f} \n Beta = 6: FRMSE = {all_temp_FRMSE.temp_FRMSE6.iloc[j]:.2f}. FRMSE_20 = {all_temp_FRMSE.temp_FRMSE6_upper_perc.iloc[j]:.2f}")
+    else:
+        plt.title(f"({df_parameters.latitude.iloc[j]:.2f},{df_parameters.longitude.iloc[j]:.2f}) \n Beta = 4: FRMSE = {all_temp_FRMSE.temp_FRMSE.iloc[j]:.2f}. FRMSE_20 = {all_temp_FRMSE.temp_FRMSE_upper_perc.iloc[j]:.2f}")
+        
     plt.legend()
     
-    plt.title(f"({df_parameters.latitude.iloc[j]:.2f},{df_parameters.longitude.iloc[j]:.2f}) \n Beta = 4: FRMSE = {all_temp_FRMSE.temp_FRMSE.iloc[j]:.2f}. FRMSE_20 = {all_temp_FRMSE.temp_FRMSE_upper_perc.iloc[j]:.2f} \n Beta = 6: FRMSE = {all_temp_FRMSE.temp_FRMSE6.iloc[j]:.2f}. FRMSE_20 = {all_temp_FRMSE.temp_FRMSE6_upper_perc.iloc[j]:.2f}")
     plt.show()
 
 

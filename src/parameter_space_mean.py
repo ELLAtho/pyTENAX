@@ -190,6 +190,8 @@ if distance_savename not in glob.glob(f"{drive}:/outputs/{country_save}\\*"):
 else:
     distances_matrix = np.load(distance_savename)
 
+df_parameters_exp = pd.read_csv(f"{drive}:/outputs/{country_save}/parameters_exp.csv", dtype={'station': str})
+
 
 #calculate b as average
 b2 = [0]*len(new_df.latitude)
@@ -198,6 +200,7 @@ b_median = [0]*len(new_df.latitude)
 max_in_group = [0]*len(new_df.latitude)
 min_in_group = [0]*len(new_df.latitude)
 std_group = [0]*len(new_df.latitude)
+bexp = [0]*len(new_df.latitude)
 
 for i in range(len(new_df.latitude)):
     if pd.isna(new_df.b.iloc[i]):
@@ -208,6 +211,7 @@ for i in range(len(new_df.latitude)):
         close_locs = np.where(station_distances<=radius*1000)
         
         b2[i] = np.mean(new_df.b.iloc[close_locs])
+        bexp[i] = np.mean(df_parameters_exp.b.iloc[close_locs])
         n_stations_in_group[i] = len(close_locs[0])
         
         b_median[i] = np.median(new_df.b.iloc[close_locs])
@@ -228,7 +232,7 @@ lat_lims = [truncate_neg(np.min(df_parameters.latitude),2.5),np.ceil(np.max(df_p
 
 fig = plt.figure(figsize=(30, 10))
 proj = ccrs.PlateCarree()
-ax1 = fig.add_subplot(1, 3, 1, projection=proj)
+ax1 = fig.add_subplot(2, 3, 1, projection=proj)
 
 # Add map features
 ax1.coastlines()
@@ -269,7 +273,7 @@ plt.title(f'GSDR: {ERA_country}. b at 0 sig level', fontsize=16)
 
 
 
-ax2 = fig.add_subplot(1, 3, 2, projection=proj)
+ax2 = fig.add_subplot(2, 3, 2, projection=proj)
 
 # Add map features
 ax2.coastlines()
@@ -310,7 +314,7 @@ plt.title(f'b moving average. radius = {radius}km', fontsize=16)
 
 
 
-ax3 = fig.add_subplot(1, 3, 3, projection=proj)
+ax3 = fig.add_subplot(2, 3, 3, projection=proj)
 
 # Add map features
 ax3.coastlines()
@@ -348,7 +352,97 @@ plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
 
 
 plt.title(f'b moving median. radius = {radius}km', fontsize=16)
+
+
+
+ax1 = fig.add_subplot(2, 3, 4, projection=proj)
+
+# Add map features
+ax1.coastlines()
+ax1.add_feature(cfeature.BORDERS, linestyle=':')
+
+# Choosing cmap
+if df_parameters_exp.b.min() == 0:
+    norm = mcolors.TwoSlopeNorm(vmin=-0.06, vcenter=0, vmax=0.06)
+else:
+    norm = mcolors.TwoSlopeNorm(vmin=df_parameters_exp.b.min(), vcenter=0, vmax=-1*df_parameters_exp.b.min())
+
+sc = ax1.scatter( #plot the negligable at 5% lvl points
+    df_parameters_exp.longitude,
+    df_parameters_exp.latitude,
+    c = df_parameters_exp.b,
+    s = s,
+    cmap = 'seismic',
+    norm = norm
+)
+
+
+
+# Add a colorbar at the bottom
+cb = plt.colorbar(sc, orientation='horizontal', pad=0.05)
+cb.set_label('b', fontsize=14)  
+cb.ax.tick_params(labelsize=12)
+
+# Set x and y ticks
+ax1.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+ax1.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
+ax1.tick_params(labelsize=12)  
+
+plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+
+
+plt.title(f'GSDR: {ERA_country}. b exponential', fontsize=16)
+
+
+
+ax2 = fig.add_subplot(2, 3, 5, projection=proj)
+
+# Add map features
+ax2.coastlines()
+ax2.add_feature(cfeature.BORDERS, linestyle=':')
+
+# Choosing cmap
+if df_parameters.b.min() == 0:
+    norm = mcolors.TwoSlopeNorm(vmin=-0.06, vcenter=0, vmax=0.06)
+else:
+    norm = mcolors.TwoSlopeNorm(vmin=df_parameters.b.min(), vcenter=0, vmax=-1*df_parameters.b.min())
+
+sc = ax2.scatter( #plot the negligable at 5% lvl points
+    new_df.longitude,
+    new_df.latitude,
+    c = bexp,
+    s = s,
+    cmap = 'seismic',
+    norm = norm
+)
+
+
+
+# Add a colorbar at the bottom
+cb = plt.colorbar(sc, orientation='horizontal', pad=0.05)
+cb.set_label('b', fontsize=14)  
+cb.ax.tick_params(labelsize=12)
+
+# Set x and y ticks
+ax2.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+ax2.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
+ax2.tick_params(labelsize=12)  
+
+plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+
+
+plt.title(f'b exponential moving average. radius = {radius}km', fontsize=16)
+
+
+
+
 plt.show()
+
+
+
+
 ###############################################################################
 fig = plt.figure(figsize=(20, 10))
 proj = ccrs.PlateCarree()
@@ -588,6 +682,167 @@ else:
         replace_range = np.delete(replace_range, np.where(replace_range == nan_locs[k]))
     for j in replace_range:
         df_parameters_rolling.at[j, "return_levels"] = np.fromstring(df_parameters_rolling.return_levels.iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'), sep=' ')
+
+###############################################################################
+
+
+
+df_savename_exp = f"{drive}:/outputs/{country_save}\\parameters_rolling_exp_{radius}.csv"
+saved_output_files = glob.glob(drive + ':/outputs/'+country_save+'/*')
+
+if df_savename_exp not in saved_output_files: #read in files and create t time series and do TENAX if it hasnt been done already
+    print('TENAX not done yet on '+country_save+' with rolling b exponential. making data.')
+    
+    saved_files = glob.glob(drive+':/'+country+'_temp/*') #temp files already saved
+    
+    F_phats = [0]*len(files_sel)
+    RL = [0]*len(files_sel)
+    
+    start_time = [0]*len(files_sel)
+    
+    for i in np.arange(0, len(files_sel)):
+        start_time[i] = time.time() 
+        #read in ppt data
+        if 'code_str' in locals():
+            G,data_meta = read_GSDR_file(files_sel[i],name_col)
+        else:
+            G = pd.read_csv(files_sel[i])
+            G['prec_time'] = pd.to_datetime(G['prec_time'])
+            G.set_index('prec_time', inplace=True)
+            
+        ######################################################################
+        #read in T data
+        if 'code_str' in locals():
+            save_path = drive + ':/'+country+'_temp\\'+code_str + str(val_info.station[val_info.index[i]]) + '.nc'
+        else:
+            save_path = drive + ':/'+country+'_temp\\'+str(val_info.station[val_info.index[i]]) + '.nc'
+        
+        
+        # Check if file already exists before saving
+        
+        if save_path not in saved_files:
+            print(f'file {save_path} not there')
+            T_ERA = []
+            
+        else:
+            print(f"File {save_path} already exists. Skipping loading.")
+            T_ERA = xr.load_dataarray(save_path)
+            
+            #####################################################################
+        #TENAX 
+        if len(T_ERA) == 0: # dont do tenax if no T data saved
+            print('skip')
+            F_phats[i] = np.array([np.nan,np.nan,np.nan,np.nan])
+            RL[i] = np.nan
+        else:
+            data = G 
+            data = S.remove_incomplete_years(data, name_col)
+            t_data = (T_ERA.squeeze()-273.15).to_dataframe()
+            
+            df_arr = np.array(data[name_col])
+            df_dates = np.array(data.index)
+            
+            #extract indexes of ordinary events
+            #these are time-wise indexes =>returns list of np arrays with np.timeindex
+            idx_ordinary=S.get_ordinary_events(data=df_arr,dates=df_dates, name_col=name_col,  check_gaps=False)
+                
+            
+            #get ordinary events by removing too short events
+            #returns boolean array, dates of OE in TO, FROM format, and count of OE in each years
+            arr_vals,arr_dates,n_ordinary_per_year=S.remove_short(idx_ordinary)
+            
+            #assign ordinary events values by given durations, values are in depth per duration, NOT in intensity mm/h
+            dict_ordinary, dict_AMS = S.get_ordinary_events_values(data=df_arr,dates=df_dates, arr_dates_oe=arr_dates)
+            
+            AMS = dict_AMS['60']
+            
+            
+            df_arr_t_data = np.array(t_data[temp_name_col])
+            df_dates_t_data = np.array(t_data.index)
+            
+            dict_ordinary, _ , n_ordinary_per_year = S.associate_vars(dict_ordinary, df_arr_t_data, df_dates_t_data)
+            
+            
+            
+            # Your data (P, T arrays) and threshold thr=3.8
+            P = dict_ordinary["60"]["ordinary"].to_numpy() 
+            T = dict_ordinary["60"]["T"].to_numpy()  
+            
+            
+            # Number of threshold 
+            thr = dict_ordinary["60"]["ordinary"].quantile(S.left_censoring[1])
+            
+            
+            n = n_ordinary_per_year.sum() / len(n_ordinary_per_year)  
+            
+            AMS_sort = AMS.sort_values(by=['AMS'])['AMS']
+            plot_pos = np.arange(1,np.size(AMS_sort)+1)/(1+np.size(AMS_sort))
+            
+            eRP = 1/(1-plot_pos)
+            S.return_period = eRP
+            
+            #TENAX MODEL HERE
+            #magnitude model
+            F_phats_norm, _, _, _ = S.magnitude_model(P, T, thr,b_exp = True)
+            F_phats[i], loglik, _, _ = S.magnitude_model(P, T, thr, b_set = bexp[i],b_exp=True)
+            if np.isnan(loglik):
+                print("trying new start")
+                S.init_param_guess = F_phats_norm
+                F_phats[i], loglik, _, _ = S.magnitude_model(P, T, thr, b_set = bexp[i],b_exp=True)
+                
+                if np.isnan(loglik):
+                    print("tried different start, still broke")
+                    F_phats[i] = [np.nan]*4
+                            
+                    
+                else:
+                    pass
+            
+            else:
+                pass
+            
+            S.init_param_guess = [0.7, 0, 2, 0]
+            #temperature model
+            g_phat = S.temperature_model(T)
+            
+            T_min = g_phat[0] - 2.5 * g_phat[1]
+            T_max = g_phat[0] + 2.5 * g_phat[1]
+            Ts = np.arange(T_min - S.temp_delta, T_max + S.temp_delta, S.temp_res_monte_carlo)
+            
+            if np.isnan(F_phats[i][0]):
+                RL[i] = np.nan
+            else:
+                RL[i], __, __ = S.model_inversion(F_phats[i], g_phat, n, Ts,b_exp = True)
+            
+            
+            time_taken = (time.time()-start_time[i-9])/10
+            time_left = (len(files_sel)-i)*time_taken/60
+            print(save_path)
+            print(files_sel[i])
+            print(f"b rolled: {F_phats[i]}. normal {F_phats_norm}")
+            print(RL[i])
+            print(f"{i}/{len(files_sel)}. Current average time to complete one {time_taken:.0f}s. Approx time left: {time_left:.0f} mins") #this is only correct after 50 loops
+        
+    
+    
+    df_parameters_rolling_exp = pd.DataFrame({'station':val_info.station,'latitude':val_info.latitude,'longitude':val_info.longitude,
+                                       'kappa':np.array(F_phats)[:,0],'b':np.array(F_phats)[:,1],'lambda':np.array(F_phats)[:,2],'a':np.array(F_phats)[:,3],
+                                       'return_levels': RL
+                                       })
+    df_parameters_rolling_exp.to_csv(df_savename_exp,index=False) #save calculated parameters
+    
+
+else:
+    print('TENAX already done! reading in data')
+    df_parameters_rolling_exp = pd.read_csv(df_savename_exp) 
+    nan_locs = df_parameters_rolling_exp.b[df_parameters_rolling_exp.b.isna()].index
+    replace_range = np.arange(0,len(df_parameters_rolling_exp))
+    for k in range(len(nan_locs)):
+        replace_range = np.delete(replace_range, np.where(replace_range == nan_locs[k]))
+    for j in replace_range:
+        df_parameters_rolling_exp.at[j, "return_levels"] = np.fromstring(df_parameters_rolling_exp.return_levels.iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'), sep=' ')
+
+
         
 ###############################################################################
 #TODO: combine these so they go at the same time

@@ -44,27 +44,30 @@ drive = 'D'
 alpha_set = 0.05
 
 #FOR BETA = 4, USE beta_set = ""
-beta_set = 6
+beta_set = ""
+if beta_set == "":
+    beta_set2 = 4
+else:
+    beta_set2 = beta_set
 
-
-# country = 'Germany' 
-# ERA_country = 'Germany'
-# country_save = 'Germany'
-# code_str = 'DE_'
-# minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
-# name_len = 5
-# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-# censor_thr = 0.9
-
-
-country = 'Japan'
-ERA_country = 'Japan'
-country_save = 'Japan'
-code_str = 'JP_'
-minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+country = 'Germany' 
+ERA_country = 'Germany'
+country_save = 'Germany'
+code_str = 'DE_'
+minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
 name_len = 5
 min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 censor_thr = 0.9
+
+
+# country = 'Japan'
+# ERA_country = 'Japan'
+# country_save = 'Japan'
+# code_str = 'JP_'
+# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+# name_len = 5
+# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+# censor_thr = 0.9
 
 # country = 'US'
 # ERA_country = 'US'
@@ -166,7 +169,14 @@ else:
 save_name = f"{drive}:/outputs/{country_save}\\temp_FRMSE{beta_set}.csv"
 output_files = glob.glob(f"{drive}:/outputs/{country_save}/*")
 GOF_perc = 0.8
-
+S = TENAX(
+        return_period = [1.1,1.2,1.5,2,5,10,20,50,100, 200],
+        durations = [60, 180, 360, 720, 1440],
+        left_censoring = [0, 0.90],
+        alpha = 0.05,
+        min_ev_dur = 60,
+        beta = beta_set2
+    )
 
 if save_name not in output_files:
     print("temp FRMSE not calculated yet. here we gooooooo")
