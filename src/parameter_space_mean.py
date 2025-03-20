@@ -230,7 +230,7 @@ lon_lims = [truncate_neg(np.min(df_parameters.longitude),2.5),np.ceil(np.max(df_
 lat_lims = [truncate_neg(np.min(df_parameters.latitude),2.5),np.ceil(np.max(df_parameters.latitude/2.5))*2.5]
 
 
-fig = plt.figure(figsize=(30, 10))
+fig = plt.figure(figsize=(30, 20))
 proj = ccrs.PlateCarree()
 ax1 = fig.add_subplot(2, 3, 1, projection=proj)
 

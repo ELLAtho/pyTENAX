@@ -61,23 +61,23 @@ else:
 # censor_thr = 0.9
 
 
-country = 'Japan'
-ERA_country = 'Japan'
-country_save = 'Japan'
-code_str = 'JP_'
-minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
-name_len = 5
-min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-censor_thr = 0.9
-
-# country = 'US' 
-# ERA_country = 'US'
-# country_save = 'US_main'
-# code_str = 'US_'
-# minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
-# name_len = 6
-# min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+# country = 'Japan'
+# ERA_country = 'Japan'
+# country_save = 'Japan'
+# code_str = 'JP_'
+# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+# name_len = 5
+# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 # censor_thr = 0.9
+
+country = 'US' 
+ERA_country = 'US'
+country_save = 'US_main'
+code_str = 'US_'
+minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
+name_len = 6
+min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+censor_thr = 0.9
 
 
 
@@ -1202,6 +1202,185 @@ else:
 
 
 ###############################################################################
+# With rolling b exponential
+
+save_roll_exp = glob.glob(f"{drive}:/outputs/{country_save}\\parameters_rolling_exp*")[0]
+
+if save_roll_exp in output_files:
+    print("hell yeah lets do some rolling b exponential liklihood")
+    df_parameters_rolling_exp = pd.read_csv(save_roll_exp,dtype={'station': str})
+    nan_locs = df_parameters_rolling_exp.b[df_parameters_rolling_exp.b.isna()].index
+    replace_range = np.arange(0,len(df_parameters_rolling_exp))
+    for k in range(len(nan_locs)):
+        replace_range = np.delete(replace_range, np.where(replace_range == nan_locs[k]))
+    for j in replace_range:
+        df_parameters_rolling_exp.at[j, "return_levels"] = np.fromstring(df_parameters_rolling_exp.return_levels.iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'), sep=' ')
+    
+    
+    if "mult_prob_roll_exp" in liklihood_df.columns:
+        print("you've already done it! b roll data is ready")
+    else:
+        print(f"b roll exp liklihoods not yet calculated for {country}")
+        mult_prob_roll_exp = [0] * len(new_df)
+        ave_prob_roll_exp = [0] * len(new_df)
+        mins_roll_exp = [0] * len(new_df)
+        maxes_roll_exp = [0] * len(new_df)
+        n_bad_RL_roll_exp = [0] * len(new_df)
+        FRMSE_roll_exp = [0] * len(new_df)
+        
+        
+        start_time = [0] * len(new_df)
+        
+        for i in np.arange(0,len(new_df)):
+            start_time[i] = time.time()
+            n_itn = 1000
+            percentages = [0.05,0.95]
+            
+            if S.beta == 4:
+                g_phat = [df_parameters.mu.iloc[i],df_parameters.sigma.iloc[i]]
+            else:
+                T_path = f"{drive}:/{country}_temp\\{code_str}{df_parameters_rolling_exp.station.iloc[i]}.nc" #TODO: nans case (not there in germany)
+                
+                if T_path not in glob.glob(f"{drive}:/{country}_temp\\*"): # dont do tenax if no T data saved
+                    print('skip')
+                    g_phat = [np.nan,np.nan]
+                else:
+                    T_ERA = xr.load_dataarray(T_path)
+                    t_data = (T_ERA.squeeze()-273.15).to_dataframe()
+                    df_arr = np.array(data[name_col])
+                    df_dates = np.array(data.index)
+                    
+                    #extract indexes of ordinary events
+                    #these are time-wise indexes =>returns list of np arrays with np.timeindex
+                    idx_ordinary=S.get_ordinary_events(data=df_arr,dates=df_dates, name_col=name_col,  check_gaps=False)
+                        
+                    
+                    #get ordinary events by removing too short events
+                    #returns boolean array, dates of OE in TO, FROM format, and count of OE in each years
+                    arr_vals,arr_dates,n_ordinary_per_year=S.remove_short(idx_ordinary)
+                    
+                    #assign ordinary events values by given durations, values are in depth per duration, NOT in intensity mm/h
+                    dict_ordinary, dict_AMS = S.get_ordinary_events_values(data=df_arr,dates=df_dates, arr_dates_oe=arr_dates)
+                    
+                    AMS = dict_AMS['60']
+                    
+                    
+                    df_arr_t_data = np.array(t_data[temp_name_col])
+                    df_dates_t_data = np.array(t_data.index)
+                    
+                    dict_ordinary, _ , n_ordinary_per_year = S.associate_vars(dict_ordinary, df_arr_t_data, df_dates_t_data)
+                    
+                    
+                    
+                    # Your data (P, T arrays) and threshold thr=3.8
+                    P = dict_ordinary["60"]["ordinary"].to_numpy() 
+                    T = dict_ordinary["60"]["T"].to_numpy()  
+                    g_phat = S.temperature_model(T)
+                    
+                    
+            if np.any(np.isnan(g_phat[0])):
+                print(f"no gphat. {g_phat}")
+                
+                mult_prob_roll_exp[i] = np.nan
+                mult_prob_roll_exp[i] = np.nan
+                FRMSE_roll_exp[i] = np.nan
+                n_bad_RL_roll_exp[i] = np.nan 
+                
+            else:
+                n = round(df_parameters.n_events_per_yr.iloc[i])
+                #free
+                F_phat = [df_parameters_rolling_exp.kappa.iloc[i],df_parameters_rolling_exp.b.iloc[i],
+                          df_parameters_rolling_exp["lambda"].iloc[i],df_parameters_rolling_exp.a.iloc[i]]
+                if np.any(np.isnan(F_phat[0])):
+                    print(f"{i}. no F_phat")
+                    mins_roll_exp[i] = [np.nan,np.nan]
+                    maxes_roll_exp[i] = [np.nan,np.nan]
+                    mult_prob_roll_exp[i] = np.nan
+                    mult_prob_roll_exp[i] = np.nan
+                    FRMSE_roll_exp[i] = np.nan
+                    n_bad_RL_roll_exp[i] = np.nan
+                
+                else:
+                    AMS_stat = RL_df.obs_AMS.iloc[i] 
+                    plot_pos = np.arange(1,np.size(AMS_stat)+1)/(1+AMS_stat)
+                    eRP = 1/(1-plot_pos)
+                    
+                    
+                    T_min = g_phat[0] - 2.5 * g_phat[1]
+                    T_max = g_phat[0] + 2.5 * g_phat[1]
+                    Ts = np.arange(T_min - S.temp_delta, T_max + S.temp_delta, S.temp_res_monte_carlo)
+                    
+                    n_years = len(AMS_stat)
+                    S.n_monte_carlo = int(n_years*n)
+                    
+                    AMS_sim = np.zeros([n_itn,n_years])
+                    for itn in np.arange(0,n_itn):
+                        _, _, P_mc = S.model_inversion(F_phat, g_phat, n, Ts,gen_P_mc = True,gen_RL=False,method_root_scalar="secant",b_exp = True) 
+                        AMS_sim[itn,:] = [np.max(P_mc[j:j+n]) for j in np.arange(0,int(n_years*n),int(n))]
+                        AMS_sim[itn,:].sort()
+                    
+                    mins_roll_exp[i] = [np.quantile(AMS_sim[:,j],percentages[0]) for j in np.arange(0,n_years)]
+                    maxes_roll_exp[i] = [np.quantile(AMS_sim[:,j],percentages[1]) for j in np.arange(0,n_years)]
+                    
+                    
+                    outs = AMS_stat[(AMS_stat > maxes_roll_exp[i]) | (AMS_stat < mins_roll_exp[i])]
+                    n_bad_RL_roll_exp[i] = len(outs)
+                    
+                    prob = [0]*len(eRP)
+                    total_prob =[0]*len(eRP)
+                    kde = [0]*len(eRP)
+                    
+                    for RP_rank in np.arange(0,len(eRP)):
+                        valid_data = AMS_sim[:, RP_rank]
+                        valid_data = valid_data[np.isfinite(valid_data)]
+                        valid_data = valid_data[valid_data < 10000]
+                        data_removed = n_itn - len(valid_data)
+                        if data_removed > 50:
+                            print(f"warning. {data_removed} values inf, nan, or too large. index {i}")
+                        else:
+                            pass
+                        kde[RP_rank]  = gaussian_kde(valid_data) #use kernel density to get probability
+                        prob[RP_rank] = kde[RP_rank](AMS_stat[RP_rank])
+                        
+                    mult_prob_roll_exp[i] = np.prod(prob)
+                    ave_prob_roll_exp[i] = np.mean(prob)
+                    
+                    
+                    
+                    RL = df_parameters_rolling_exp.return_levels.iloc[i]
+                    
+                    diffs = RL - AMS_stat
+                    
+                    FRMSE_roll_exp[i] = np.sqrt(np.sum(diffs**2)/len(diffs))/(np.sum(AMS_stat)/len(diffs))
+                    
+                
+            if i%50 == 0:
+                print(f"multiplied prob {mult_prob_roll_exp[i]}")
+                time_taken = (time.time()-start_time[i-9])/10
+                time_left = (len(new_df)-i)*time_taken/60
+                print(f"{i}/{len(new_df)}. Approx time left: {time_left:.0f} mins")
+                
+        liklihood_df["mult_prob_roll_exp"] = mult_prob_roll_exp
+        liklihood_df["ave_prob_roll_exp"] = ave_prob_roll_exp
+        liklihood_df["mins_roll_exp"] = mins_roll_exp
+        liklihood_df["maxes_roll_exp"] = maxes_roll_exp
+        liklihood_df["n_bad_RL_roll_exp"] = n_bad_RL_roll_exp
+        
+        FRMSE_df["FRMSE_roll_exp"] = FRMSE_roll_exp
+        RL_df["return_levels_roll_exp"] = df_parameters_rolling_exp.return_levels
+        
+        liklihood_df.to_csv(f"{drive}:/outputs/{country_save}/liklihood{beta_set}.csv",index=False)
+        RL_df.to_csv(f"{drive}:/outputs/{country_save}/return_levels{beta_set}.csv",index=False)
+        FRMSE_df.to_csv(f"{drive}:/outputs/{country_save}/FRMSE{beta_set}.csv",index=False)
+
+else:
+    print("go to parameter_space_mean if you want to look at b roll")
+
+
+
+
+###############################################################################
+
 #maps
 significants = df_parameters[df_parameters.b != 0]
 show_sig_locs = False
