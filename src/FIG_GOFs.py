@@ -45,14 +45,14 @@ drive = 'D'
 
 
 
-country = 'Japan'
-ERA_country = 'Japan'
-country_save = 'Japan'
-code_str = 'JP_'
-minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
-name_len = 5
-min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-censor_thr = 0.9
+# country = 'Japan'
+# ERA_country = 'Japan'
+# country_save = 'Japan'
+# code_str = 'JP_'
+# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+# name_len = 5
+# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+# censor_thr = 0.9
 
 
 # country = 'Germany' 
@@ -65,14 +65,14 @@ censor_thr = 0.9
 # censor_thr = 0.9
 
 
-# country = 'US' 
-# ERA_country = 'US'
-# country_save = 'US_main'
-# code_str = 'US_'
-# minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
-# name_len = 6
-# min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
-# censor_thr = 0.9
+country = 'US' 
+ERA_country = 'US'
+country_save = 'US_main'
+code_str = 'US_'
+minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
+name_len = 6
+min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+censor_thr = 0.9
 
 
 name_col = 'ppt' 
@@ -207,45 +207,49 @@ if save_name6 in glob.glob(f"{drive}:/outputs/{country_save}\\*"):
     ###############################################################################
     #BETA COMP
     
-    box_list_fr = [FRMSE_df6.copy().dropna().FRMSE - FRMSE_df.copy().dropna().FRMSE, FRMSE_df6.copy().dropna().FRMSE_0 - FRMSE_df.copy().dropna().FRMSE_0]
+    box_list_fr = [FRMSE_df6.FRMSE - FRMSE_df.FRMSE, FRMSE_df6.FRMSE_0 - FRMSE_df.FRMSE_0]
     labels_list = ["b free", "b = 0"]
     
     fig = plt.figure(figsize = (10,15))
     ax1 = fig.add_subplot(3,2,1)
     
-    ax1.boxplot(box_list_fr,vert=False)
+    ax1.boxplot([box.copy().dropna() for box in box_list_fr],vert=False)
     plt.xlabel('FRMSE')
     #plt.xlim(-0.1,0.2)
     plt.yticks([1,2],labels_list)
+    plt.grid()
     ax1.set_title('FRMSE beta = 6 - beta = 4')
     
     ax2 = fig.add_subplot(3,2,2)
-    ax2.boxplot(box_list_fr,vert=False)
+    ax2.boxplot([box.copy().dropna() for box in box_list_fr],vert=False)
     plt.xlabel('FRMSE')
     #plt.xlim(-0.1,0.2)
     plt.yticks([1,2],labels_list)
+    plt.grid()
     ax2.set_title('FRMSE beta = 6 - beta = 4')
     plt.xlim(-0.05,0.05)
     
-    box_list_lik = [np.log(liklihood_df6.copy().dropna().mult_prob) - np.log(liklihood_df.copy().dropna().mult_prob),
-                np.log(liklihood_df6.copy().dropna().mult_prob_0) - np.log(liklihood_df.copy().dropna().mult_prob_0)]
+    box_list_lik = [np.log(liklihood_df6.mult_prob) - np.log(liklihood_df.mult_prob),
+                np.log(liklihood_df6.mult_prob_0) - np.log(liklihood_df.mult_prob_0)]
     
     labels_list = ["b free", "b = 0"]
     
     
     ax3 = fig.add_subplot(3,2,3)
-    ax3.boxplot(box_list_lik,vert=False)
+    ax3.boxplot([box.copy().dropna() for box in box_list_lik],vert=False)
     plt.xlabel('log(liklihood)')
     #plt.xlim(-0.1,0.2)
     plt.yticks([1,2],labels_list)
+    plt.grid()
     ax3.set_title('liklihood beta = 6 - beta = 4')
     
     
     ax4 = fig.add_subplot(3,2,4)
-    ax4.boxplot(box_list_lik,vert=False)
+    ax4.boxplot([box.copy().dropna() for box in box_list_lik],vert=False)
     plt.xlabel('log(liklihood)')
     #plt.xlim(-0.1,0.2)
     plt.yticks([1,2],labels_list)
+    plt.grid()
     ax4.set_title('liklihood beta = 6 - beta = 4')
     plt.xlim(-10,10)
     
@@ -258,6 +262,7 @@ if save_name6 in glob.glob(f"{drive}:/outputs/{country_save}\\*"):
     plt.xlabel('average probability')
     #plt.xlim(-0.1,0.2)
     plt.yticks([1,2],labels_list)
+    plt.grid()
     ax3.set_title('liklihood beta = 6 - beta = 4')
     
     
@@ -266,6 +271,7 @@ if save_name6 in glob.glob(f"{drive}:/outputs/{country_save}\\*"):
     plt.xlabel('average probability')
     #plt.xlim(-0.1,0.2)
     plt.yticks([1,2],labels_list)
+    plt.grid()
     ax4.set_title('liklihood beta = 6 - beta = 4')
     plt.xlim(-0.2,0.2)
     
@@ -445,8 +451,9 @@ if save_name6 in glob.glob(f"{drive}:/outputs/{country_save}\\*"):
 
 ###############################################################################
 # b comp
-box_list_fr = [FRMSE_df.FRMSE - FRMSE_df.FRMSE_0, FRMSE_df.FRMSE_bexp - FRMSE_df.FRMSE_0, FRMSE_df.FRMSE_roll - FRMSE_df.FRMSE_0]
-labels_list = ["b = free - b = 0", "b = exp - b = 0", "b = rolling mean - b = 0"]
+FRMSE_cols = FRMSE_df.columns.drop(["station",'FRMSE_0'])
+box_list_fr = [FRMSE_df[col] - FRMSE_df.FRMSE_0 for col in FRMSE_cols]
+labels_list = [f"b = {col[6:]} - b = 0" for col in FRMSE_cols]
 
 fig = plt.figure(figsize = (15,15))
 ax1 = fig.add_subplot(3,3,1)
@@ -455,7 +462,7 @@ ax1.boxplot([box.copy().dropna() for box in box_list_fr],vert=False)
 plt.xlabel('FRMSE')
 plt.grid()
 #plt.xlim(-0.1,0.2)
-plt.yticks([1,2,3],labels_list)
+plt.yticks(np.arange(1,len(labels_list)+1),labels_list)
 
 ax2 = fig.add_subplot(3,3,2)
 ax2.boxplot([box.copy().dropna() for box in box_list_fr],vert=False)
@@ -464,10 +471,14 @@ plt.xlabel('FRMSE')
 minlim = np.quantile(box_list_fr[0].copy().dropna(),0.25)*2
 plt.xlim(minlim,minlim*-1)
 plt.grid()
-box_list_lik = [np.log(liklihood_df.mult_prob) - np.log(liklihood_df.mult_prob_0),
-            np.log(liklihood_df.mult_prob_bexp) - np.log(liklihood_df.mult_prob_0),
-            np.log(liklihood_df.mult_prob_roll) - np.log(liklihood_df.mult_prob_0)
-            ]
+
+
+# b comp
+lik_cols = liklihood_df.columns.drop(["station"])
+lik_cols = lik_cols.drop([s for s in lik_cols if "_0" in s])
+lik_cols_mult = [s for s in lik_cols if "mult" in s]
+
+box_list_lik = [np.log(liklihood_df[col]) - np.log(liklihood_df.mult_prob_0) for col in lik_cols_mult]
 
 
 
@@ -476,7 +487,7 @@ ax3.boxplot([box.copy().dropna() for box in box_list_lik],vert=False)
 plt.xlabel('log(liklihood)')
 plt.grid()
 #plt.xlim(-0.1,0.2)
-plt.yticks([1,2,3],labels_list)
+plt.yticks(np.arange(1,len(labels_list)+1),labels_list)
 
 
 ax4 = fig.add_subplot(3,3,5)
@@ -488,9 +499,9 @@ minlim = np.quantile(box_list_lik[0].copy().dropna(),0.25)*2
 plt.xlim(minlim,minlim*-1)
 
 
-box_list_ave = [liklihood_df.ave_prob - liklihood_df.ave_prob_0,
-            liklihood_df.ave_prob_bexp - liklihood_df.ave_prob_0,
-            liklihood_df.ave_prob_roll - liklihood_df.ave_prob_0]
+lik_cols_ave = [s for s in lik_cols if "ave" in s]
+
+box_list_ave = [liklihood_df[col] - liklihood_df.ave_prob_0 for col in lik_cols_ave]
 
 
 
@@ -499,7 +510,7 @@ ax3.boxplot([box.copy().dropna() for box in box_list_ave],vert=False)
 plt.grid()
 plt.xlabel('average probability')
 #plt.xlim(-0.1,0.2)
-plt.yticks([1,2,3],labels_list)
+plt.yticks(np.arange(1,len(labels_list)+1),labels_list)
 
 
 ax4 = fig.add_subplot(3,3,8)
@@ -519,13 +530,13 @@ lat_lims = [truncate_neg(np.min(df_parameters.latitude),2.5),np.ceil(np.max(df_p
 s = 3
 
 
-fig = plt.figure(figsize=(15, 15))
+fig = plt.figure(figsize=(20, 15))
 norm = mcolors.Normalize(vmin=-0.3, vmax=0.3)
 cmap = 'seismic'
 
 
 proj = ccrs.PlateCarree()
-ax1 = fig.add_subplot(3, 3, 1, projection=proj)
+ax1 = fig.add_subplot(3, 4, 1, projection=proj)
 
 # Add map features
 ax1.coastlines()
@@ -552,7 +563,7 @@ cb = plt.colorbar(sc,extend = "both")
 cb.set_label('FRMSE', fontsize=10)
 
 
-ax2 = fig.add_subplot(3, 3, 2, projection=proj)
+ax2 = fig.add_subplot(3, 4, 2, projection=proj)
 ax2.coastlines()
 ax2.add_feature(cfeature.BORDERS, linestyle=':')
 
@@ -575,7 +586,7 @@ cb = plt.colorbar(sc,extend = "both")
 cb.set_label('FRMSE', fontsize=10)
 
 
-ax3 = fig.add_subplot(3, 3, 3, projection=proj)
+ax3 = fig.add_subplot(3, 4, 3, projection=proj)
 ax3.coastlines()
 ax3.add_feature(cfeature.BORDERS, linestyle=':')
 
@@ -598,12 +609,34 @@ cb = plt.colorbar(sc,extend = "both")
 cb.set_label('FRMSE', fontsize=10)
 
 
+if "ave_prob_roll_exp" in liklihood_df.columns:
+    ax4 = fig.add_subplot(3, 4, 4, projection=proj)
+    ax4.coastlines()
+    ax4.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+    sc = ax4.scatter(
+        df_parameters.longitude,
+        df_parameters.latitude,
+        c=FRMSE_df.FRMSE_roll_exp - FRMSE_df.FRMSE_0,
+        cmap=cmap,
+        norm = norm,
+        s = s,
+    )
+    ax4.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+    ax4.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
+    ax4.tick_params(labelsize=12)  
+    plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+    plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+    ax4.set_title("b = rolling exp - b = 0")
+    cb = plt.colorbar(sc,extend = "both")
+    cb.set_label('FRMSE', fontsize=10)
 
 
 norm = mcolors.Normalize(vmin=0.8*np.min(box_list_lik[0].replace([np.inf, -np.inf], np.nan).dropna()), vmax=-0.8 * np.min(box_list_lik[0].replace([np.inf, -np.inf], np.nan).dropna()))
 cmap = 'seismic_r'
 
-ax1 = fig.add_subplot(3, 3, 4, projection=proj)
+ax1 = fig.add_subplot(3, 4, 5, projection=proj)
 
 # Add map features
 ax1.coastlines()
@@ -629,7 +662,7 @@ cb = plt.colorbar(sc,extend = "both")
 cb.set_label('log(liklihood)', fontsize=10)
 
 
-ax2 = fig.add_subplot(3, 3, 5, projection=proj)
+ax2 = fig.add_subplot(3, 4, 6, projection=proj)
 ax2.coastlines()
 ax2.add_feature(cfeature.BORDERS, linestyle=':')
 
@@ -652,7 +685,7 @@ cb = plt.colorbar(sc,extend = "both")
 cb.set_label('log(liklihood)', fontsize=10)
 
 
-ax3 = fig.add_subplot(3, 3, 6, projection=proj)
+ax3 = fig.add_subplot(3, 4, 7, projection=proj)
 ax3.coastlines()
 ax3.add_feature(cfeature.BORDERS, linestyle=':')
 
@@ -674,10 +707,31 @@ ax3.set_title("b = rolling - b = 0")
 cb = plt.colorbar(sc,extend = "both")
 cb.set_label('log(liklihood)', fontsize=10)
 
+if "ave_prob_roll_exp" in liklihood_df.columns:
+    ax4 = fig.add_subplot(3, 4, 8, projection=proj)
+    ax4.coastlines()
+    ax4.add_feature(cfeature.BORDERS, linestyle=':')
 
+
+    sc = ax4.scatter(
+        df_parameters.longitude,
+        df_parameters.latitude,
+        c=np.log(liklihood_df.mult_prob_roll_exp) - np.log(liklihood_df.mult_prob_0),
+        cmap=cmap,
+        norm = norm,
+        s = s,
+    )
+    ax4.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+    ax4.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
+    ax4.tick_params(labelsize=12)  
+    plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+    plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+    ax4.set_title("b = rolling exp - b = 0")
+    cb = plt.colorbar(sc,extend = "both")
+    cb.set_label('log(liklihood)', fontsize=10)
 
 norm = mcolors.Normalize(vmin=-np.max(box_list_ave[0]), vmax=np.max(box_list_ave[0]))
-ax1 = fig.add_subplot(3, 3, 7, projection=proj)
+ax1 = fig.add_subplot(3, 4, 9, projection=proj)
 
 # Add map features
 ax1.coastlines()
@@ -703,7 +757,7 @@ cb = plt.colorbar(sc,extend = "both")
 cb.set_label('average probability', fontsize=10)
 
 
-ax2 = fig.add_subplot(3, 3, 8, projection=proj)
+ax2 = fig.add_subplot(3, 4, 10, projection=proj)
 ax2.coastlines()
 ax2.add_feature(cfeature.BORDERS, linestyle=':')
 
@@ -726,7 +780,7 @@ cb = plt.colorbar(sc,extend = "both")
 cb.set_label('average probability', fontsize=10)
 
 
-ax3 = fig.add_subplot(3, 3, 9, projection=proj)
+ax3 = fig.add_subplot(3, 4, 11, projection=proj)
 ax3.coastlines()
 ax3.add_feature(cfeature.BORDERS, linestyle=':')
 
@@ -748,6 +802,29 @@ ax3.set_title("b = rolling - b = 0")
 cb = plt.colorbar(sc,extend = "both")
 cb.set_label('average probability', fontsize=10)
 
+if "ave_prob_roll_exp" in liklihood_df.columns:
+    ax4 = fig.add_subplot(3, 4, 12, projection=proj)
+    ax4.coastlines()
+    ax4.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+    sc = ax4.scatter(
+        df_parameters.longitude,
+        df_parameters.latitude,
+        c=liklihood_df.ave_prob_roll_exp - liklihood_df.ave_prob_0,
+        cmap=cmap,
+        norm = norm,
+        s = s,
+    )
+    
+    ax4.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
+    ax4.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
+    ax4.tick_params(labelsize=12)  
+    plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+    plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+    ax4.set_title("b = rolling exp - b = 0")
+    cb = plt.colorbar(sc,extend = "both")
+    cb.set_label('average probability', fontsize=10)
 
 
 plt.suptitle("blue means b = 0 is worse")
