@@ -19,6 +19,7 @@ sys.path.append('D:')
 import numpy as np
 import pandas as pd
 from scipy.stats import gaussian_kde
+from scipy.stats import ttest_ind
 
 import datetime as dt
 import glob
@@ -132,9 +133,12 @@ for j in replace_range:
         RL_df.loc[j, "return_levels_bexp"] = np.fromstring(RL_df.return_levels_bexp.iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'), sep=' ')
     
    
+N_years = [len(RL_df.obs_AMS.iloc[row]) for row in np.arange(0,len(RL_df))]
+
 
 FRMSE_df = pd.read_csv(f"{drive}:/outputs/{country_save}/FRMSE.csv", dtype={'station': str})
 FRMSE_df = FRMSE_df.drop("FRMSE_5",axis=1) 
+FRMSE_df["number_years"] = N_years
 
 save_name6 = f"{drive}:/outputs/{country_save}\\liklihood6.csv"
 if save_name6 in glob.glob(f"{drive}:/outputs/{country_save}\\*"):
@@ -451,12 +455,15 @@ if save_name6 in glob.glob(f"{drive}:/outputs/{country_save}\\*"):
 
 ###############################################################################
 # b comp
-FRMSE_cols = FRMSE_df.columns.drop(["station",'FRMSE_0'])
+FRMSE_cols = FRMSE_df.columns.drop(["station",'FRMSE_0',"number_years"])
 box_list_fr = [FRMSE_df[col] - FRMSE_df.FRMSE_0 for col in FRMSE_cols]
 labels_list = [f"b = {col[6:]} - b = 0" for col in FRMSE_cols]
 
-fig = plt.figure(figsize = (15,15))
-ax1 = fig.add_subplot(3,3,1)
+FRMSE_ttest = [ttest_ind(FRMSE_df[col].copy().dropna(),FRMSE_df.FRMSE_0.copy().dropna()) 
+               for col in FRMSE_cols]
+
+fig = plt.figure(figsize = (20,15))
+ax1 = fig.add_subplot(3,4,1)
 
 ax1.boxplot([box.copy().dropna() for box in box_list_fr],vert=False)
 plt.xlabel('FRMSE')
@@ -464,7 +471,7 @@ plt.grid()
 #plt.xlim(-0.1,0.2)
 plt.yticks(np.arange(1,len(labels_list)+1),labels_list)
 
-ax2 = fig.add_subplot(3,3,2)
+ax2 = fig.add_subplot(3,4,2)
 ax2.boxplot([box.copy().dropna() for box in box_list_fr],vert=False)
 plt.xlabel('FRMSE')
 #plt.xlim(-0.1,0.2)
@@ -472,17 +479,34 @@ minlim = np.quantile(box_list_fr[0].copy().dropna(),0.25)*2
 plt.xlim(minlim,minlim*-1)
 plt.grid()
 
+box_list_fr_short = [box[FRMSE_df.number_years >= FRMSE_df.number_years.quantile(0.75)] for box in box_list_fr] #get approx top 25% of year lengths data
 
-# b comp
+ax = fig.add_subplot(3,4,3)
+ax.boxplot([box.copy().dropna() for box in box_list_fr_short],vert=False)
+plt.xlabel(f'FRMSE, top 25% by record length (>= {FRMSE_df.number_years.quantile(0.75)} years)')
+plt.grid()
+
+ax = fig.add_subplot(3,4,4)
+ax.boxplot([box.copy().dropna() for box in box_list_fr_short],vert=False)
+plt.xlabel(f'FRMSE, top 25% by record length (>= {FRMSE_df.number_years.quantile(0.75)} years)')
+plt.xlim(minlim,minlim*-1)
+plt.grid()
+
+
+
+
 lik_cols = liklihood_df.columns.drop(["station"])
 lik_cols = lik_cols.drop([s for s in lik_cols if "_0" in s])
 lik_cols_mult = [s for s in lik_cols if "mult" in s]
 
 box_list_lik = [np.log(liklihood_df[col]) - np.log(liklihood_df.mult_prob_0) for col in lik_cols_mult]
 
+lik_ttest = [ttest_ind(liklihood_df[col],liklihood_df.mult_prob_0,nan_policy = 'omit') 
+               for col in lik_cols_mult]
 
 
-ax3 = fig.add_subplot(3,3,4)
+
+ax3 = fig.add_subplot(3,4,5)
 ax3.boxplot([box.copy().dropna() for box in box_list_lik],vert=False)
 plt.xlabel('log(liklihood)')
 plt.grid()
@@ -490,7 +514,7 @@ plt.grid()
 plt.yticks(np.arange(1,len(labels_list)+1),labels_list)
 
 
-ax4 = fig.add_subplot(3,3,5)
+ax4 = fig.add_subplot(3,4,6)
 ax4.boxplot([box.copy().dropna() for box in box_list_lik],vert=False)
 plt.xlabel('log(liklihood)')
 plt.grid()
@@ -499,13 +523,31 @@ minlim = np.quantile(box_list_lik[0].copy().dropna(),0.25)*2
 plt.xlim(minlim,minlim*-1)
 
 
+box_list_lik_short = [box[FRMSE_df.number_years >= FRMSE_df.number_years.quantile(0.75)] for box in box_list_lik] #get approx top 25% of year lengths data
+
+ax = fig.add_subplot(3,4,7)
+ax.boxplot([box.copy().dropna() for box in box_list_lik_short],vert=False)
+plt.xlabel(f'log(liklihood), top 25% by record length (>= {FRMSE_df.number_years.quantile(0.75)} years)')
+plt.grid()
+
+ax = fig.add_subplot(3,4,8)
+ax.boxplot([box.copy().dropna() for box in box_list_lik_short],vert=False)
+plt.xlabel(f'log(liklihood), top 25% by record length (>= {FRMSE_df.number_years.quantile(0.75)} years)')
+plt.grid()
+plt.xlim(minlim,minlim*-1)
+
+
+
 lik_cols_ave = [s for s in lik_cols if "ave" in s]
 
 box_list_ave = [liklihood_df[col] - liklihood_df.ave_prob_0 for col in lik_cols_ave]
 
+lik_ave_ttest = [ttest_ind(liklihood_df[col].copy().dropna(),liklihood_df.ave_prob_0.copy().dropna()) 
+               for col in lik_cols_ave]
 
 
-ax3 = fig.add_subplot(3,3,7)
+
+ax3 = fig.add_subplot(3,4,9)
 ax3.boxplot([box.copy().dropna() for box in box_list_ave],vert=False)
 plt.grid()
 plt.xlabel('average probability')
@@ -513,15 +555,76 @@ plt.xlabel('average probability')
 plt.yticks(np.arange(1,len(labels_list)+1),labels_list)
 
 
-ax4 = fig.add_subplot(3,3,8)
+ax4 = fig.add_subplot(3,4,10)
 ax4.boxplot([box.copy().dropna() for box in box_list_ave],vert=False)
 plt.grid()
 plt.xlabel('average probability')
 minlim = np.quantile(box_list_ave[0].copy().dropna(),0.25)*2
 plt.xlim(minlim,minlim*-1)
 
+box_list_ave_short = [box[FRMSE_df.number_years >= FRMSE_df.number_years.quantile(0.75)] for box in box_list_ave] #get approx top 25% of year lengths data
+
+ax = fig.add_subplot(3,4,11)
+ax.boxplot([box.copy().dropna() for box in box_list_ave_short],vert=False)
+plt.xlabel(f'average probability, top 25% by record length (>= {FRMSE_df.number_years.quantile(0.75)} years)')
+plt.grid()
+
+ax = fig.add_subplot(3,4,12)
+ax.boxplot([box.copy().dropna() for box in box_list_ave_short],vert=False)
+plt.xlabel(f'average probability, top 25% by record length (>= {FRMSE_df.number_years.quantile(0.75)} years)')
+plt.grid()
+plt.xlim(minlim,minlim*-1)
+
 
 plt.show()
+
+# print results of t test
+
+labels_list2 = [f"b = {col[6:]}" for col in FRMSE_cols]
+
+print(f"FRMSE {country_save}")
+
+if FRMSE_ttest[0].statistic < 0:    
+    print(f"b free better than b = 0 with {(1-FRMSE_ttest[0].pvalue)*100:.0f}% certainty")
+else:
+    print(f"b free worse than b = 0 with {(1-FRMSE_ttest[0].pvalue)*100:.0f}% certainty")
+
+for numb in np.arange(1,len(lik_ttest)):
+    if FRMSE_ttest[numb].statistic < 0:    
+        print(f"{labels_list2[numb]} better than b = 0 with {(1-FRMSE_ttest[numb].pvalue)*100:.0f}% certainty")
+    else:
+        print(f"{labels_list2[numb]} worse than b = 0 with {(1-FRMSE_ttest[numb].pvalue)*100:.0f}% certainty")
+
+
+print(f"multiplied probability {country_save}")
+
+if lik_ttest[0].statistic < 0:    
+    print(f"b free worse than b = 0 with {(1-lik_ttest[0].pvalue)*100:.0f}% certainty")
+else:
+    print(f"b free better than b = 0 with {(1-lik_ttest[0].pvalue)*100:.0f}% certainty")
+
+for numb in np.arange(1,len(lik_ttest)):
+    if lik_ttest[numb].statistic < 0:    
+        print(f"{labels_list2[numb]} worse than b = 0 with {(1-lik_ttest[numb].pvalue)*100:.0f}% certainty")
+    else:
+        print(f"{labels_list2[numb]} better than b = 0 with {(1-lik_ttest[numb].pvalue)*100:.0f}% certainty")
+
+
+print(f"average probability {country_save}")
+
+if lik_ave_ttest[0].statistic < 0:    
+    print(f"b free worse than b = 0 with {(1-lik_ave_ttest[0].pvalue)*100:.0f}% certainty")
+else:
+    print(f"b free better than b = 0 with {(1-lik_ave_ttest[0].pvalue)*100:.0f}% certainty")
+
+for numb in np.arange(1,len(lik_ttest)):
+    if lik_ave_ttest[numb].statistic < 0:    
+        print(f"{labels_list2[numb]} worse than b = 0 with {(1-lik_ave_ttest[numb].pvalue)*100:.0f}% certainty")
+    else:
+        print(f"{labels_list2[numb]} better than b = 0 with {(1-lik_ave_ttest[numb].pvalue)*100:.0f}% certainty")
+
+
+
 
 
 #map
@@ -618,7 +721,7 @@ if "ave_prob_roll_exp" in liklihood_df.columns:
     sc = ax4.scatter(
         df_parameters.longitude,
         df_parameters.latitude,
-        c=FRMSE_df.FRMSE_roll_exp - FRMSE_df.FRMSE_0,
+        c=box_list_fr[3],
         cmap=cmap,
         norm = norm,
         s = s,
@@ -716,7 +819,7 @@ if "ave_prob_roll_exp" in liklihood_df.columns:
     sc = ax4.scatter(
         df_parameters.longitude,
         df_parameters.latitude,
-        c=np.log(liklihood_df.mult_prob_roll_exp) - np.log(liklihood_df.mult_prob_0),
+        c=box_list_lik[3],
         cmap=cmap,
         norm = norm,
         s = s,
@@ -811,7 +914,7 @@ if "ave_prob_roll_exp" in liklihood_df.columns:
     sc = ax4.scatter(
         df_parameters.longitude,
         df_parameters.latitude,
-        c=liklihood_df.ave_prob_roll_exp - liklihood_df.ave_prob_0,
+        c=box_list_ave[3],
         cmap=cmap,
         norm = norm,
         s = s,
@@ -868,6 +971,7 @@ box_list = [all_temp_FRMSE[lab].copy().dropna() for lab in label]
 
 plt.boxplot(box_list,vert=False)
 plt.xlabel('FRMSE')
+plt.grid()
 #plt.xlim(-0.1,0.2)
 plt.yticks(range(1,number_betas+1),label)
 plt.title(f'{country} FRMSE')
@@ -880,6 +984,7 @@ box_list = [all_temp_FRMSE[lab].copy().dropna()
 
 plt.boxplot(box_list,vert=False)
 plt.xlabel('FRMSE')
+plt.grid()
 #plt.xlim(-0.1,0.2)
 plt.yticks(range(1,number_betas+1),label)
 plt.title(f'{country} FRMSE upper 20%')
@@ -893,6 +998,7 @@ if "temp_FRMSE6" in all_temp_FRMSE.columns:
     plt.xlabel('FRMSE')
     #plt.xlim(-0.1,0.2)
     plt.yticks([1],["beta = 6 - beta = 4"])
+    plt.grid()
     plt.title(f'{country} FRMSE')
     plt.show()  
         
@@ -904,6 +1010,7 @@ if "temp_FRMSE6" in all_temp_FRMSE.columns:
     plt.xlabel('FRMSE')
     #plt.xlim(-0.1,0.2)
     plt.yticks([1],["beta = 6 - beta = 4"])
+    plt.grid()
     plt.title(f'{country} FRMSE upper 20%')
     plt.show()  
     
@@ -1120,7 +1227,7 @@ for j in np.arange(0,5):
         g_phat6 = [g_phats6.mu.iloc[j],g_phats6.sigma.iloc[j]]
         pdf_values = gen_norm_pdf(eT, g_phat6[0], g_phat6[1], 6)
         plt.plot(eT, pdf_values, '-', color="g", label="beta = 6")
-        plt.title(f"({df_parameters.latitude.iloc[j]:.2f},{df_parameters.longitude.iloc[j]:.2f}) \n Beta = 4: FRMSE = {all_temp_FRMSE.temp_FRMSE.iloc[j]:.2f}. FRMSE_20 = {all_temp_FRMSE.temp_FRMSE_upper_perc.iloc[j]:.2f} \n Beta = 6: FRMSE = {all_temp_FRMSE.temp_FRMSE6.iloc[j]:.2f}. FRMSE_20 = {all_temp_FRMSE.temp_FRMSE6_upper_perc.iloc[j]:.2f}")
+        #plt.title(f"({df_parameters.latitude.iloc[j]:.2f},{df_parameters.longitude.iloc[j]:.2f}) \n Beta = 4: FRMSE = {all_temp_FRMSE.temp_FRMSE.iloc[j]:.2f}. FRMSE_20 = {all_temp_FRMSE.temp_FRMSE_upper_perc.iloc[j]:.2f} \n Beta = 6: FRMSE = {all_temp_FRMSE.temp_FRMSE6.iloc[j]:.2f}. FRMSE_20 = {all_temp_FRMSE.temp_FRMSE6_upper_perc.iloc[j]:.2f}")
     else:
         plt.title(f"({df_parameters.latitude.iloc[j]:.2f},{df_parameters.longitude.iloc[j]:.2f}) \n Beta = 4: FRMSE = {all_temp_FRMSE.temp_FRMSE.iloc[j]:.2f}. FRMSE_20 = {all_temp_FRMSE.temp_FRMSE_upper_perc.iloc[j]:.2f}")
         

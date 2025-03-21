@@ -44,20 +44,20 @@ drive = 'D'
 alpha_set = 0.05
 
 #FOR BETA = 4, USE beta_set = ""
-beta_set = ""
+beta_set = 6
 if beta_set == "":
     beta_set2 = 4
 else:
     beta_set2 = beta_set
 
-country = 'Germany' 
-ERA_country = 'Germany'
-country_save = 'Germany'
-code_str = 'DE_'
-minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
-name_len = 5
-min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-censor_thr = 0.9
+# country = 'Germany' 
+# ERA_country = 'Germany'
+# country_save = 'Germany'
+# code_str = 'DE_'
+# minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
+# name_len = 5
+# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+# censor_thr = 0.9
 
 
 # country = 'Japan'
@@ -69,14 +69,14 @@ censor_thr = 0.9
 # min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 # censor_thr = 0.9
 
-# country = 'US'
-# ERA_country = 'US'
-# country_save = 'US_main'
-# code_str = 'US_'
-# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
-# name_len = 5
-# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-# censor_thr = 0.9
+country = 'US'
+ERA_country = 'US'
+country_save = 'US_main'
+code_str = 'US_'
+minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+name_len = 5
+min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+censor_thr = 0.9
 
 
 name_col = 'ppt' 
