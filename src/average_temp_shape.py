@@ -37,6 +37,7 @@ import matplotlib.patches as patches
 from scipy.stats import kendalltau, pearsonr, spearmanr
 from scipy.interpolate import interp1d
 from matplotlib import cm
+from matplotlib import colormaps
 
 
 
@@ -53,6 +54,7 @@ alpha_set = 0
 # name_len = 5
 # min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 # censor_thr = 0.9
+# max_lat = 50
 
 
 # country = 'Japan'
@@ -63,6 +65,8 @@ alpha_set = 0
 # name_len = 5
 # min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 # censor_thr = 0.9
+# max_lat = 30
+
 
 
 country = 'US' 
@@ -73,6 +77,8 @@ minlat,minlon,maxlat,maxlon = 24, -125, 56, -66
 name_len = 6
 min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
 censor_thr = 0.9
+max_lat = 30
+
 
 
 name_col = 'ppt' 
@@ -287,52 +293,376 @@ if save_name not in output_files:
 else:
     df = pd.read_csv(save_name,dtype = {0:str})
         
+eTs = [0] * len(new_df)
+start_time = [0] * len(new_df)
+aves = [0] * len(new_df)
+sds = [0] * len(new_df)
 
+for i in np.arange(0, len(new_df)):
+    start_time[i] = time.time()
+    oe_save = f"{drive}:/ordinary_events/{country_save}\\T_{df_parameters.station.iloc[i]}.csv"
+    if oe_save not in glob.glob(f"{drive}:/ordinary_events/{country_save}/*"):
+        eTs[i] = [np.nan]*1000
+        aves[i] = np.nan
+        sds[i] = np.nan
+    else:
+        T = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/T_{df_parameters.station.iloc[i]}.csv")
+        
+        aves[i] = np.mean(T)
+        sds[i] = np.std(T)
+        eT_sep = (np.max(T) - np.min(T)+8)/1000
+        eTs[i] = np.arange(np.min(T)-4,np.max(T)+4,eT_sep)
+        
+        if len(eTs[i]) != 1000:
+            eTs[i] = eTs[i][0:1000]
+    
 
 temp_aves = df.drop(columns = "station").mean(axis = 0)
 
 x_vals = np.arange(-0.5,0.5,1/1000)
 ymax = np.max(df.drop(columns = "station"))
 
-
-plt.plot(x_vals ,temp_aves)
-for i in np.arange(0,len(df_parameters)):    
-    plt.plot(x_vals ,df.iloc[i][1:],alpha = 0.01,color = "b")
-
-#plt.plot(x_vals ,df.iloc[3][1:],color = "r",label = df_parameters.station.iloc[3])
-plt.legend()
-plt.ylim(0,ymax)
-plt.title(f"Average temperature distribution {country_save}")
-plt.show()
+xmin = np.nanmin(eTs)
+xmax = np.nanmax(eTs)
 
 
-max_lat = 30
-
-df_south = df[df_parameters.latitude <= max_lat]
 
 
+interp_x = np.arange(-4,4.1,0.1)
+interp_y = [np.nan] * len(df_parameters)
+for i in np.arange(0,len(df_parameters)):  
+    if np.isnan(aves[i]):
+        interp_y[i] = [np.nan]*len(interp_x)
+    else:  
+        interp_func = interp1d((eTs[i]-aves[i])/sds[i],df.iloc[i][1:])
+        interp_y[i] = np.zeros(len(interp_x))
+        interp_x_here = interp_x[interp_x>=np.min((eTs[i]-aves[i])/sds[i])]
+        interp_x_here = interp_x_here[interp_x_here<=np.max((eTs[i]-aves[i])/sds[i])]
+        
+        interp_y[i][(interp_x>=np.min((eTs[i]-aves[i])/sds[i])) & (interp_x<=np.max((eTs[i]-aves[i])/sds[i]))] = interp_func(interp_x_here)*sds[i]
+        
+
+
+
+ymax2 = np.max(interp_y)+0.05
+
+temp_aves_proper = np.nanmean(interp_y,axis =0)
+
+df_south = df[df_parameters.reset_index().latitude <= max_lat]
 temp_aves_south = df_south.drop(columns = "station").mean(axis = 0)
-plt.plot(x_vals ,temp_aves_south)
-for i in np.arange(0,len(df_south)):    
-    plt.plot(x_vals ,df_south.iloc[i][1:],alpha = 0.01,color = "b")
+eTs = np.array(eTs)
+eTs_south = eTs[df_parameters.reset_index().latitude <= max_lat]
 
-plt.ylim(0,ymax)
-plt.title(f"Average temperature distribution {country_save} below {max_lat} °")
-plt.show()
+sds_south = np.array(sds)[df_parameters.reset_index().latitude <= max_lat]
+aves_south = np.array(aves)[df_parameters.reset_index().latitude <= max_lat]
+interp_y_south  = [np.nan] * len(df_south)
+
+for i in np.arange(0,len(df_south)):  
+    if np.isnan(aves_south[i]):
+        interp_y_south[i] = [np.nan]*len(interp_x)
+    else:  
+        interp_func = interp1d((eTs_south[i]-aves_south[i])/sds_south[i],df_south.iloc[i][1:])
+        interp_y_south[i] = np.zeros(len(interp_x))
+        interp_x_here = interp_x[interp_x>=np.min((eTs_south[i]-aves_south[i])/sds_south[i])]
+        interp_x_here = interp_x_here[interp_x_here<=np.max((eTs_south[i]-aves_south[i])/sds_south[i])]
+        
+        interp_y_south[i][(interp_x>=np.min((eTs_south[i]-aves_south[i])/sds_south[i])) & (interp_x<=np.max((eTs_south[i]-aves_south[i])/sds_south[i]))] = interp_func(interp_x_here)*sds_south[i]
+        
+
+temp_aves_proper_south = np.nanmean(interp_y_south,axis =0)
 
 
-df_north = df[df_parameters.latitude > max_lat]
 
 
+df_north = df[df_parameters.reset_index().latitude > max_lat]
 temp_aves_north = df_north.drop(columns = "station").mean(axis = 0)
-plt.plot(x_vals ,temp_aves_north)
+eTs = np.array(eTs)
+eTs_north = eTs[df_parameters.reset_index().latitude > max_lat]
+
+
+sds_north= np.array(sds)[df_parameters.reset_index().latitude > max_lat]
+aves_north= np.array(aves)[df_parameters.reset_index().latitude > max_lat]
+interp_y_north = [np.nan] * len(df_north)
+
+for i in np.arange(0,len(df_north)):  
+    if np.isnan(aves_north[i]):
+        interp_y_north[i] = [np.nan]*len(interp_x)
+    else:  
+        interp_func = interp1d((eTs_north[i]-aves_north[i])/sds_north[i],df_north.iloc[i][1:])
+        interp_y_north[i] = np.zeros(len(interp_x))
+        interp_x_here = interp_x[interp_x>=np.min((eTs_north[i]-aves_north[i])/sds_north[i])]
+        interp_x_here = interp_x_here[interp_x_here<=np.max((eTs_north[i]-aves_north[i])/sds_north[i])]
+        
+        interp_y_north[i][(interp_x>=np.min((eTs_north[i]-aves_north[i])/sds_north[i])) & (interp_x<=np.max((eTs_north[i]-aves_north[i])/sds_north[i]))] = interp_func(interp_x_here)*sds_north[i]
+        
+
+temp_aves_proper_north= np.nanmean(interp_y_north,axis =0)
+
+
+
+fig = plt.figure(figsize = (15,15))
+ax1 = fig.add_subplot(3,3,1)
+
+for i in np.arange(0,len(df_parameters)):    
+    if np.isnan(aves[i]):
+        pass
+    else:    
+        ax1.plot(eTs[i] ,df.iloc[i][1:],alpha = 0.01,color = "b")
+
+plt.ylim(0,ymax)
+plt.xlim(-30,40)
+plt.title(f"Temperature distributions {country_save}")
+plt.xlabel("Temperature (°C)")
+
+
+
+
+ax2 = fig.add_subplot(3,3,2)
 for i in np.arange(0,len(df_north)):    
-    plt.plot(x_vals ,df_north.iloc[i][1:],alpha = 0.01,color = "b")
+    plt.plot(eTs_north[i] ,df_north.iloc[i][1:],alpha = 0.01,color = "b")
 
 
 plt.ylim(0,ymax)
-plt.title(f"Average temperature distribution {country_save} above {max_lat} °")
+plt.xlim(-30,40)
+plt.title(f"Average temperature distribution above {max_lat} °")
+plt.xlabel("Temperature (°C)")
+
+
+ax3 = fig.add_subplot(3,3,3)
+for i in np.arange(0,len(df_south)):    
+    plt.plot(eTs_south[i],df_south.iloc[i][1:],alpha = 0.01,color = "b")
+
+plt.ylim(0,ymax)
+plt.xlim(xmin,xmax)
+plt.title(f"Average temperature distribution {country_save} below {max_lat} °")
+plt.xlabel("Temperature (°C)")
+
+ax4 = fig.add_subplot(3,3,4)
+for i in np.arange(0,len(df_parameters)):  
+    if np.isnan(aves[i]):
+        pass
+    else:    
+        ax4.plot(eTs[i]-aves[i] ,df.iloc[i][1:],alpha = 0.01,color = "b")
+
+
+plt.ylim(0,ymax)
+plt.xlim(xmin,xmax)
+plt.title(f"Temperature distributions {country_save}")
+plt.xlabel("Temperature (°C) - mean")
+
+
+ax5 = fig.add_subplot(3,3,5)
+for i in np.arange(0,len(df_north)):  
+    if np.isnan(aves_north[i]):
+        pass
+    else:    
+        ax5.plot(eTs_north[i]-aves_north[i] ,df_north.iloc[i][1:],alpha = 0.01,color = "b")
+
+
+plt.ylim(0,ymax)
+plt.xlim(xmin,xmax)
+plt.title(f"Temperature distributions above {max_lat} °")
+plt.xlabel("Temperature (°C) - mean")
+
+ax6 = fig.add_subplot(3,3,6)
+for i in np.arange(0,len(df_south)):  
+    if np.isnan(aves_south[i]):
+        pass
+    else:    
+        ax6.plot(eTs_south[i]-aves_south[i] ,df_south.iloc[i][1:],alpha = 0.01,color = "b")
+
+
+plt.ylim(0,ymax)
+plt.xlim(xmin,xmax)
+plt.title(f"Temperature distributions below {max_lat} °")
+plt.xlabel("Temperature (°C) - mean")
+
+
+ax7 = fig.add_subplot(3,3,7)
+
+for i in np.arange(0,len(df_parameters)):  
+    if np.isnan(aves[i]):
+        pass
+    else:    
+        ax7.plot(interp_x ,interp_y[i],alpha = 0.01,color = "b")
+
+plt.plot(interp_x,temp_aves_proper,label = "mean",color = "r")
+#plt.plot(interp_x ,interp_y[1200],color = "r",label = df_parameters.station.iloc[3])
+plt.legend()
+plt.ylim(0,ymax2)
+plt.title(f"Temperature distributions {country_save}")
+plt.xlabel("(Temperature - mean)/std")
+
+
+ax8 = fig.add_subplot(3,3,8)
+
+for i in np.arange(0,len(df_north)):  
+    if np.isnan(aves_north[i]):
+        pass
+    else:    
+        ax8.plot(interp_x ,interp_y_north[i],alpha = 0.01,color = "b")
+
+plt.plot(interp_x,temp_aves_proper_north,label = "mean",color = "r")
+#plt.plot(interp_x ,interp_y[1200],color = "r",label = df_parameters.station.iloc[3])
+plt.legend()
+plt.ylim(0,ymax2)
+plt.title(f"Temperature distributions  above {max_lat} °")
+plt.xlabel("(Temperature - mean)/std")
+
+ax9 = fig.add_subplot(3,3,9)
+for i in np.arange(0,len(df_south)):  
+    if np.isnan(aves_south[i]):
+        pass
+    else:    
+        ax9.plot(interp_x ,interp_y_south[i],alpha = 0.01,color = "b")
+
+plt.plot(interp_x,temp_aves_proper_south,label = "mean",color = "r")
+#plt.plot(interp_x ,interp_y[1200],color = "r",label = df_parameters.station.iloc[3])
+plt.legend()
+plt.ylim(0,ymax2)
+plt.title(f"Temperature distributions below {max_lat} °")
+plt.xlabel("(Temperature - mean)/std")
+
+
+
 plt.show()
+
+# minlat,minlon,maxlat,maxlon
+df_boundaries = [np.min(df_parameters.latitude),np.min(df_parameters.longitude),np.max(df_parameters.latitude),np.max(df_parameters.longitude)]
+
+
+normed_lats = (df_parameters.latitude - df_boundaries[0])/(df_boundaries[2]-df_boundaries[0])
+normed_lons = (df_parameters.longitude - df_boundaries[1])/(df_boundaries[3]-df_boundaries[1])
+
+
+
+cmap = colormaps['jet']
+
+
+x = np.arange(df_boundaries[1],df_boundaries[3],0.1)
+y = np.arange(df_boundaries[0],df_boundaries[2],0.1)
+y_norm = (y - df_boundaries[0])/(df_boundaries[2]-df_boundaries[0])
+x_norm = (x - df_boundaries[1])/(df_boundaries[3]-df_boundaries[1])
+
+
+
+fig = plt.figure(figsize=(12, 12))
+
+proj = ccrs.PlateCarree()
+
+# First subplot
+ax1 = fig.add_subplot(2, 2, 1, projection=proj)
+ax1.coastlines()
+ax1.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+plt.contourf(x,
+             y,
+             np.transpose([y_norm]*len(x)), cmap = cmap
+             )
+
+
+
+ax2 = fig.add_subplot(2, 2, 2)
+
+for i in np.arange(0,len(df_parameters)):    
+    if np.isnan(aves[i]):
+        pass
+    else:    
+        plt.plot(eTs[i],df.iloc[i][1:],alpha = 0.01,color = cmap(normed_lats[i]))
+
+plt.ylim(0,ymax)
+plt.xlim(-30,40)
+plt.title(f"Temperature distributions {country_save}")
+plt.xlabel("Temperature (°C)")
+
+
+ax3 = fig.add_subplot(2,2,3)
+
+for i in np.arange(0,len(df_parameters)):  
+    if np.isnan(aves[i]):
+        pass
+    else:    
+        ax3.plot(interp_x ,interp_y[i],alpha = 0.01,color =  cmap(normed_lats[i]))
+
+#plt.plot(interp_x,temp_aves_proper,label = "mean",color = "r")
+#plt.plot(interp_x ,interp_y[1200],color = "r",label = df_parameters.station.iloc[3])
+plt.legend()
+plt.ylim(0,ymax2)
+plt.title(f"Temperature distributions {country_save}")
+plt.xlabel("(Temperature - mean)/std")
+
+
+
+plt.show()
+
+
+
+
+normed_lats = normed_lats*2 - 1
+normed_lons = normed_lons*2 - 1
+
+x_norm = x_norm*2 - 1
+y_norm = y_norm*2 - 1
+
+
+def tan_transform(lon,lat): #TODO: this is basicccc maths why can't i get it to do what I want
+    theta = 2*np.arctan((lat+0.5)/(lon+0.5)) /np.pi
+    return theta
+    
+
+cmap = colormaps['hsv']
+
+fig = plt.figure(figsize=(12, 12))
+
+proj = ccrs.PlateCarree()
+
+# First subplot
+ax1 = fig.add_subplot(2, 2, 1, projection=proj)
+ax1.coastlines()
+ax1.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+z = [[tan_transform(xs,ys) for xs in x_norm] for ys in y_norm]
+plt.contourf(x,y,z, cmap = cmap, levels = np.arange(-1,1,0.001))
+
+
+
+ax2 = fig.add_subplot(2, 2, 2)
+
+for i in np.arange(0,len(df_parameters)):    
+    if np.isnan(aves[i]):
+        pass
+    else:    
+        plt.plot(eTs[i],df.iloc[i][1:],alpha = 0.01,color = cmap(tan_transform(normed_lons[i],normed_lats[i])))
+
+plt.ylim(0,ymax)
+plt.xlim(-30,40)
+plt.title(f"Temperature distributions {country_save}")
+plt.xlabel("Temperature (°C)")
+
+
+ax3 = fig.add_subplot(2,2,3)
+
+for i in np.arange(0,len(df_parameters)):  
+    if np.isnan(aves[i]):
+        pass
+    else:    
+        ax3.plot(interp_x ,interp_y[i],alpha = 0.01,color =  cmap(tan_transform(normed_lons[i],normed_lats[i])))
+
+#plt.plot(interp_x,temp_aves_proper,label = "mean",color = "r")
+#plt.plot(interp_x ,interp_y[1200],color = "r",label = df_parameters.station.iloc[3])
+plt.ylim(0,ymax2)
+plt.title(f"Temperature distributions {country_save}")
+plt.xlabel("(Temperature - mean)/std")
+
+
+
+plt.show()
+
+
+
+
 
 
 
