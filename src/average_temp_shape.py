@@ -18,6 +18,7 @@ sys.path.append('D:')
 import numpy as np
 import pandas as pd
 from scipy.stats import gaussian_kde
+from scipy.signal import find_peaks
 
 import datetime as dt
 import glob
@@ -47,15 +48,15 @@ alpha_set = 0
 
 
 
-country = 'Germany' 
-ERA_country = 'Germany'
-country_save = 'Germany'
-code_str = 'DE_'
-minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
-name_len = 5
-min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-censor_thr = 0.9
-max_lat = 50
+# country = 'Germany' 
+# ERA_country = 'Germany'
+# country_save = 'Germany'
+# code_str = 'DE_'
+# minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
+# name_len = 5
+# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+# censor_thr = 0.9
+# max_lat = 50
 
 
 # country = 'Japan'
@@ -70,15 +71,15 @@ max_lat = 50
 
 
 
-# country = 'US' 
-# ERA_country = 'US'
-# country_save = 'US_main'
-# code_str = 'US_'
-# minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
-# name_len = 6
-# min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
-# censor_thr = 0.9
-# max_lat = 30
+country = 'US' 
+ERA_country = 'US'
+country_save = 'US_main'
+code_str = 'US_'
+minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
+name_len = 6
+min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+censor_thr = 0.9
+max_lat = 30
 
 # country = 'UK' 
 # ERA_country = 'UK'
@@ -716,6 +717,7 @@ for i in np.arange(0,len(df_parameters)):
     else:    
         plt.plot(eTs[i],df.iloc[i][1:],alpha = 0.01,color = colors[i])
 
+plt.plot(eTs[i],df.iloc[1200][1:])
 plt.ylim(0,ymax)
 plt.xlim(-30,40)
 plt.title(f"Temperature distributions {country_save}")
@@ -740,3 +742,38 @@ plt.xlabel("(Temperature - mean)/std")
 
 
 plt.show()
+
+
+###############################################################################4
+#PEAK INVESTIGATION
+x, y = eTs[84],df.iloc[84][1:]
+height = 0
+plt.plot(x,y)
+peaks = find_peaks(y,height = height)
+plt.scatter(x[peaks[0]],y[peaks[0]])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
