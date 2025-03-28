@@ -120,8 +120,8 @@ for i in range(len(df)):
     for j in np.arange(0,n_peaks[i]-1):
         diffs[i][j] = x[peaks[0][j+1]] -x[peaks[0][j]] 
         
-    if i % 50 == 0:
-        print(i)
+    # if i % 50 == 0:
+    #     print(i)
 
 peaks_df = pd.DataFrame({
     "n_peaks" : n_peaks,
@@ -140,14 +140,15 @@ peaks_df = pd.DataFrame({
     })
 
 
-
-fig = plt.figure(figsize=(10, 10))
-norm = mcolors.Normalize(vmin=-0.2, vmax=0.2)
 cmap = 'plasma'
+bounds = [0.5,1.5,2.5,3.5,4.5]  # 3 discrete levels
+norm = mcolors.BoundaryNorm(bounds, plt.get_cmap(cmap).N)
 
+
+fig = plt.figure(figsize=(15, 10))
 
 proj = ccrs.PlateCarree()
-ax1 = fig.add_subplot(1, 1, 1, projection=proj)
+ax1 = fig.add_subplot(1, 2, 1, projection=proj)
 
 # Add map features
 ax1.coastlines()
@@ -159,31 +160,27 @@ sc = ax1.scatter(
     df_parameters.latitude,
     c=peaks_df.n_peaks,
     cmap=cmap,
+    norm = norm,
 )
-
-plt.colorbar(sc)
-plt.show()
-
-
-fig = plt.figure(figsize=(10, 10))
-norm = mcolors.Normalize(vmin=-0.2, vmax=0.2)
-cmap = 'plasma'
+ax1.set_title("height = 0")
 
 
 proj = ccrs.PlateCarree()
-ax1 = fig.add_subplot(1, 1, 1, projection=proj)
+ax1 = fig.add_subplot(1, 2, 2, projection=proj)
 
 # Add map features
 ax1.coastlines()
 ax1.add_feature(cfeature.BORDERS, linestyle=':')
-
 
 sc = ax1.scatter(
     df_parameters.longitude,
     df_parameters.latitude,
     c=peaks_df.n_peaks01,
     cmap=cmap,
+    norm = norm
 )
+ax1.set_title("height = 0.01")
+cbar_ax = fig.add_axes([0.92, 0.25, 0.02, 0.5])  # [left, bottom, width, height]
+cbar = plt.colorbar(sc, shrink = 0.2, cax=cbar_ax, ticks=[1, 2, 3, 4])
 
-plt.colorbar(sc)
 plt.show()
