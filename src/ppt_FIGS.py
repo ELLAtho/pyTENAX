@@ -105,7 +105,11 @@ proj = ccrs.PlateCarree()
 ax1 = fig.add_subplot(1, 1, 1, projection=proj)
 ax1.coastlines()
 ax1.add_feature(cfeature.BORDERS)
-plt.contourf(elevation.longitude,elevation.latitude,elevation,levels = np.arange(0,2650,50),cmap = "terrain")
+cnt = plt.pcolormesh(elevation.longitude,elevation.latitude,elevation
+                     ,cmap = "terrain",alpha = 0.5,
+                   transform=ccrs.PlateCarree())
+
+
 plt.scatter(info[info.station == station].longitude,
             info[info.station == station].latitude, 
             s = 300,

@@ -47,15 +47,15 @@ alpha_set = 0
 
 
 
-# country = 'Germany' 
-# ERA_country = 'Germany'
-# country_save = 'Germany'
-# code_str = 'DE_'
-# minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
-# name_len = 5
-# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-# censor_thr = 0.9
-# max_lat = 50
+country = 'Germany' 
+ERA_country = 'Germany'
+country_save = 'Germany'
+code_str = 'DE_'
+minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
+name_len = 5
+min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+censor_thr = 0.9
+max_lat = 50
 
 
 # country = 'Japan'
@@ -80,14 +80,14 @@ alpha_set = 0
 # censor_thr = 0.9
 # max_lat = 30
 
-country = 'UK' 
-ERA_country = 'UK'
-country_save = 'UK'
-code_str = 'UK_'
-name_len = 0
-min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
-censor_thr = 0.9
-max_lat = 50
+# country = 'UK' 
+# ERA_country = 'UK'
+# country_save = 'UK'
+# code_str = 'UK_'
+# name_len = 0
+# min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+# censor_thr = 0.9
+# max_lat = 50
 
 
 
@@ -302,30 +302,54 @@ if save_name not in output_files:
     
 else:
     df = pd.read_csv(save_name,dtype = {0:str})
-        
-eTs = [0] * len(new_df)
-start_time = [0] * len(new_df)
-aves = [0] * len(new_df)
-sds = [0] * len(new_df)
 
-for i in np.arange(0, len(new_df)):
-    start_time[i] = time.time()
-    oe_save = f"{drive}:/ordinary_events/{country_save}\\T_{df_parameters.station.iloc[i]}.csv"
-    if oe_save not in glob.glob(f"{drive}:/ordinary_events/{country_save}/*"):
-        eTs[i] = [np.nan]*1000
-        aves[i] = np.nan
-        sds[i] = np.nan
-    else:
-        T = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/T_{df_parameters.station.iloc[i]}.csv")
-        
-        aves[i] = np.mean(T)
-        sds[i] = np.std(T)
-        eT_sep = (np.max(T) - np.min(T)+8)/1000
-        eTs[i] = np.arange(np.min(T)-4,np.max(T)+4,eT_sep)
-        
-        if len(eTs[i]) != 1000:
-            eTs[i] = eTs[i][0:1000]
+
+
+average_filename = f"{drive}:/outputs/{country_save}\\average_temp_shape_ave_std.csv"
+if average_filename not in output_files:
+    print("aves not calculated")
+    eTs = [0] * len(new_df)
+    aves = [0] * len(new_df)
+    sds = [0] * len(new_df)
     
+    for i in np.arange(0, len(new_df)):
+        oe_save = f"{drive}:/ordinary_events/{country_save}\\T_{df_parameters.station.iloc[i]}.csv"
+        if oe_save not in glob.glob(f"{drive}:/ordinary_events/{country_save}/*"):
+            eTs[i] = [np.nan]*1000
+            aves[i] = np.nan
+            sds[i] = np.nan
+        else:
+            T = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/T_{df_parameters.station.iloc[i]}.csv")
+            
+            aves[i] = np.mean(T)
+            sds[i] = np.std(T)
+            eT_sep = (np.max(T) - np.min(T)+8)/1000
+            eTs[i] = np.arange(np.min(T)-4,np.max(T)+4,eT_sep)
+            
+            if len(eTs[i]) != 1000:
+                eTs[i] = eTs[i][0:1000]
+    
+    average_df = pd.DataFrame({
+        "station":df.station,
+        "aves":aves,
+        "sds": sds
+        })
+    eTs_df = pd.DataFrame(eTs)
+    eTs_df["station"] = df.station
+    
+    
+    eTs_df.to_csv(f"{drive}:/outputs/{country_save}\\eTs_df.csv", index=False)
+    average_df.to_csv(average_filename, index=False)
+    
+else:
+    print("reading files")
+    eTs_df = pd.read_csv(f"{drive}:/outputs/{country_save}\\eTs_df.csv",dtype = {"station":str})
+    average_df = pd.read_csv(average_filename,dtype = {"station":str})
+    aves = average_df.aves.to_numpy()
+    sds = average_df.sds.to_numpy()
+    eTs = eTs_df.drop(columns = "station").to_numpy()
+    
+
 
 temp_aves = df.drop(columns = "station").mean(axis = 0)
 
@@ -334,7 +358,6 @@ ymax = np.nanmax(df.drop(columns = "station"))
 
 xmin = np.nanmin(eTs)
 xmax = np.nanmax(eTs)
-
 
 
 
