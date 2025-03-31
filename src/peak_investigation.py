@@ -58,27 +58,27 @@ alpha_set = 0
 # max_lat = 50
 
 
-# country = 'Japan'
-# ERA_country = 'Japan'
-# country_save = 'Japan'
-# code_str = 'JP_'
-# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
-# name_len = 5
-# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-# censor_thr = 0.9
-# max_lat = 30
-
-
-
-country = 'US' 
-ERA_country = 'US'
-country_save = 'US_main'
-code_str = 'US_'
-minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
-name_len = 6
-min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+country = 'Japan'
+ERA_country = 'Japan'
+country_save = 'Japan'
+code_str = 'JP_'
+minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+name_len = 5
+min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 censor_thr = 0.9
 max_lat = 30
+
+
+
+# country = 'US' 
+# ERA_country = 'US'
+# country_save = 'US_main'
+# code_str = 'US_'
+# minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
+# name_len = 6
+# min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+# censor_thr = 0.9
+# max_lat = 30
 
 # country = 'UK' 
 # ERA_country = 'UK'
@@ -100,6 +100,17 @@ df = pd.read_csv(save_name,dtype = {0:str})
 
 df_savename = drive + ':/outputs/'+country_save+'\\parameters.csv'
 df_parameters = pd.read_csv(df_savename, dtype={'station': str}) 
+
+#merging the dataframes to ensure station consistency
+missing_rows = pd.merge(df_parameters.station, df.station, how='left', indicator=True).query('_merge == "left_only"').drop('_merge', axis=1)
+if len(missing_rows) != 0:
+    print("miss-match, dropping")
+    df_parameters = df_parameters.drop(missing_rows.index)
+else:
+    pass
+
+
+
 
 eTs_df = pd.read_csv(f"{drive}:/outputs/{country_save}\\eTs_df.csv",dtype = {"station":str})
 eTs = eTs_df.drop(columns = "station").to_numpy()
@@ -184,3 +195,180 @@ cbar_ax = fig.add_axes([0.92, 0.25, 0.02, 0.5])  # [left, bottom, width, height]
 cbar = plt.colorbar(sc, shrink = 0.2, cax=cbar_ax, ticks=[1, 2, 3, 4])
 
 plt.show()
+
+
+
+
+###############################################################################
+S = TENAX(
+        return_period = [1.1,1.2,1.5,2,5,10,20,50,100, 200],
+        durations = [60, 180, 360, 720, 1440],
+        left_censoring = [0, 0.90],
+        alpha = 0,
+        min_ev_dur = 60,
+        beta = 4
+    )
+#Skewness
+save_name_skew = f"{drive}:/outputs/{country_save}\\temp_skew.csv"
+output_files = glob.glob(f"{drive}:/outputs/{country_save}/*")
+
+if save_name_skew not in output_files:
+    print("temp skewed not calculated yet. here we gooooooo")
+    
+
+    g_phat_skew = [0] * len(df)
+    start_time = [0] * len(df)
+    
+    for i in np.arange(0, len(df)):
+        start_time[i] = time.time()
+        file_name = f"{drive}:/{country}/{code_str}{df_parameters.station.iloc[i]}"
+        
+        oe_save = f"{drive}:/ordinary_events/{country_save}\\T_{df_parameters.station.iloc[i]}.csv"
+        if oe_save not in glob.glob(f"{drive}:/ordinary_events/{country_save}/*"):
+                
+            
+            if 'code_str' in locals():
+                G,data_meta = read_GSDR_file(f"{file_name}.txt",name_col)
+            else:
+                G = pd.read_csv(f"{file_name}.csv")
+                G['prec_time'] = pd.to_datetime(G['prec_time'])
+                G.set_index('prec_time', inplace=True)
+                
+                
+            data = S.remove_incomplete_years(G, name_col)
+            
+            T_path = f"{drive}:/{country}_temp\\{code_str}{df_parameters.station.iloc[i]}.nc" #TODO: nans case (not there in germany)
+            
+            if T_path not in glob.glob(f"{drive}:/{country}_temp\\*"): # dont do tenax if no T data saved
+                print('skip')
+                T = [np.nan]
+            else:
+                T_ERA = xr.load_dataarray(T_path)
+                t_data = (T_ERA.squeeze()-273.15).to_dataframe()
+                
+        
+                df_arr = np.array(data[name_col])
+                df_dates = np.array(data.index)
+                
+                #extract indexes of ordinary events
+                #these are time-wise indexes =>returns list of np arrays with np.timeindex
+                idx_ordinary=S.get_ordinary_events(data=df_arr,dates=df_dates, name_col=name_col,  check_gaps=False)
+                    
+                
+                #get ordinary events by removing too short events
+                #returns boolean array, dates of OE in TO, FROM format, and count of OE in each years
+                _,arr_dates,n_ordinary_per_year=S.remove_short(idx_ordinary)
+                
+                #assign ordinary events values by given durations, values are in depth per duration, NOT in intensity mm/h
+                dict_ordinary, _ = S.get_ordinary_events_values(data=df_arr,dates=df_dates, arr_dates_oe=arr_dates)
+                
+                
+                
+                df_arr_t_data = np.array(t_data[temp_name_col])
+                df_dates_t_data = np.array(t_data.index)
+                
+                if type(df_dates_t_data[0]) != np.datetime64:
+                        
+                    df_dates_t_data = pd.Series([item[0] for item in df_dates_t_data])
+                    df_dates_t_data = np.array(df_dates_t_data)
+                else:
+                    pass
+                
+                dicts, _ , n_ordinary_per_year = S.associate_vars(dict_ordinary, df_arr_t_data, df_dates_t_data)
+                
+                #g_phat = [df_parameters.mu.iloc[i],df_parameters.sigma.iloc[i]] 
+                
+                
+                # Your data (P, T arrays) and threshold thr=3.8
+                P = dicts["60"]["ordinary"].to_numpy() 
+                T = dicts["60"]["T"].to_numpy()  
+                
+                np.savetxt(f"{drive}:/ordinary_events/{country_save}/T_{df_parameters.station.iloc[i]}.csv",T)
+                np.savetxt(f"{drive}:/ordinary_events/{country_save}/P_{df_parameters.station.iloc[i]}.csv",P)
+        else:
+            T = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/T_{df_parameters.station.iloc[i]}.csv")
+            P = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/P_{df_parameters.station.iloc[i]}.csv")
+        
+        if len(T) <= 2:
+            g_phat_skew[i] = [np.nan]*3
+        else:
+            g_phat_skew[i] = S.temperature_model(T, method = "skewnorm")
+        
+        
+        if i%50 == 0: 
+            time_taken = (time.time()-start_time[i-9])/10
+            time_left = (len(df)-i)*time_taken/60
+            print(f"{i}/{len(df)}. Approx time left: {time_left:.0f} mins") #this is only correct after 50 loops
+        else:
+            pass
+        
+    skew_df = pd.DataFrame({
+        'station': df_parameters.station,
+        "skewness" : np.array(g_phat_skew)[:,0],
+        "g_phat1" : np.array(g_phat_skew)[:,1],
+        "g_phat2" : np.array(g_phat_skew)[:,2],
+        })
+    skew_df.to_csv(save_name_skew,index=False)
+else:
+    skew_df = pd.read_csv(save_name_skew, dtype={"station":str})
+        
+    
+
+
+###############################################################################
+#plot
+cmap = "seismic"
+s = 3
+norm = mcolors.Normalize(vmin=np.min(skew_df.skewness)*0.6, vmax=np.min(skew_df.skewness)*-0.6)
+fig = plt.figure(figsize=(10, 10))
+
+proj = ccrs.PlateCarree()
+ax1 = fig.add_subplot(2, 1, 1, projection=proj)
+
+# Add map features
+ax1.coastlines()
+ax1.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc = ax1.scatter(
+    df_parameters.longitude,
+    df_parameters.latitude,
+    c=skew_df.skewness,
+    cmap=cmap,
+    norm = norm,
+    s = s
+)
+ax1.set_title("skewness")
+plt.colorbar(sc,extend = "both")
+
+
+proj = ccrs.PlateCarree()
+
+cmap = 'plasma'
+bounds = [0.5,1.5,2.5,3.5,4.5]  # 3 discrete levels
+norm = mcolors.BoundaryNorm(bounds, plt.get_cmap(cmap).N)
+
+ax1 = fig.add_subplot(2, 1, 2, projection=proj)
+
+# Add map features
+ax1.coastlines()
+ax1.add_feature(cfeature.BORDERS, linestyle=':')
+
+sc = ax1.scatter(
+    df_parameters.longitude,
+    df_parameters.latitude,
+    c=peaks_df.n_peaks01,
+    cmap=cmap,
+    norm = norm,
+    s = s
+)
+ax1.set_title("number of peaks (height = 0.01)")
+plt.colorbar(sc,ticks=[1, 2, 3, 4])
+
+plt.show()
+
+print(f"max skew: {np.max(skew_df.skewness)}")
+print(f"min skew: {np.min(skew_df.skewness)}")
+
+
+
