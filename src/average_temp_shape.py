@@ -48,15 +48,15 @@ alpha_set = 0
 
 
 
-country = 'Germany' 
-ERA_country = 'Germany'
-country_save = 'Germany'
-code_str = 'DE_'
-minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
-name_len = 5
-min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-censor_thr = 0.9
-max_lat = 50
+# country = 'Germany' 
+# ERA_country = 'Germany'
+# country_save = 'Germany'
+# code_str = 'DE_'
+# minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
+# name_len = 5
+# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+# censor_thr = 0.9
+# max_lat = 50
 
 
 # country = 'Japan'
@@ -71,15 +71,17 @@ max_lat = 50
 
 
 
-# country = 'US' 
-# ERA_country = 'US'
-# country_save = 'US_main'
-# code_str = 'US_'
-# minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
-# name_len = 6
-# min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
-# censor_thr = 0.9
-# max_lat = 30
+country = 'US' 
+ERA_country = 'US'
+country_save = 'US_main'
+code_str = 'US_'
+minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
+name_len = 6
+min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+censor_thr = 0.9
+max_lat = 30
+region_lats = [minlat,37.5,maxlat]
+region_lons = [minlon,-116,-105,-90,maxlon]
 
 # country = 'UK' 
 # ERA_country = 'UK'
@@ -352,6 +354,10 @@ else:
     
 
 
+
+
+################################################################################♦
+#interping for shifts
 temp_aves = df.drop(columns = "station").mean(axis = 0)
 
 x_vals = np.arange(-0.5,0.5,1/1000)
@@ -433,7 +439,64 @@ for i in np.arange(0,len(df_north)):
 temp_aves_proper_north= np.nanmean(interp_y_north,axis =0)
 
 
+################################################################################
+#total average temperature shape
+non_event_temp_savename = f"{drive}:/outputs/{country_save}\\non_event_temp.csv"
+if non_event_temp_savename not in output_files:
+    print("temp average shape not calculated yet. here we gooooooo")
+    
+    kde = [0] * len(new_df)
+    prob = [0] * len(new_df)
+    start_time = [0] * len(new_df)
+    
+    for i in np.arange(0, len(new_df)):
+        start_time[i] = time.time()
+        file_name = f"{drive}:/{country}/{code_str}{df_parameters.station.iloc[i]}"
+        
+        
+        T_path = f"{drive}:/{country}_temp\\{code_str}{df_parameters.station.iloc[i]}.nc" #TODO: nans case (not there in germany)
+        
+        if T_path not in glob.glob(f"{drive}:/{country}_temp\\*"): # dont do tenax if no T data saved
+            print('skip')
+            t_data = [np.nan]
+        else:
+            T_ERA = xr.load_dataarray(T_path)
+            t_data = (T_ERA.squeeze()-273.15).to_dataframe()
+            t = t_data["t2m"]
+            
+        if len(t_data) <= 2:
+            prob[i] = [np.nan]*1000
+        
+        else:
+            eT_sep = (np.max(t) - np.min(t)+8)/1000
+            eT = np.arange(np.min(t)-4,np.max(t)+4,eT_sep)
+            
+            if len(eT) != 1000:
+                eT = eT[0:1000]
+            
+            kde[i]  = gaussian_kde(t) #use kernel density to get probability
+            prob[i] = kde[i](eT)
+                
+                
+                  
+            if i%50 == 0:    
+                time_taken = (time.time()-start_time[i-9])/10
+                time_left = (len(new_df)-i)*time_taken/60
+                print(f"{i}/{len(new_df)}. Approx time left: {time_left:.0f} mins") #this is only correct after 50 loops
+            else:
+                pass
+    non_event_temp = np.array(prob)
+    non_event_temp_ = np.concatenate([df_parameters.station.to_numpy()[:, np.newaxis], non_event_temp], axis=1)
+    
+    df_nonevent = pd.DataFrame(non_event_temp_)
+    df_nonevent.rename(columns = {0:"station"},inplace = True)
+    df.to_csv(non_event_temp_savename, index=False)
+    
+else:
+    df_nonevent = pd.read_csv(non_event_temp_savename,dtype = {0:str})
 
+###############################################################################
+#plots
 fig = plt.figure(figsize = (15,15))
 ax1 = fig.add_subplot(3,3,1)
 
@@ -799,6 +862,40 @@ plt.xlabel("(Temperature - mean)/std")
 
 
 plt.show()
+
+###############################################################################
+#regional splits
+
+n_lat = len(region_lats)-1
+n_lon = len(region_lons)-1
+
+
+
+fig,axs = plt.subplots(n_lat,n_lon,figsize = (n_lon*5,n_lat*5))
+for lat_i in range(n_lat):
+    for lon_i in range(n_lon):
+        interp_y_region = np.array(interp_y)[(df_parameters.longitude<=region_lons[lon_i+1])
+                                              & (df_parameters.longitude>region_lons[lon_i])
+                                              & (df_parameters.latitude<=region_lats[lat_i+1])
+                                              & (df_parameters.latitude>region_lats[lat_i])
+                                             ]
+        aves_region = aves[(df_parameters.longitude<=region_lons[lon_i+1])
+                                              & (df_parameters.longitude>region_lons[lon_i])
+                                              & (df_parameters.latitude<=region_lats[lat_i+1])
+                                              & (df_parameters.latitude>region_lats[lat_i])
+                                             ]
+        for i in np.arange(0,len(interp_y_region)):  
+            if np.isnan(aves_region[i]):
+                pass
+            else:    
+                axs[n_lat-1-lat_i,lon_i].plot(interp_x ,interp_y_region[i],alpha = 0.01,color =  "b")
+        axs[n_lat-1-lat_i,lon_i].plot(interp_x,np.nanmean(interp_y_region,axis=0),color = "r")
+        axs[n_lat-1-lat_i,lon_i].set_title(f"latitude: {region_lats[lat_i]} to {region_lats[lat_i+1]}. longitude: {region_lons[lon_i]} to {region_lons[lon_i+1]} ")
+
+
+plt.show()
+
+
 
 
 ###############################################################################4

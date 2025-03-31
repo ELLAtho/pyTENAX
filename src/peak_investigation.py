@@ -58,27 +58,27 @@ alpha_set = 0
 # max_lat = 50
 
 
-country = 'Japan'
-ERA_country = 'Japan'
-country_save = 'Japan'
-code_str = 'JP_'
-minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
-name_len = 5
-min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-censor_thr = 0.9
-max_lat = 30
-
-
-
-# country = 'US' 
-# ERA_country = 'US'
-# country_save = 'US_main'
-# code_str = 'US_'
-# minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
-# name_len = 6
-# min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+# country = 'Japan'
+# ERA_country = 'Japan'
+# country_save = 'Japan'
+# code_str = 'JP_'
+# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+# name_len = 5
+# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 # censor_thr = 0.9
 # max_lat = 30
+
+
+
+country = 'US' 
+ERA_country = 'US'
+country_save = 'US_main'
+code_str = 'US_'
+minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
+name_len = 6
+min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+censor_thr = 0.9
+max_lat = 30
 
 # country = 'UK' 
 # ERA_country = 'UK'
@@ -317,6 +317,11 @@ else:
 
 ###############################################################################
 #plot
+
+lon_lims = [truncate_neg(np.min(df_parameters.longitude),5),np.ceil(np.max(df_parameters.longitude/5))*5]
+lat_lims = [truncate_neg(np.min(df_parameters.latitude),2.5),np.ceil(np.max(df_parameters.latitude/2.5))*2.5]
+
+
 cmap = "seismic"
 s = 3
 norm = mcolors.Normalize(vmin=np.min(skew_df.skewness)*0.6, vmax=np.min(skew_df.skewness)*-0.6)
@@ -339,6 +344,8 @@ sc = ax1.scatter(
     s = s
 )
 ax1.set_title("skewness")
+ax1.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,5), crs=proj)
+ax1.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
 plt.colorbar(sc,extend = "both")
 
 
@@ -363,6 +370,8 @@ sc = ax1.scatter(
     s = s
 )
 ax1.set_title("number of peaks (height = 0.01)")
+ax1.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,5), crs=proj)
+ax1.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
 plt.colorbar(sc,ticks=[1, 2, 3, 4])
 
 plt.show()

@@ -199,9 +199,9 @@ def truncate_neg(num,factor):
     """
     
     if num >= 0:
-        return int(num * factor) / factor  # Truncate positive number
+        return int(num / factor) * factor  # Truncate positive number
     else:
-        return int(num * factor - 1) / factor  # Truncate negative number to be more negative
+        return int(num / factor - 1) * factor  # Truncate negative number to be more negative
 
 
 
