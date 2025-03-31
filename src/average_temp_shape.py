@@ -48,15 +48,15 @@ alpha_set = 0
 
 
 
-# country = 'Germany' 
-# ERA_country = 'Germany'
-# country_save = 'Germany'
-# code_str = 'DE_'
-# minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
-# name_len = 5
-# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-# censor_thr = 0.9
-# max_lat = 50
+country = 'Germany' 
+ERA_country = 'Germany'
+country_save = 'Germany'
+code_str = 'DE_'
+minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
+name_len = 5
+min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+censor_thr = 0.9
+max_lat = 50
 
 
 # country = 'Japan'
@@ -71,15 +71,15 @@ alpha_set = 0
 
 
 
-country = 'US' 
-ERA_country = 'US'
-country_save = 'US_main'
-code_str = 'US_'
-minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
-name_len = 6
-min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
-censor_thr = 0.9
-max_lat = 30
+# country = 'US' 
+# ERA_country = 'US'
+# country_save = 'US_main'
+# code_str = 'US_'
+# minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
+# name_len = 6
+# min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+# censor_thr = 0.9
+# max_lat = 30
 
 # country = 'UK' 
 # ERA_country = 'UK'
@@ -561,7 +561,7 @@ plt.xlabel("(Temperature - mean)/std")
 
 plt.show()
 
-# minlat,minlon,maxlat,maxlon
+# PLOT WITH LAT RAINBOW
 df_boundaries = [np.min(df_parameters.latitude),np.min(df_parameters.longitude),np.max(df_parameters.latitude),np.max(df_parameters.longitude)]
 
 
@@ -577,8 +577,6 @@ x = np.arange(df_boundaries[1],df_boundaries[3],0.1)
 y = np.arange(df_boundaries[0],df_boundaries[2],0.1)
 y_norm = (y - df_boundaries[0])/(df_boundaries[2]-df_boundaries[0])
 x_norm = (x - df_boundaries[1])/(df_boundaries[3]-df_boundaries[1])
-
-
 
 fig = plt.figure(figsize=(12, 12))
 
@@ -631,9 +629,68 @@ plt.xlabel("(Temperature - mean)/std")
 plt.show()
 
 
+# PLOT WITH LON RAINBOW
+cmap = colormaps['jet']
+
+
+x = np.arange(df_boundaries[1],df_boundaries[3],0.1)
+y = np.arange(df_boundaries[0],df_boundaries[2],0.1)
+y_norm = (y - df_boundaries[0])/(df_boundaries[2]-df_boundaries[0])
+x_norm = (x - df_boundaries[1])/(df_boundaries[3]-df_boundaries[1])
+
+fig = plt.figure(figsize=(12, 12))
+
+proj = ccrs.PlateCarree()
+
+# First subplot
+ax1 = fig.add_subplot(2, 2, 1, projection=proj)
+ax1.coastlines()
+ax1.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+plt.contourf(x,
+             y,
+             [x_norm]*len(y), cmap = cmap
+             )
 
 
 
+ax2 = fig.add_subplot(2, 2, 2)
+
+for i in np.arange(0,len(df_parameters)):    
+    if np.isnan(aves[i]):
+        pass
+    else:    
+        plt.plot(eTs[i],df.iloc[i][1:],alpha = 0.01,color = cmap(normed_lons[i]))
+
+plt.ylim(0,ymax)
+plt.xlim(-30,40)
+plt.title(f"Temperature distributions {country_save}")
+plt.xlabel("Temperature (°C)")
+
+
+ax3 = fig.add_subplot(2,2,3)
+
+for i in np.arange(0,len(df_parameters)):  
+    if np.isnan(aves[i]):
+        pass
+    else:    
+        ax3.plot(interp_x ,interp_y[i],alpha = 0.01,color =  cmap(normed_lons[i]))
+
+#plt.plot(interp_x,temp_aves_proper,label = "mean",color = "r")
+#plt.plot(interp_x ,interp_y[1200],color = "r",label = df_parameters.station.iloc[3])
+plt.legend()
+plt.ylim(0,ymax2)
+plt.title(f"Temperature distributions {country_save}")
+plt.xlabel("(Temperature - mean)/std")
+
+
+
+plt.show()
+
+
+
+# PLOT WITH FULL COLOR GRADIENT
 colors = [to_rgba((lat, lon, 0.7, 1)) for lat, lon in zip(normed_lats, normed_lons)]
 
 
@@ -751,7 +808,7 @@ height = 0
 plt.plot(x,y)
 peaks = find_peaks(y,height = height)
 plt.scatter(x[peaks[0]],y[peaks[0]])
-
+plt.show()
 
 
 
