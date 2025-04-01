@@ -57,6 +57,8 @@ alpha_set = 0
 # min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 # censor_thr = 0.9
 # max_lat = 50
+# region_lats = [minlat,51,maxlat]
+# region_lons = [minlon,9,maxlon]
 
 
 # country = 'Japan'
@@ -68,6 +70,8 @@ alpha_set = 0
 # min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 # censor_thr = 0.9
 # max_lat = 30
+# region_lats = [minlat,31,35.8,41.3,maxlat]
+# region_lons = [minlon,maxlon]
 
 
 
@@ -490,7 +494,7 @@ if non_event_temp_savename not in output_files:
     
     df_nonevent = pd.DataFrame(non_event_temp_)
     df_nonevent.rename(columns = {0:"station"},inplace = True)
-    df.to_csv(non_event_temp_savename, index=False)
+    df_nonevent.to_csv(non_event_temp_savename, index=False)
     
 else:
     df_nonevent = pd.read_csv(non_event_temp_savename,dtype = {0:str})

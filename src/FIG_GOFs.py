@@ -54,6 +54,8 @@ drive = 'D'
 # name_len = 5
 # min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 # censor_thr = 0.9
+# region_lats = [minlat,31,35.8,41.3,maxlat]
+# region_lons = [minlon,maxlon]
 
 
 # country = 'Germany' 
@@ -64,6 +66,9 @@ drive = 'D'
 # name_len = 5
 # min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 # censor_thr = 0.9
+# region_lats = [minlat,51,maxlat]
+# region_lons = [minlon,9,maxlon]
+
 
 
 country = 'US' 
@@ -74,6 +79,8 @@ minlat,minlon,maxlat,maxlon = 24, -125, 56, -66
 name_len = 6
 min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
 censor_thr = 0.9
+region_lats = [minlat,37.5,maxlat]
+region_lons = [minlon,-116,-105,-90,maxlon]
 
 
 name_col = 'ppt' 
@@ -934,9 +941,87 @@ plt.suptitle("blue means b = 0 is worse")
 fig.tight_layout()
 plt.show()
 
+###############################################################################
+# SPLITS
+
+n_lat = len(region_lats)-1
+n_lon = len(region_lons)-1
 
 
+#FRMSE
+fig,axs = plt.subplots(n_lat,n_lon,figsize = (n_lon*6,n_lat*6))
+for lat_i in range(n_lat):
+    for lon_i in range(n_lon):
+        
+        box_list_fr_region = [box[(df_parameters.longitude<=region_lons[lon_i+1])
+                                              & (df_parameters.longitude>region_lons[lon_i])
+                                              & (df_parameters.latitude<=region_lats[lat_i+1])
+                                              & (df_parameters.latitude>region_lats[lat_i])
+                                             ] for box in box_list_fr]
+        lower_xlim = -0.05
+        
+        axs[n_lat-1-lat_i,lon_i].boxplot([box.copy().dropna() for box in box_list_fr_region],vert=False)
+        axs[n_lat-1-lat_i,lon_i].set_xlabel('FRMSE')
+        axs[n_lat-1-lat_i,lon_i].grid()
+        axs[n_lat-1-lat_i,lon_i].set_xlim(lower_xlim,-1 * lower_xlim)
+        axs[n_lat-1-lat_i,lon_i].set_title(f"latitude: {region_lats[lat_i]} to {region_lats[lat_i+1]}. longitude: {region_lons[lon_i]} to {region_lons[lon_i+1]} ")
 
+for lat_i in range(n_lat): 
+    axs[lat_i,0].set_yticks(np.arange(1,len(labels_list)+1),labels_list)
+    axs[lat_i,0].set_yticks(np.arange(1,len(labels_list)+1),labels_list)
+plt.suptitle("FRMSE by region. Negative means b=0 is worse")
+plt.show()
+
+
+#log(liklihood)
+fig,axs = plt.subplots(n_lat,n_lon,figsize = (n_lon*6,n_lat*6))
+for lat_i in range(n_lat):
+    for lon_i in range(n_lon):
+        
+        box_list_lik_region = [box[(df_parameters.longitude<=region_lons[lon_i+1])
+                                              & (df_parameters.longitude>region_lons[lon_i])
+                                              & (df_parameters.latitude<=region_lats[lat_i+1])
+                                              & (df_parameters.latitude>region_lats[lat_i])
+                                             ] for box in box_list_lik]
+        lower_xlim = -20
+        
+        axs[n_lat-1-lat_i,lon_i].boxplot([box.copy().dropna() for box in box_list_lik_region],vert=False)
+        axs[n_lat-1-lat_i,lon_i].set_xlabel('log(liklihood)')
+        axs[n_lat-1-lat_i,lon_i].grid()
+        axs[n_lat-1-lat_i,lon_i].set_xlim(lower_xlim,-1 * lower_xlim)
+        axs[n_lat-1-lat_i,lon_i].set_title(f"latitude: {region_lats[lat_i]} to {region_lats[lat_i+1]}. longitude: {region_lons[lon_i]} to {region_lons[lon_i+1]} ")
+
+for lat_i in range(n_lat): 
+    axs[lat_i,0].set_yticks(np.arange(1,len(labels_list)+1),labels_list)
+    axs[lat_i,0].set_yticks(np.arange(1,len(labels_list)+1),labels_list)
+plt.suptitle("log(liklihood) by region. Negative means b=0 is better")
+plt.show()
+
+
+#ave liklihood
+
+fig,axs = plt.subplots(n_lat,n_lon,figsize = (n_lon*6,n_lat*6))
+for lat_i in range(n_lat):
+    for lon_i in range(n_lon):
+        
+        box_list_ave_region = [box[(df_parameters.longitude<=region_lons[lon_i+1])
+                                              & (df_parameters.longitude>region_lons[lon_i])
+                                              & (df_parameters.latitude<=region_lats[lat_i+1])
+                                              & (df_parameters.latitude>region_lats[lat_i])
+                                             ] for box in box_list_ave]
+        lower_xlim = -0.02
+        
+        axs[n_lat-1-lat_i,lon_i].boxplot([box.copy().dropna() for box in box_list_ave_region],vert=False)
+        axs[n_lat-1-lat_i,lon_i].set_xlabel('average probability')
+        axs[n_lat-1-lat_i,lon_i].grid()
+        axs[n_lat-1-lat_i,lon_i].set_xlim(lower_xlim,-1 * lower_xlim)
+        axs[n_lat-1-lat_i,lon_i].set_title(f"latitude: {region_lats[lat_i]} to {region_lats[lat_i+1]}. longitude: {region_lons[lon_i]} to {region_lons[lon_i+1]} ")
+
+for lat_i in range(n_lat): 
+    axs[lat_i,0].set_yticks(np.arange(1,len(labels_list)+1),labels_list)
+    axs[lat_i,0].set_yticks(np.arange(1,len(labels_list)+1),labels_list)
+plt.suptitle("average probability by region. Negative means b=0 is better")
+plt.show()
 
 
 
