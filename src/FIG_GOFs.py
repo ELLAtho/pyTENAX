@@ -944,8 +944,27 @@ plt.show()
 ###############################################################################
 # SPLITS
 
+
 n_lat = len(region_lats)-1
 n_lon = len(region_lons)-1
+
+
+# show regions
+fig = plt.figure()
+ax1 = fig.add_subplot(1, 1, 1, projection=proj)
+
+ax1.coastlines()
+ax1.add_feature(cfeature.BORDERS, linestyle=':')
+
+for lat_i in range(n_lat-1):
+    ax1.plot([minlon-3,maxlon+3],[region_lats[lat_i+1],region_lats[lat_i+1]],  'r', linewidth=2, transform=ccrs.PlateCarree())
+
+for lon_i in range(n_lon-1):
+    ax1.plot([region_lons[lon_i+1],region_lons[lon_i+1]],[minlat-3,maxlat+3],  'r', linewidth=2, transform=ccrs.PlateCarree())
+
+plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+plt.show()
 
 
 #FRMSE
