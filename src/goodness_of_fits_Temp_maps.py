@@ -44,7 +44,7 @@ drive = 'D'
 alpha_set = 0.05
 
 #FOR BETA = 4, USE beta_set = ""
-beta_set = ""
+beta_set = 6
 if beta_set == "":
     beta_set2 = 4
 else:
@@ -204,68 +204,82 @@ if save_name not in output_files:
     
     for i in np.arange(0, len(new_df)):
         start_time[i] = time.time()
+        
+        
+        g_phat = [df_parameters.mu.iloc[i],df_parameters.sigma.iloc[i]] 
         file_name = f"{drive}:/{country}/{code_str}{df_parameters.station.iloc[i]}"
-        
-        if 'code_str' in locals():
-            G,data_meta = read_GSDR_file(f"{file_name}.txt",name_col)
+        oe_save = f"{drive}:/ordinary_events/{country_save}\\T_{df_parameters.station.iloc[i]}.csv"
+        if oe_save not in glob.glob(f"{drive}:/ordinary_events/{country_save}/*"):
+            if type(df_parameters.station.iloc[i]) == float:
+                T = [np.nan]
+            else:
+                
+                if 'code_str' in locals():
+                    G,data_meta = read_GSDR_file(f"{file_name}.txt",name_col)
+                else:
+                    G = pd.read_csv(f"{file_name}.csv")
+                    G['prec_time'] = pd.to_datetime(G['prec_time'])
+                    G.set_index('prec_time', inplace=True)
+                    
+                    
+                data = S.remove_incomplete_years(G, name_col)
+                
+                T_path = f"{drive}:/{country}_temp\\{code_str}{df_parameters.station.iloc[i]}.nc" #TODO: nans case (not there in germany)
+                
+                if T_path not in glob.glob(f"{drive}:/{country}_temp\\*"): # dont do tenax if no T data saved
+                    print('skip')
+                    diff[i] = np.nan
+                    FRMSE_upper_perc[i] = np.nan
+                    FRMSE[i] = np.nan
+                else:
+                    T_ERA = xr.load_dataarray(T_path)
+                    t_data = (T_ERA.squeeze()-273.15).to_dataframe()
+                    
+            
+                    df_arr = np.array(data[name_col])
+                    df_dates = np.array(data.index)
+                    
+                    #extract indexes of ordinary events
+                    #these are time-wise indexes =>returns list of np arrays with np.timeindex
+                    idx_ordinary=S.get_ordinary_events(data=df_arr,dates=df_dates, name_col=name_col,  check_gaps=False)
+                        
+                    
+                    #get ordinary events by removing too short events
+                    #returns boolean array, dates of OE in TO, FROM format, and count of OE in each years
+                    _,arr_dates,n_ordinary_per_year=S.remove_short(idx_ordinary)
+                    
+                    #assign ordinary events values by given durations, values are in depth per duration, NOT in intensity mm/h
+                    dict_ordinary, _ = S.get_ordinary_events_values(data=df_arr,dates=df_dates, arr_dates_oe=arr_dates)
+                    
+                    
+                    
+                    df_arr_t_data = np.array(t_data[temp_name_col])
+                    df_dates_t_data = np.array(t_data.index)
+                    
+                    if type(df_dates_t_data[0]) != np.datetime64:
+                            
+                        df_dates_t_data = pd.Series([item[0] for item in df_dates_t_data])
+                        df_dates_t_data = np.array(df_dates_t_data)
+                    else:
+                        pass
+                    
+                    dicts, _ , n_ordinary_per_year = S.associate_vars(dict_ordinary, df_arr_t_data, df_dates_t_data)
+                    
+                    
+                    
+                    # Your data (P, T arrays) and threshold thr=3.8
+                    P = dicts["60"]["ordinary"].to_numpy() 
+                    T = dicts["60"]["T"].to_numpy()  
+                
         else:
-            G = pd.read_csv(f"{file_name}.csv")
-            G['prec_time'] = pd.to_datetime(G['prec_time'])
-            G.set_index('prec_time', inplace=True)
-            
-            
-        data = S.remove_incomplete_years(G, name_col)
-        
-        T_path = f"{drive}:/{country}_temp\\{code_str}{df_parameters.station.iloc[i]}.nc" #TODO: nans case (not there in germany)
-        
-        if T_path not in glob.glob(f"{drive}:/{country}_temp\\*"): # dont do tenax if no T data saved
-            print('skip')
+            T = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/T_{df_parameters.station.iloc[i]}.csv")
+            P = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/P_{df_parameters.station.iloc[i]}.csv")
+        if len(T) <= 2:
             diff[i] = np.nan
             FRMSE_upper_perc[i] = np.nan
             FRMSE[i] = np.nan
         else:
-            T_ERA = xr.load_dataarray(T_path)
-            t_data = (T_ERA.squeeze()-273.15).to_dataframe()
-            
-    
-            df_arr = np.array(data[name_col])
-            df_dates = np.array(data.index)
-            
-            #extract indexes of ordinary events
-            #these are time-wise indexes =>returns list of np arrays with np.timeindex
-            idx_ordinary=S.get_ordinary_events(data=df_arr,dates=df_dates, name_col=name_col,  check_gaps=False)
-                
-            
-            #get ordinary events by removing too short events
-            #returns boolean array, dates of OE in TO, FROM format, and count of OE in each years
-            _,arr_dates,n_ordinary_per_year=S.remove_short(idx_ordinary)
-            
-            #assign ordinary events values by given durations, values are in depth per duration, NOT in intensity mm/h
-            dict_ordinary, _ = S.get_ordinary_events_values(data=df_arr,dates=df_dates, arr_dates_oe=arr_dates)
-            
-            
-            
-            df_arr_t_data = np.array(t_data[temp_name_col])
-            df_dates_t_data = np.array(t_data.index)
-            
-            if type(df_dates_t_data[0]) != np.datetime64:
-                    
-                df_dates_t_data = pd.Series([item[0] for item in df_dates_t_data])
-                df_dates_t_data = np.array(df_dates_t_data)
-            else:
-                pass
-            
-            dicts, _ , n_ordinary_per_year = S.associate_vars(dict_ordinary, df_arr_t_data, df_dates_t_data)
-            
-            g_phat = [df_parameters.mu.iloc[i],df_parameters.sigma.iloc[i]] 
-            
-            
-            # Your data (P, T arrays) and threshold thr=3.8
-            P = dicts["60"]["ordinary"].to_numpy() 
-            T = dicts["60"]["T"].to_numpy()  
-            
-            
-            
+            g_phat = S.temperature_model(T)
             min_T_upper = np.quantile(T,GOF_perc)
             
             eT = np.arange(np.min(T),np.max(T)+4,0.1)
