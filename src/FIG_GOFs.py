@@ -46,28 +46,28 @@ drive = 'D'
 
 
 
-country = 'Japan'
-ERA_country = 'Japan'
-country_save = 'Japan'
-code_str = 'JP_'
-minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
-name_len = 5
-min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-censor_thr = 0.9
-region_lats = [minlat,31,35.8,41.3,maxlat]
-region_lons = [minlon,maxlon]
-
-
-# country = 'Germany' 
-# ERA_country = 'Germany'
-# country_save = 'Germany'
-# code_str = 'DE_'
-# minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
+# country = 'Japan'
+# ERA_country = 'Japan'
+# country_save = 'Japan'
+# code_str = 'JP_'
+# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
 # name_len = 5
 # min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 # censor_thr = 0.9
-# region_lats = [minlat,51,maxlat]
-# region_lons = [minlon,9,maxlon]
+# region_lats = [minlat,31,35.8,41.3,maxlat]
+# region_lons = [minlon,maxlon]
+
+
+country = 'Germany' 
+ERA_country = 'Germany'
+country_save = 'Germany'
+code_str = 'DE_'
+minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
+name_len = 5
+min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+censor_thr = 0.9
+region_lats = [minlat,51,maxlat]
+region_lons = [minlon,9,maxlon]
 
 
 
@@ -981,9 +981,9 @@ for lat_i in range(n_lat):
                                              ] for box in box_list_fr]
         lower_xlim = -0.05
         if n_lon < 1:
-            ax = axs[n_lat-1-lat_i,lon_i]
-        else:
             ax = axs[n_lat-1-lat_i]
+        else:
+            ax = axs[n_lat-1-lat_i,lon_i]
         
         
         ax.boxplot([box.copy().dropna() for box in box_list_fr_region],vert=False)
@@ -994,11 +994,11 @@ for lat_i in range(n_lat):
 
 for lat_i in range(n_lat):
     if n_lon < 1:
-        axs[lat_i,0].set_yticks(np.arange(1,len(labels_list)+1),labels_list)
-        axs[lat_i,0].set_yticks(np.arange(1,len(labels_list)+1),labels_list)
+        axs[lat_i].set_yticks(np.arange(1,len(labels_list)+1),labels_list)
+        axs[lat_i].set_yticks(np.arange(1,len(labels_list)+1),labels_list)
     else:
-        axs[lat_i].set_yticks(np.arange(1,len(labels_list)+1),labels_list)
-        axs[lat_i].set_yticks(np.arange(1,len(labels_list)+1),labels_list)
+        axs[lat_i,0].set_yticks(np.arange(1,len(labels_list)+1),labels_list)
+        axs[lat_i,0].set_yticks(np.arange(1,len(labels_list)+1),labels_list)
     
 plt.suptitle("FRMSE by region. Negative means b=0 is worse")
 plt.show()
@@ -1016,9 +1016,9 @@ for lat_i in range(n_lat):
                                              ] for box in box_list_lik]
         lower_xlim = -20
         if n_lon < 1:
-            ax = axs[n_lat-1-lat_i,lon_i]
-        else:
             ax = axs[n_lat-1-lat_i]
+        else:
+            ax = axs[n_lat-1-lat_i,lon_i]
         
         
         ax.boxplot([box.copy().dropna() for box in box_list_lik_region],vert=False)
@@ -1029,11 +1029,11 @@ for lat_i in range(n_lat):
 
 for lat_i in range(n_lat):
     if n_lon < 1:
-        axs[lat_i,0].set_yticks(np.arange(1,len(labels_list)+1),labels_list)
-        axs[lat_i,0].set_yticks(np.arange(1,len(labels_list)+1),labels_list)
+        axs[lat_i].set_yticks(np.arange(1,len(labels_list)+1),labels_list)
+        axs[lat_i].set_yticks(np.arange(1,len(labels_list)+1),labels_list)
     else:
-        axs[lat_i].set_yticks(np.arange(1,len(labels_list)+1),labels_list)
-        axs[lat_i].set_yticks(np.arange(1,len(labels_list)+1),labels_list)
+        axs[lat_i,0].set_yticks(np.arange(1,len(labels_list)+1),labels_list)
+        axs[lat_i,0].set_yticks(np.arange(1,len(labels_list)+1),labels_list)
     
 plt.suptitle("log(liklihood) by region. Negative means b=0 is better")
 plt.show()
@@ -1052,9 +1052,9 @@ for lat_i in range(n_lat):
                                              ] for box in box_list_ave]
         lower_xlim = -0.02
         if n_lon < 1:
-            ax = axs[n_lat-1-lat_i,lon_i]
-        else:
             ax = axs[n_lat-1-lat_i]
+        else:
+            ax = axs[n_lat-1-lat_i,lon_i]
         
         ax.boxplot([box.copy().dropna() for box in box_list_ave_region],vert=False)
         ax.set_xlabel('average probability')
@@ -1064,11 +1064,11 @@ for lat_i in range(n_lat):
 
 for lat_i in range(n_lat):
     if n_lon < 1:
-        axs[lat_i,0].set_yticks(np.arange(1,len(labels_list)+1),labels_list)
-        axs[lat_i,0].set_yticks(np.arange(1,len(labels_list)+1),labels_list)
+        axs[lat_i].set_yticks(np.arange(1,len(labels_list)+1),labels_list)
+        axs[lat_i].set_yticks(np.arange(1,len(labels_list)+1),labels_list)
     else:
-        axs[lat_i].set_yticks(np.arange(1,len(labels_list)+1),labels_list)
-        axs[lat_i].set_yticks(np.arange(1,len(labels_list)+1),labels_list)
+        axs[lat_i,0].set_yticks(np.arange(1,len(labels_list)+1),labels_list)
+        axs[lat_i,0].set_yticks(np.arange(1,len(labels_list)+1),labels_list)
     
 plt.suptitle("average probability by region. Negative means b=0 is better")
 plt.show()
@@ -1083,7 +1083,7 @@ temp_output_files_path = f"{drive}:/outputs/{country_save}/temp_FRMSE*"
 temp_output_files = glob.glob(temp_output_files_path)
 df = [0]*len(temp_output_files)
 label = [0]*len(temp_output_files)
-df_parameters = pd.read_csv(f"{drive}:/outputs/{country_save}\\parameters.csv", dtype={'station': str}) 
+#df_parameters = pd.read_csv(f"{drive}:/outputs/{country_save}\\parameters.csv", dtype={'station': str}) 
 
 
 for i in range(len(temp_output_files)):

@@ -58,27 +58,27 @@ alpha_set = 0
 # max_lat = 50
 
 
-# country = 'Japan'
-# ERA_country = 'Japan'
-# country_save = 'Japan'
-# code_str = 'JP_'
-# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
-# name_len = 5
-# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-# censor_thr = 0.9
-# max_lat = 30
-
-
-
-country = 'US' 
-ERA_country = 'US'
-country_save = 'US_main'
-code_str = 'US_'
-minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
-name_len = 6
-min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+country = 'Japan'
+ERA_country = 'Japan'
+country_save = 'Japan'
+code_str = 'JP_'
+minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+name_len = 5
+min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 censor_thr = 0.9
 max_lat = 30
+
+
+
+# country = 'US' 
+# ERA_country = 'US'
+# country_save = 'US_main'
+# code_str = 'US_'
+# minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
+# name_len = 6
+# min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+# censor_thr = 0.9
+# max_lat = 30
 
 # country = 'UK' 
 # ERA_country = 'UK'
@@ -378,6 +378,40 @@ plt.show()
 
 print(f"max skew: {np.max(skew_df.skewness)}")
 print(f"min skew: {np.min(skew_df.skewness)}")
+
+
+df_parameters_north = df_parameters[df_parameters.latitude > max_lat+10]
+peaks_df_north = peaks_df[df_parameters.latitude > max_lat+10]
+
+north_3peak = df_parameters_north[peaks_df_north.n_peaks01 == 3]
+
+eTs_df_north = eTs_df[df_parameters.latitude > max_lat+10]
+
+eTs_3peak = eTs_df_north[peaks_df_north.n_peaks01 == 3]
+
+df_3peak = df[df_parameters.latitude > max_lat+10][peaks_df_north.n_peaks01 == 3]
+
+
+for i in range(len(north_3peak)):
+    oe_save = f"{drive}:/ordinary_events/{country_save}\\T_{north_3peak.station.iloc[i]}.csv"
+    T = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/T_{north_3peak.station.iloc[i]}.csv")
+    P = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/P_{north_3peak.station.iloc[i]}.csv")
+    
+    g_phat_skew = S.temperature_model(T, method = "skewnorm")
+    eT = np.arange(np.min(T),np.max(T)+4)
+    TNX_FIG_temp_model(T, g_phat_skew, 4, eT, obscol='r',valcol='b',
+                           obslabel = 'observations',
+                           vallabel = 'skewed normal',
+                           xlimits = [-15,30],
+                           ylimits = [0,0.06],
+                           method = "skewnorm")
+    plt.plot(eTs_3peak.iloc[i][1:],df_3peak.iloc[i][1:])
+    
+    plt.show()
+
+
+
+
 
 
 

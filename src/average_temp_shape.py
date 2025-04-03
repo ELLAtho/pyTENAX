@@ -48,30 +48,30 @@ alpha_set = 0
 
 
 
-# country = 'Germany' 
-# ERA_country = 'Germany'
-# country_save = 'Germany'
-# code_str = 'DE_'
-# minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
-# name_len = 5
-# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-# censor_thr = 0.9
-# max_lat = 50
-# region_lats = [minlat,51,maxlat]
-# region_lons = [minlon,9,maxlon]
-
-
-country = 'Japan'
-ERA_country = 'Japan'
-country_save = 'Japan'
-code_str = 'JP_'
-minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+country = 'Germany' 
+ERA_country = 'Germany'
+country_save = 'Germany'
+code_str = 'DE_'
+minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
 name_len = 5
 min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 censor_thr = 0.9
-max_lat = 30
-region_lats = [minlat,31,35.8,41.3,maxlat]
-region_lons = [minlon,maxlon]
+max_lat = 50
+region_lats = [minlat,51,maxlat]
+region_lons = [minlon,9,maxlon]
+
+
+# country = 'Japan'
+# ERA_country = 'Japan'
+# country_save = 'Japan'
+# code_str = 'JP_'
+# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+# name_len = 5
+# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+# censor_thr = 0.9
+# max_lat = 30
+# region_lats = [minlat,31,35.8,41.3,maxlat]
+# region_lons = [minlon,maxlon]
 
 
 
@@ -447,7 +447,7 @@ temp_aves_proper_north= np.nanmean(interp_y_north,axis =0)
 #total average temperature shape
 non_event_temp_savename = f"{drive}:/outputs/{country_save}\\non_event_temp.csv"
 if non_event_temp_savename not in output_files:
-    print("temp average shape not calculated yet. here we gooooooo")
+    print("temp average shape not calculated yet for non events. here we gooooooo")
     
     kde = [0] * len(new_df)
     prob = [0] * len(new_df)
