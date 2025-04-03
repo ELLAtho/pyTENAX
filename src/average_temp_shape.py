@@ -48,17 +48,17 @@ alpha_set = 0
 
 
 
-country = 'Germany' 
-ERA_country = 'Germany'
-country_save = 'Germany'
-code_str = 'DE_'
-minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
-name_len = 5
-min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-censor_thr = 0.9
-max_lat = 50
-region_lats = [minlat,51,maxlat]
-region_lons = [minlon,9,maxlon]
+# country = 'Germany' 
+# ERA_country = 'Germany'
+# country_save = 'Germany'
+# code_str = 'DE_'
+# minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
+# name_len = 5
+# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+# censor_thr = 0.9
+# max_lat = 50
+# region_lats = [minlat,51,maxlat]
+# region_lons = [minlon,9,maxlon]
 
 
 # country = 'Japan'
@@ -75,17 +75,17 @@ region_lons = [minlon,9,maxlon]
 
 
 
-# country = 'US' 
-# ERA_country = 'US'
-# country_save = 'US_main'
-# code_str = 'US_'
-# minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
-# name_len = 6
-# min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
-# censor_thr = 0.9
-# max_lat = 30
-# region_lats = [minlat,37.5,maxlat]
-# region_lons = [minlon,-116,-105,-90,maxlon]
+country = 'US' 
+ERA_country = 'US'
+country_save = 'US_main'
+code_str = 'US_'
+minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
+name_len = 6
+min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+censor_thr = 0.9
+max_lat = 30
+region_lats = [minlat,37.5,maxlat]
+region_lons = [minlon,-116,-105,-90,maxlon]
 
 # country = 'UK' 
 # ERA_country = 'UK'
@@ -1103,9 +1103,9 @@ plt.show()
 ###############################################################################4
 #PEAK INVESTIGATION
 x, y = eTs[84],df.iloc[84][1:]
-height = 0
+prominence = 0.0001
 plt.plot(x,y)
-peaks = find_peaks(y,height = height)
+peaks = find_peaks(y,prominence = prominence)
 plt.scatter(x[peaks[0]],y[peaks[0]])
 plt.show()
 

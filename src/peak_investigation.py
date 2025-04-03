@@ -58,27 +58,27 @@ alpha_set = 0
 # max_lat = 50
 
 
-country = 'Japan'
-ERA_country = 'Japan'
-country_save = 'Japan'
-code_str = 'JP_'
-minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
-name_len = 5
-min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-censor_thr = 0.9
-max_lat = 30
-
-
-
-# country = 'US' 
-# ERA_country = 'US'
-# country_save = 'US_main'
-# code_str = 'US_'
-# minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
-# name_len = 6
-# min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+# country = 'Japan'
+# ERA_country = 'Japan'
+# country_save = 'Japan'
+# code_str = 'JP_'
+# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+# name_len = 5
+# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 # censor_thr = 0.9
 # max_lat = 30
+
+
+
+country = 'US' 
+ERA_country = 'US'
+country_save = 'US_main'
+code_str = 'US_'
+minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
+name_len = 6
+min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+censor_thr = 0.9
+max_lat = 30
 
 # country = 'UK' 
 # ERA_country = 'UK'
@@ -117,17 +117,17 @@ eTs = eTs_df.drop(columns = "station").to_numpy()
 
 n_peaks = [0]*len(df)
 n_peaks01 = [0]*len(df)
-heights = [[np.nan,np.nan,np.nan,np.nan,np.nan]]*len(df)
-diffs = [[np.nan,np.nan,np.nan,np.nan]]*len(df)
+prominences = np.array([[np.nan,np.nan,np.nan,np.nan,np.nan]]*len(df))
+diffs = np.array([[np.nan,np.nan,np.nan,np.nan]]*len(df))
 
 for i in range(len(df)):
     x, y = eTs[i],df.iloc[i][1:]
-    peaks = find_peaks(y,height = 0.000)
-    peaks01 = find_peaks(y,height = 0.01)
+    peaks = find_peaks(y,prominence = 0.000)
+    peaks01 = find_peaks(y,prominence = 0.001)
     n_peaks[i] = len(peaks[0])
     n_peaks01[i] = len(peaks01[0])
     for j in range(n_peaks[i]):
-        heights[i][j] = peaks[1]["peak_heights"][j]
+        prominences[i][j] = peaks[1]["prominences"][j]
     for j in np.arange(0,n_peaks[i]-1):
         diffs[i][j] = x[peaks[0][j+1]] -x[peaks[0][j]] 
         
@@ -137,15 +137,15 @@ for i in range(len(df)):
 peaks_df = pd.DataFrame({
     "n_peaks" : n_peaks,
     "n_peaks01" : n_peaks01,
-    "height_1" : np.array(heights)[:,0],
-    "height_2" : np.array(heights)[:,1],
-    "height_3" : np.array(heights)[:,2],
-    "height_4" : np.array(heights)[:,3],
-    "height_5" : np.array(heights)[:,4],
-    "diff_1" : np.array(diffs)[:,0],
-    "diff_2" : np.array(diffs)[:,1],
-    "diff_3" : np.array(diffs)[:,2],
-    "diff_4" : np.array(diffs)[:,3],
+    "prominence_1" : prominences[:,0],
+    "prominence_2" : prominences[:,1],
+    "prominence_3" : prominences[:,2],
+    "prominence_4" : prominences[:,3],
+    "prominence_5" : prominences[:,4],
+    "diff_1" : diffs[:,0],
+    "diff_2" : diffs[:,1],
+    "diff_3" : diffs[:,2],
+    "diff_4" : diffs[:,3],
 
     
     })
@@ -154,7 +154,7 @@ peaks_df = pd.DataFrame({
 cmap = 'plasma'
 bounds = [0.5,1.5,2.5,3.5,4.5]  # 3 discrete levels
 norm = mcolors.BoundaryNorm(bounds, plt.get_cmap(cmap).N)
-
+s = 3
 
 fig = plt.figure(figsize=(15, 10))
 
@@ -172,8 +172,9 @@ sc = ax1.scatter(
     c=peaks_df.n_peaks,
     cmap=cmap,
     norm = norm,
+    s = s
 )
-ax1.set_title("height = 0")
+ax1.set_title("prominence = 0")
 
 
 proj = ccrs.PlateCarree()
@@ -188,9 +189,10 @@ sc = ax1.scatter(
     df_parameters.latitude,
     c=peaks_df.n_peaks01,
     cmap=cmap,
-    norm = norm
+    norm = norm,
+    s = s
 )
-ax1.set_title("height = 0.01")
+ax1.set_title("prominence = 0.001")
 cbar_ax = fig.add_axes([0.92, 0.25, 0.02, 0.5])  # [left, bottom, width, height]
 cbar = plt.colorbar(sc, shrink = 0.2, cax=cbar_ax, ticks=[1, 2, 3, 4])
 
@@ -369,7 +371,7 @@ sc = ax1.scatter(
     norm = norm,
     s = s
 )
-ax1.set_title("number of peaks (height = 0.01)")
+ax1.set_title("number of peaks (prominence = 0.001)")
 ax1.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,5), crs=proj)
 ax1.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
 plt.colorbar(sc,ticks=[1, 2, 3, 4])
@@ -391,6 +393,7 @@ eTs_3peak = eTs_df_north[peaks_df_north.n_peaks01 == 3]
 
 df_3peak = df[df_parameters.latitude > max_lat+10][peaks_df_north.n_peaks01 == 3]
 
+heights_north_3peak = peaks_df[["prominence_1","prominence_2","prominence_3","prominence_4","prominence_5"]][df_parameters.latitude > max_lat+10][peaks_df_north.n_peaks01 == 3]
 
 for i in range(len(north_3peak)):
     oe_save = f"{drive}:/ordinary_events/{country_save}\\T_{north_3peak.station.iloc[i]}.csv"
@@ -405,8 +408,9 @@ for i in range(len(north_3peak)):
                            xlimits = [-15,30],
                            ylimits = [0,0.06],
                            method = "skewnorm")
-    plt.plot(eTs_3peak.iloc[i][1:],df_3peak.iloc[i][1:])
-    
+    plt.plot(eTs_3peak.iloc[i][1:],df_3peak.iloc[i][1:],label = "kernel density")
+    plt.legend()
+    plt.title(f"station {north_3peak.station.iloc[i]}")
     plt.show()
 
 

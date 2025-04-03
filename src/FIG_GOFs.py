@@ -46,28 +46,28 @@ drive = 'D'
 
 
 
-# country = 'Japan'
-# ERA_country = 'Japan'
-# country_save = 'Japan'
-# code_str = 'JP_'
-# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
-# name_len = 5
-# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-# censor_thr = 0.9
-# region_lats = [minlat,31,35.8,41.3,maxlat]
-# region_lons = [minlon,maxlon]
-
-
-country = 'Germany' 
-ERA_country = 'Germany'
-country_save = 'Germany'
-code_str = 'DE_'
-minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
+country = 'Japan'
+ERA_country = 'Japan'
+country_save = 'Japan'
+code_str = 'JP_'
+minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
 name_len = 5
 min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 censor_thr = 0.9
-region_lats = [minlat,51,maxlat]
-region_lons = [minlon,9,maxlon]
+region_lats = [minlat,31,35.8,41.3,maxlat]
+region_lons = [minlon,maxlon]
+
+
+# country = 'Germany' 
+# ERA_country = 'Germany'
+# country_save = 'Germany'
+# code_str = 'DE_'
+# minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
+# name_len = 5
+# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+# censor_thr = 0.9
+# region_lats = [minlat,51,maxlat]
+# region_lons = [minlon,9,maxlon]
 
 
 
@@ -980,7 +980,7 @@ for lat_i in range(n_lat):
                                               & (df_parameters.latitude>region_lats[lat_i])
                                              ] for box in box_list_fr]
         lower_xlim = -0.05
-        if n_lon < 1:
+        if n_lon < 2:
             ax = axs[n_lat-1-lat_i]
         else:
             ax = axs[n_lat-1-lat_i,lon_i]
@@ -993,7 +993,7 @@ for lat_i in range(n_lat):
         ax.set_title(f"latitude: {region_lats[lat_i]} to {region_lats[lat_i+1]}. longitude: {region_lons[lon_i]} to {region_lons[lon_i+1]} ")
 
 for lat_i in range(n_lat):
-    if n_lon < 1:
+    if n_lon < 2:
         axs[lat_i].set_yticks(np.arange(1,len(labels_list)+1),labels_list)
         axs[lat_i].set_yticks(np.arange(1,len(labels_list)+1),labels_list)
     else:
@@ -1015,7 +1015,7 @@ for lat_i in range(n_lat):
                                               & (df_parameters.latitude>region_lats[lat_i])
                                              ] for box in box_list_lik]
         lower_xlim = -20
-        if n_lon < 1:
+        if n_lon < 2:
             ax = axs[n_lat-1-lat_i]
         else:
             ax = axs[n_lat-1-lat_i,lon_i]
@@ -1028,7 +1028,7 @@ for lat_i in range(n_lat):
         ax.set_title(f"latitude: {region_lats[lat_i]} to {region_lats[lat_i+1]}. longitude: {region_lons[lon_i]} to {region_lons[lon_i+1]} ")
 
 for lat_i in range(n_lat):
-    if n_lon < 1:
+    if n_lon < 2:
         axs[lat_i].set_yticks(np.arange(1,len(labels_list)+1),labels_list)
         axs[lat_i].set_yticks(np.arange(1,len(labels_list)+1),labels_list)
     else:
@@ -1051,7 +1051,7 @@ for lat_i in range(n_lat):
                                               & (df_parameters.latitude>region_lats[lat_i])
                                              ] for box in box_list_ave]
         lower_xlim = -0.02
-        if n_lon < 1:
+        if n_lon < 2:
             ax = axs[n_lat-1-lat_i]
         else:
             ax = axs[n_lat-1-lat_i,lon_i]
@@ -1063,7 +1063,7 @@ for lat_i in range(n_lat):
         ax.set_title(f"latitude: {region_lats[lat_i]} to {region_lats[lat_i+1]}. longitude: {region_lons[lon_i]} to {region_lons[lon_i+1]} ")
 
 for lat_i in range(n_lat):
-    if n_lon < 1:
+    if n_lon < 2:
         axs[lat_i].set_yticks(np.arange(1,len(labels_list)+1),labels_list)
         axs[lat_i].set_yticks(np.arange(1,len(labels_list)+1),labels_list)
     else:
