@@ -44,7 +44,7 @@ drive = 'D'
 alpha_set = 0.05
 
 #FOR BETA = 4, USE beta_set = ""
-beta_set = 6
+beta_set = ""
 if beta_set == "":
     beta_set2 = 4
 else:
@@ -60,23 +60,23 @@ else:
 # censor_thr = 0.9
 
 
-# country = 'Japan'
-# ERA_country = 'Japan'
-# country_save = 'Japan'
-# code_str = 'JP_'
-# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
-# name_len = 5
-# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-# censor_thr = 0.9
-
-country = 'US'
-ERA_country = 'US'
-country_save = 'US_main'
-code_str = 'US_'
-minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
-name_len = 6
-min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+country = 'Japan'
+ERA_country = 'Japan'
+country_save = 'Japan'
+code_str = 'JP_'
+minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+name_len = 5
+min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 censor_thr = 0.9
+
+# country = 'US'
+# ERA_country = 'US'
+# country_save = 'US_main'
+# code_str = 'US_'
+# minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
+# name_len = 6
+# min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+# censor_thr = 0.9
 
 
 name_col = 'ppt' 
@@ -322,7 +322,7 @@ if save_name not in output_files:
 else:
     temp_FRMSE_df = pd.read_csv(save_name,dtype = {"station":str})
         
-        
+  
 ##############################################################################
 #skewnorm
 skew_parameters_savename = f"{drive}:/outputs/{country_save}\\temp_skew.csv"
@@ -584,7 +584,65 @@ if skew_parameters_savename in output_files:
 else:
     print("Can't do FRMSE on skew, calculate the skew values first")
 
+##############################################################################
+# AIC
+FRMSE_files = glob.glob(f"{drive}:/outputs/{country_save}\\temp_FRMSE*")
 
+AIC_headers = [f"AIC{name[len(country_save)+22:-4]}" for name in FRMSE_files]
+
+AIC = np.array([[0]*len(FRMSE_files)]*len(new_df))
+start_time = [0]*len(new_df)
+
+AIC_savename = f"{drive}:/outputs/{country_save}\\AIC.csv"
+if AIC_savename not in output_files:
+    print("calculating AIC")
+    for i in np.arange(0, len(new_df)):
+        start_time[i] = time.time() 
+        oe_save = f"{drive}:/ordinary_events/{country_save}\\T_{df_parameters.station.iloc[i]}.csv"
+        if oe_save not in glob.glob(f"{drive}:/ordinary_events/{country_save}/*"):
+            for j in range(len(FRMSE_files)):
+                AIC[i][j] = 0
+        else:
+            T = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/T_{df_parameters.station.iloc[i]}.csv")
+            
+            for j in range(len(FRMSE_files)):
+                if "skew" in FRMSE_files[j]:
+                    g_phat = S.temperature_model(T, method="skewnorm")
+                    pdf_vals = skewnorm.pdf(T, g_phat[0], g_phat[1], g_phat[2])
+                    
+                    AIC[i][j] = 2*(3.0 - np.sum(np.log(pdf_vals)))
+                    if i%50 == 0:
+                        print("skew")
+                    
+                else:
+                    betanow = FRMSE_files[j][len(country_save)+22:-4]
+                    if betanow == '':
+                        beta1 = 4
+                    else:
+                        beta1 = float(betanow)
+                    S.beta = beta1
+                    g_phat = S.temperature_model(T)
+                    
+                    loglik = gen_norm_loglik(T, g_phat, beta1, print_0_warning = False)
+                    AIC[i][j] = 2*(2.0 - loglik)
+                    if i%50 == 0:
+                        print(beta1)
+                    
+        if i%50 == 0:    
+            print(AIC[i])
+            time_taken = (time.time()-start_time[i-9])/10
+            time_left = (len(new_df)-i)*time_taken/60
+            print(f"{i}/{len(new_df)}. Approx time left: {time_left:.0f} mins") #this is only correct after 50 loops
+        else:
+            pass
+    AIC_df = pd.DataFrame(AIC,columns = AIC_headers)
+    AIC_df["station"] = df_parameters.station
+    AIC_df.to_csv(AIC_savename,index = False)
+else:
+    AIC_df = pd.read_csv(AIC_savename,dtype = {"station":str})
+        
+        
+S.beta = beta_set2
 ##############################################################################
 #plots
 lon_lims = [truncate_neg(np.min(df_parameters.longitude),2.5),np.ceil(np.max(df_parameters.longitude/2.5))*2.5]
@@ -646,83 +704,103 @@ plt.colorbar(sc)
 
 plt.show()
 ###############################################################################
-#correlations
-FRMSE_df = pd.read_csv(f"{drive}:/outputs/{country_save}/FRMSE.csv", dtype={'station': str})
-liklihood_df = pd.read_csv(f"{drive}:/outputs/{country_save}/liklihood.csv",dtype={'station': str})
+# #correlations
+# FRMSE_df = pd.read_csv(f"{drive}:/outputs/{country_save}/FRMSE.csv", dtype={'station': str})
+# liklihood_df = pd.read_csv(f"{drive}:/outputs/{country_save}/liklihood.csv",dtype={'station': str})
 
 
-def pearsonr_pval(x,y):
-    return pearsonr(x,y)[1]
+# def pearsonr_pval(x,y):
+#     return pearsonr(x,y)[1]
 
 
-r_val = FRMSE_df.FRMSE.corr(temp_FRMSE_df.FRMSE_upper_perc)
-p_val = FRMSE_df.FRMSE.corr(temp_FRMSE_df.FRMSE_upper_perc,method=pearsonr_pval)
+# r_val = FRMSE_df.FRMSE.corr(temp_FRMSE_df.FRMSE_upper_perc)
+# p_val = FRMSE_df.FRMSE.corr(temp_FRMSE_df.FRMSE_upper_perc,method=pearsonr_pval)
 
-coeffs=np.polyfit(FRMSE_df.FRMSE.dropna(),temp_FRMSE_df.FRMSE_upper_perc.dropna(),1)
-delt = (np.max(FRMSE_df.FRMSE)-np.min(FRMSE_df.FRMSE))/10
-x = np.arange(np.min(FRMSE_df.FRMSE),np.max(FRMSE_df.FRMSE)+delt,delt)
-y = coeffs[0]*x+coeffs[1]
+# coeffs=np.polyfit(FRMSE_df.FRMSE.dropna(),temp_FRMSE_df.FRMSE_upper_perc.dropna(),1)
+# delt = (np.max(FRMSE_df.FRMSE)-np.min(FRMSE_df.FRMSE))/10
+# x = np.arange(np.min(FRMSE_df.FRMSE),np.max(FRMSE_df.FRMSE)+delt,delt)
+# y = coeffs[0]*x+coeffs[1]
 
 
-plt.scatter(FRMSE_df.FRMSE,temp_FRMSE_df.FRMSE_upper_perc,alpha = val_info.cleaned_years/np.max(val_info.cleaned_years))
-plt.plot(x,y,color = 'r',label = f'y={coeffs[0]:.3f}x+{coeffs[1]:.3f}')
-plt.xlabel("FRMSE on the return levels")
-plt.ylabel(f'FRMSE on the top {(1-GOF_perc)*100:.0f}% temperature')
-plt.text(np.min(FRMSE_df.FRMSE),np.min(temp_FRMSE_df.FRMSE_upper_perc),f'r = {r_val:.3f}\n p = {p_val:.5f}')
+# plt.scatter(FRMSE_df.FRMSE,temp_FRMSE_df.FRMSE_upper_perc,alpha = val_info.cleaned_years/np.max(val_info.cleaned_years))
+# plt.plot(x,y,color = 'r',label = f'y={coeffs[0]:.3f}x+{coeffs[1]:.3f}')
+# plt.xlabel("FRMSE on the return levels")
+# plt.ylabel(f'FRMSE on the top {(1-GOF_perc)*100:.0f}% temperature')
+# plt.text(np.min(FRMSE_df.FRMSE),np.min(temp_FRMSE_df.FRMSE_upper_perc),f'r = {r_val:.3f}\n p = {p_val:.5f}')
 
-plt.xlim(0,0.5)
-plt.legend()
+# plt.xlim(0,0.5)
+# plt.legend()
+# plt.show()
+
+
+
+
+
+# r_val = np.log(liklihood_df.mult_prob).corr(temp_FRMSE_df.FRMSE_upper_perc)
+# p_val = np.log(liklihood_df.mult_prob).corr(temp_FRMSE_df.FRMSE_upper_perc,method=pearsonr_pval)
+
+# coeffs=np.polyfit(np.log(liklihood_df.mult_prob).dropna(),temp_FRMSE_df.FRMSE_upper_perc.dropna(),1)
+# delt = (np.max(np.log(liklihood_df.mult_prob))-np.min(np.log(liklihood_df.mult_prob)))/10
+# x = np.arange(np.min(np.log(liklihood_df.mult_prob)),np.max(np.log(liklihood_df.mult_prob))+delt,delt)
+# y = coeffs[0]*x+coeffs[1]
+
+
+# plt.scatter(np.log(liklihood_df.mult_prob),temp_FRMSE_df.FRMSE_upper_perc,alpha = val_info.cleaned_years/np.max(val_info.cleaned_years))
+# plt.plot(x,y,color = 'r',label = f'y={coeffs[0]:.3f}x+{coeffs[1]:.3f}')
+# plt.xlabel("log prob")
+# plt.ylabel(f'FRMSE on the top {(1-GOF_perc)*100:.0f}% temperature')
+# plt.text(np.min(np.log(liklihood_df.mult_prob)),np.min(temp_FRMSE_df.FRMSE_upper_perc),f'r = {r_val:.3f}\n p = {p_val:.5f}')
+
+# plt.legend()
+# plt.show()
+
+
+# r_val = np.log(liklihood_df.mult_prob).corr(new_df.b)
+# p_val = np.log(liklihood_df.mult_prob).corr(new_df.b,method=pearsonr_pval)
+
+# coeffs=np.polyfit(np.log(liklihood_df.mult_prob).dropna(),new_df.b.dropna(),1)
+# delt = (np.max(np.log(liklihood_df.mult_prob))-np.min(np.log(liklihood_df.mult_prob)))/10
+# x = np.arange(np.min(np.log(liklihood_df.mult_prob)),np.max(np.log(liklihood_df.mult_prob))+delt,delt)
+# y = coeffs[0]*x+coeffs[1]
+
+
+# plt.scatter(np.log(liklihood_df.mult_prob),new_df.b,alpha = val_info.cleaned_years/np.max(val_info.cleaned_years))
+# plt.plot(x,y,color = 'r',label = f'y={coeffs[0]:.3f}x+{coeffs[1]:.3f}')
+# plt.xlabel("log prob")
+# plt.ylabel('b')
+# plt.text(np.min(np.log(liklihood_df.mult_prob)),np.min(new_df.b),f'r = {r_val:.3f}\n p = {p_val:.5f}')
+
+# plt.legend()
+# plt.show()
+
+
+
+###############################################################################
+#AIC
+AIC_df_sm = AIC_df.drop(columns = "station")
+number_AIC = len(AIC_df_sm.columns)
+
+cmap = "seismic"
+norm = mcolors.Normalize(vmin=-50, vmax=50)
+
+
+fig,axs = plt.subplots(number_AIC - 1,1,figsize = ((number_AIC - 1)*6,6), subplot_kw={'projection': proj})
+
+for n in range(number_AIC - 1):
+    axs[n].coastlines()
+    axs[n].add_feature(cfeature.BORDERS, linestyle=':')
+    
+    sc = axs[n].scatter(df_parameters.longitude,
+                df_parameters.latitude,
+                c = AIC_df_sm[AIC_headers[n+1]] - AIC_df_sm[AIC_headers[0]],
+                cmap=cmap,
+                norm = norm,
+                s = s,
+                )
+    plt.colorbar(sc,extend = "both")
+    axs[n].set_title(f"{AIC_headers[n+1]} - {AIC_headers[0]}4")
+    
 plt.show()
-
-
-
-
-
-r_val = np.log(liklihood_df.mult_prob).corr(temp_FRMSE_df.FRMSE_upper_perc)
-p_val = np.log(liklihood_df.mult_prob).corr(temp_FRMSE_df.FRMSE_upper_perc,method=pearsonr_pval)
-
-coeffs=np.polyfit(np.log(liklihood_df.mult_prob).dropna(),temp_FRMSE_df.FRMSE_upper_perc.dropna(),1)
-delt = (np.max(np.log(liklihood_df.mult_prob))-np.min(np.log(liklihood_df.mult_prob)))/10
-x = np.arange(np.min(np.log(liklihood_df.mult_prob)),np.max(np.log(liklihood_df.mult_prob))+delt,delt)
-y = coeffs[0]*x+coeffs[1]
-
-
-plt.scatter(np.log(liklihood_df.mult_prob),temp_FRMSE_df.FRMSE_upper_perc,alpha = val_info.cleaned_years/np.max(val_info.cleaned_years))
-plt.plot(x,y,color = 'r',label = f'y={coeffs[0]:.3f}x+{coeffs[1]:.3f}')
-plt.xlabel("log prob")
-plt.ylabel(f'FRMSE on the top {(1-GOF_perc)*100:.0f}% temperature')
-plt.text(np.min(np.log(liklihood_df.mult_prob)),np.min(temp_FRMSE_df.FRMSE_upper_perc),f'r = {r_val:.3f}\n p = {p_val:.5f}')
-
-plt.legend()
-plt.show()
-
-
-r_val = np.log(liklihood_df.mult_prob).corr(new_df.b)
-p_val = np.log(liklihood_df.mult_prob).corr(new_df.b,method=pearsonr_pval)
-
-coeffs=np.polyfit(np.log(liklihood_df.mult_prob).dropna(),new_df.b.dropna(),1)
-delt = (np.max(np.log(liklihood_df.mult_prob))-np.min(np.log(liklihood_df.mult_prob)))/10
-x = np.arange(np.min(np.log(liklihood_df.mult_prob)),np.max(np.log(liklihood_df.mult_prob))+delt,delt)
-y = coeffs[0]*x+coeffs[1]
-
-
-plt.scatter(np.log(liklihood_df.mult_prob),new_df.b,alpha = val_info.cleaned_years/np.max(val_info.cleaned_years))
-plt.plot(x,y,color = 'r',label = f'y={coeffs[0]:.3f}x+{coeffs[1]:.3f}')
-plt.xlabel("log prob")
-plt.ylabel('b')
-plt.text(np.min(np.log(liklihood_df.mult_prob)),np.min(new_df.b),f'r = {r_val:.3f}\n p = {p_val:.5f}')
-
-plt.legend()
-plt.show()
-
-
-
-
-
-
-
-
-
 
 
 
