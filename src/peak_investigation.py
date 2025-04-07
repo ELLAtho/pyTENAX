@@ -384,9 +384,9 @@ print(f"min skew: {np.min(skew_df.skewness)}")
 
 
 
-n_peak = 1
-sel_lat = [37,60]
-sel_lon = [-150,-120]
+n_peak = 2
+sel_lat = [32,40]
+sel_lon = [-115,-105]
 peak1 = df_parameters[(peaks_df.n_peaks01 == n_peak)&
                       (df_parameters.latitude.between(sel_lat[0],sel_lat[1]))&
                       (df_parameters.longitude.between(sel_lon[0],sel_lon[1]))]

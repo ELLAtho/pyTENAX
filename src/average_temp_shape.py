@@ -61,31 +61,31 @@ alpha_set = 0
 # region_lons = [minlon,9,maxlon]
 
 
-# country = 'Japan'
-# ERA_country = 'Japan'
-# country_save = 'Japan'
-# code_str = 'JP_'
-# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
-# name_len = 5
-# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-# censor_thr = 0.9
-# max_lat = 30
-# region_lats = [minlat,31,35.8,41.3,maxlat]
-# region_lons = [minlon,maxlon]
-
-
-
-country = 'US' 
-ERA_country = 'US'
-country_save = 'US_main'
-code_str = 'US_'
-minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
-name_len = 6
-min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+country = 'Japan'
+ERA_country = 'Japan'
+country_save = 'Japan'
+code_str = 'JP_'
+minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+name_len = 5
+min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 censor_thr = 0.9
 max_lat = 30
-region_lats = [minlat,37.5,maxlat]
-region_lons = [minlon,-116,-105,-90,maxlon]
+region_lats = [minlat,31,35.8,41.3,maxlat]
+region_lons = [minlon,maxlon]
+
+
+
+# country = 'US' 
+# ERA_country = 'US'
+# country_save = 'US_main'
+# code_str = 'US_'
+# minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
+# name_len = 6
+# min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+# censor_thr = 0.9
+# max_lat = 30
+# region_lats = [minlat,37.5,maxlat]
+# region_lons = [minlon,-116,-105,-90,maxlon]
 
 # country = 'UK' 
 # ERA_country = 'UK'
@@ -499,7 +499,6 @@ if non_event_temp_savename not in output_files:
 else:
     df_nonevent = pd.read_csv(non_event_temp_savename,dtype = {0:str})
 
-average_filename = f"{drive}:/outputs/{country_save}\\average_temp_shape_ave_std.csv"
 
 non_event_average_savename = f"{drive}:/outputs/{country_save}\\average_non_event_temp.csv"
 if non_event_average_savename not in output_files:
@@ -576,6 +575,105 @@ for i in np.arange(0,len(df_parameters)):
         
         non_event_interp_y[i][(interp_x>=np.min((non_event_eTs[i]-non_event_aves[i])/non_event_sds[i])) & (interp_x<=np.max((non_event_eTs[i]-non_event_aves[i])/non_event_sds[i]))] = interp_func(interp_x_here)*non_event_sds[i]
         
+###############################################################################
+#total average temperature shape collated to days
+non_event_temp_savename_days = f"{drive}:/outputs/{country_save}\\non_event_temp_days.csv"
+non_event_average_savename_days = f"{drive}:/outputs/{country_save}\\average_non_event_temp_days.csv"
+if non_event_temp_savename_days not in output_files:
+    print("temp average shape not calculated yet for non events in days. here we gooooooo")
+    
+    kde = [0] * len(new_df)
+    prob = [0] * len(new_df)
+    start_time = [0] * len(new_df)
+    non_event_eTs_day = [0] * len(new_df)
+    non_event_aves_day = [0] * len(new_df)
+    non_event_sds_day = [0] * len(new_df)
+    start_time = [0] * len(new_df)
+    
+    for i in np.arange(0, len(new_df)):
+        start_time[i] = time.time()
+        
+        T_path = f"{drive}:/{country}_temp\\{code_str}{df_parameters.station.iloc[i]}.nc" #TODO: nans case (not there in germany)
+        
+        if T_path not in glob.glob(f"{drive}:/{country}_temp\\*"): # dont do tenax if no T data saved
+            print('skip')
+            t_data = [np.nan]
+            non_event_eTs_day[i] = [np.nan]*1000
+            non_event_aves_day[i] = np.nan
+            non_event_sds_day[i] = np.nan
+        else:
+            T_ERA = xr.load_dataarray(T_path)
+            t_data = (T_ERA.squeeze()-273.15).to_dataframe()
+            t = t_data["t2m"]
+            t = t.resample("d").mean()
+            
+        if len(t_data) <= 2:
+            prob[i] = [np.nan]*1000
+            non_event_eTs_day[i] = [np.nan]*1000
+            non_event_aves_day[i] = np.nan
+            non_event_sds_day[i] = np.nan
+        
+        else:
+            eT_sep = (np.max(t) - np.min(t)+8)/1000
+            eT = np.arange(np.min(t)-4,np.max(t)+4,eT_sep)
+            non_event_aves_day[i] = np.mean(t)
+            non_event_sds_day[i] = np.std(t)
+            non_event_eTs_day[i] = eT
+            
+            if len(eT) != 1000:
+                eT = eT[0:1000]
+                non_event_eTs_day[i] = non_event_eTs_day[i][0:1000]
+            
+            kde[i]  = gaussian_kde(t.dropna()) #use kernel density to get probability
+            prob[i] = kde[i](eT)
+                
+                
+                  
+            if i%50 == 0:    
+                time_taken = (time.time()-start_time[i-9])/10
+                time_left = (len(new_df)-i)*time_taken/60
+                print(f"{i}/{len(new_df)}. Approx time left: {time_left:.0f} mins") #this is only correct after 50 loops
+            else:
+                pass
+    non_event_temp = np.array(prob)
+    non_event_temp_ = np.concatenate([df_parameters.station.to_numpy()[:, np.newaxis], non_event_temp], axis=1)
+    
+    df_nonevent_days = pd.DataFrame(non_event_temp_)
+    df_nonevent_days.rename(columns = {0:"station"},inplace = True)
+    df_nonevent_days.to_csv(non_event_temp_savename_days, index=False)
+    
+    non_event_average_df_day = pd.DataFrame({
+        "station":df.station,
+        "aves":non_event_aves_day ,
+        "sds": non_event_sds_day 
+        })
+    non_event_eTs_df_day  = pd.DataFrame(non_event_eTs_day)
+    non_event_eTs_df_day["station"] = df.station
+    
+    
+    non_event_eTs_df_day.to_csv(f"{drive}:/outputs/{country_save}\\non_event_eTs_df_day.csv", index=False)
+    non_event_average_df_day.to_csv(non_event_average_savename_days, index=False)
+    
+else:
+    df_nonevent_days = pd.read_csv(non_event_temp_savename_days,dtype = {0:str})
+    non_event_eTs_df_day = pd.read_csv(f"{drive}:/outputs/{country_save}\\non_event_eTs_df_day.csv",dtype = {"station":str})
+    non_event_average_df_day = pd.read_csv(non_event_average_savename_days,dtype = {"station":str})
+    non_event_aves_day = non_event_average_df_day.aves.to_numpy()
+    non_event_sds_day = non_event_average_df_day.sds.to_numpy()
+    non_event_eTs_day = non_event_eTs_df_day.drop(columns = "station").to_numpy()
+
+non_event_interp_y_day = [np.nan] * len(df_parameters)
+for i in np.arange(0,len(df_parameters)):  
+    if np.isnan(non_event_aves_day[i]):
+        non_event_interp_y_day[i] = [np.nan]*len(interp_x)
+    else:  
+        interp_func = interp1d((non_event_eTs_day[i]-non_event_aves_day[i])/non_event_sds_day[i],df_nonevent_days.iloc[i][1:])
+        non_event_interp_y_day[i] = np.zeros(len(interp_x))
+        interp_x_here = interp_x[interp_x>=np.min((non_event_eTs_day[i]-non_event_aves_day[i])/non_event_sds_day[i])]
+        interp_x_here = interp_x_here[interp_x_here<=np.max((non_event_eTs_day[i]-non_event_aves_day[i])/non_event_sds_day[i])]
+        
+        non_event_interp_y_day[i][(interp_x>=np.min((non_event_eTs_day[i]-non_event_aves_day[i])/non_event_sds_day[i])) & (interp_x<=np.max((non_event_eTs_day[i]-non_event_aves_day[i])/non_event_sds_day[i]))] = interp_func(interp_x_here)*non_event_sds_day[i]
+    
 
 ###############################################################################
 #plots
@@ -1036,6 +1134,39 @@ for lat_i in range(n_lat):
             axs[n_lat-1-lat_i].plot(interp_x,np.nanmean(interp_y_region,axis=0),color = "r")
             axs[n_lat-1-lat_i].set_title(f"latitude: {region_lats[lat_i]} to {region_lats[lat_i+1]}. longitude: {region_lons[lon_i]} to {region_lons[lon_i+1]} ")
 plt.suptitle("Full temperature (not events)")
+plt.show()
+
+
+fig,axs = plt.subplots(n_lat,n_lon,figsize = (n_lon*5,n_lat*5))
+for lat_i in range(n_lat):
+    for lon_i in range(n_lon):
+        interp_y_region = np.array(non_event_interp_y_day)[(df_parameters.longitude<=region_lons[lon_i+1])
+                                              & (df_parameters.longitude>region_lons[lon_i])
+                                              & (df_parameters.latitude<=region_lats[lat_i+1])
+                                              & (df_parameters.latitude>region_lats[lat_i])
+                                             ]
+        aves_region = np.array(non_event_aves_day)[(df_parameters.longitude<=region_lons[lon_i+1])
+                                              & (df_parameters.longitude>region_lons[lon_i])
+                                              & (df_parameters.latitude<=region_lats[lat_i+1])
+                                              & (df_parameters.latitude>region_lats[lat_i])
+                                             ]
+        if n_lon>1:
+            for i in np.arange(0,len(interp_y_region)):  
+                if np.isnan(aves_region[i]):
+                    pass
+                else:    
+                    axs[n_lat-1-lat_i,lon_i].plot(interp_x ,interp_y_region[i],alpha = 0.01,color =  "b")
+            axs[n_lat-1-lat_i,lon_i].plot(interp_x,np.nanmean(interp_y_region,axis=0),color = "r")
+            axs[n_lat-1-lat_i,lon_i].set_title(f"latitude: {region_lats[lat_i]} to {region_lats[lat_i+1]}. longitude: {region_lons[lon_i]} to {region_lons[lon_i+1]} ")
+        else:
+            for i in np.arange(0,len(interp_y_region)):  
+                if np.isnan(aves_region[i]):
+                    pass
+                else:    
+                    axs[n_lat-1-lat_i].plot(interp_x ,interp_y_region[i],alpha = 0.01,color =  "b")
+            axs[n_lat-1-lat_i].plot(interp_x,np.nanmean(interp_y_region,axis=0),color = "r")
+            axs[n_lat-1-lat_i].set_title(f"latitude: {region_lats[lat_i]} to {region_lats[lat_i+1]}. longitude: {region_lons[lon_i]} to {region_lons[lon_i+1]} ")
+plt.suptitle("Full temperature (not events, daily mean)")
 plt.show()
 
 # PLOT WITH LON RAINBOW
