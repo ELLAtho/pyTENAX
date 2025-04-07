@@ -382,36 +382,51 @@ print(f"max skew: {np.max(skew_df.skewness)}")
 print(f"min skew: {np.min(skew_df.skewness)}")
 
 
-df_parameters_north = df_parameters[df_parameters.latitude > max_lat+10]
-peaks_df_north = peaks_df[df_parameters.latitude > max_lat+10]
 
-north_3peak = df_parameters_north[peaks_df_north.n_peaks01 == 3]
 
-eTs_df_north = eTs_df[df_parameters.latitude > max_lat+10]
+n_peak = 1
+sel_lat = [37,60]
+sel_lon = [-150,-120]
+peak1 = df_parameters[(peaks_df.n_peaks01 == n_peak)&
+                      (df_parameters.latitude.between(sel_lat[0],sel_lat[1]))&
+                      (df_parameters.longitude.between(sel_lon[0],sel_lon[1]))]
+df1 = df[(peaks_df.n_peaks01 == n_peak)&
+                      (df_parameters.latitude.between(sel_lat[0],sel_lat[1]))&
+                      (df_parameters.longitude.between(sel_lon[0],sel_lon[1]))]
+eTs_df1 = eTs_df[(peaks_df.n_peaks01 == n_peak)&
+                      (df_parameters.latitude.between(sel_lat[0],sel_lat[1]))&
+                      (df_parameters.longitude.between(sel_lon[0],sel_lon[1]))]
 
-eTs_3peak = eTs_df_north[peaks_df_north.n_peaks01 == 3]
-
-df_3peak = df[df_parameters.latitude > max_lat+10][peaks_df_north.n_peaks01 == 3]
-
-heights_north_3peak = peaks_df[["prominence_1","prominence_2","prominence_3","prominence_4","prominence_5"]][df_parameters.latitude > max_lat+10][peaks_df_north.n_peaks01 == 3]
-
-for i in range(len(north_3peak)):
-    oe_save = f"{drive}:/ordinary_events/{country_save}\\T_{north_3peak.station.iloc[i]}.csv"
-    T = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/T_{north_3peak.station.iloc[i]}.csv")
-    P = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/P_{north_3peak.station.iloc[i]}.csv")
+for i in range(10):
+    oe_save = f"{drive}:/ordinary_events/{country_save}\\T_{peak1.station.iloc[i]}.csv"
+    T = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/T_{peak1.station.iloc[i]}.csv")
+    P = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/P_{peak1.station.iloc[i]}.csv")
     
     g_phat_skew = S.temperature_model(T, method = "skewnorm")
+    
+    
     eT = np.arange(np.min(T),np.max(T)+4)
     TNX_FIG_temp_model(T, g_phat_skew, 4, eT, obscol='r',valcol='b',
                            obslabel = 'observations',
                            vallabel = 'skewed normal',
-                           xlimits = [-15,30],
-                           ylimits = [0,0.06],
+                           xlimits = [np.min(T)-3,np.max(T)+3],
                            method = "skewnorm")
-    plt.plot(eTs_3peak.iloc[i][1:],df_3peak.iloc[i][1:],label = "kernel density")
+    plt.plot(eTs_df1.iloc[i][1:],df1.iloc[i][1:],color = "r", label = "kernel density")
+    S.beta = 4
+    g_phat = S.temperature_model(T)
+    plt.plot(eT,gen_norm_pdf(eT, g_phat[0], g_phat[1], 4),label = "beta = 4")
+    S.beta = 6
+    g_phat6 = S.temperature_model(T)
+    plt.plot(eT,gen_norm_pdf(eT, g_phat[0], g_phat[1], 6),label = "beta = 6")
+    plt.ylim(0,np.max(df1.iloc[i][1:])+0.01)
+    
     plt.legend()
-    plt.title(f"station {north_3peak.station.iloc[i]}")
+    plt.title(f"{country_save}. station {peak1.station.iloc[i]}. lat {peak1.latitude.iloc[i]}. lon {peak1.longitude.iloc[i]}")
     plt.show()
+
+
+
+
 
 
 

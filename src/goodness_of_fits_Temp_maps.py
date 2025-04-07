@@ -60,23 +60,23 @@ else:
 # censor_thr = 0.9
 
 
-country = 'Japan'
-ERA_country = 'Japan'
-country_save = 'Japan'
-code_str = 'JP_'
-minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
-name_len = 5
-min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-censor_thr = 0.9
-
-# country = 'US'
-# ERA_country = 'US'
-# country_save = 'US_main'
-# code_str = 'US_'
-# minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
-# name_len = 6
-# min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+# country = 'Japan'
+# ERA_country = 'Japan'
+# country_save = 'Japan'
+# code_str = 'JP_'
+# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+# name_len = 5
+# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 # censor_thr = 0.9
+
+country = 'US'
+ERA_country = 'US'
+country_save = 'US_main'
+code_str = 'US_'
+minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
+name_len = 6
+min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+censor_thr = 0.9
 
 
 name_col = 'ppt' 
@@ -554,7 +554,7 @@ if skew_parameters_savename in output_files:
 
     plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
     plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
-    ax1.set_title(f"skew - beta = 4")
+    ax1.set_title(f"skew - beta = {beta_set2}")
     plt.colorbar(sc,extend = "both")
     
     
@@ -577,7 +577,7 @@ if skew_parameters_savename in output_files:
 
     plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
     plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
-    ax2.set_title(f"skew - beta = 4 upper 20%")
+    ax2.set_title(f"skew - beta = {beta_set2} upper 20%")
     plt.colorbar(sc,extend = "both")
     plt.show()
     
@@ -589,8 +589,10 @@ else:
 FRMSE_files = glob.glob(f"{drive}:/outputs/{country_save}\\temp_FRMSE*")
 
 AIC_headers = [f"AIC{name[len(country_save)+22:-4]}" for name in FRMSE_files]
+AIC_headers_20 = [f"AIC{name[len(country_save)+22:-4]}_20" for name in FRMSE_files]
 
 AIC = np.array([[0]*len(FRMSE_files)]*len(new_df))
+AIC_20 = np.array([[0]*len(FRMSE_files)]*len(new_df))
 start_time = [0]*len(new_df)
 
 AIC_savename = f"{drive}:/outputs/{country_save}\\AIC.csv"
@@ -604,13 +606,14 @@ if AIC_savename not in output_files:
                 AIC[i][j] = 0
         else:
             T = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/T_{df_parameters.station.iloc[i]}.csv")
-            
+            T_20 = T[T>=np.quantile(T,0.8)]
             for j in range(len(FRMSE_files)):
                 if "skew" in FRMSE_files[j]:
                     g_phat = S.temperature_model(T, method="skewnorm")
                     pdf_vals = skewnorm.pdf(T, g_phat[0], g_phat[1], g_phat[2])
-                    
+                    pdf_vals_20 = skewnorm.pdf(T_20, g_phat[0], g_phat[1], g_phat[2])
                     AIC[i][j] = 2*(3.0 - np.sum(np.log(pdf_vals)))
+                    AIC_20[i][j] = 2*(3.0 - np.sum(np.log(pdf_vals_20)))
                     if i%50 == 0:
                         print("skew")
                     
@@ -624,7 +627,9 @@ if AIC_savename not in output_files:
                     g_phat = S.temperature_model(T)
                     
                     loglik = gen_norm_loglik(T, g_phat, beta1, print_0_warning = False)
+                    loglik_20 = gen_norm_loglik(T_20, g_phat, beta1, print_0_warning = False)
                     AIC[i][j] = 2*(2.0 - loglik)
+                    AIC_20[i][j] = 2*(2.0 - loglik_20)
                     if i%50 == 0:
                         print(beta1)
                     
@@ -635,7 +640,9 @@ if AIC_savename not in output_files:
             print(f"{i}/{len(new_df)}. Approx time left: {time_left:.0f} mins") #this is only correct after 50 loops
         else:
             pass
-    AIC_df = pd.DataFrame(AIC,columns = AIC_headers)
+    AIC_df_ = pd.DataFrame(AIC,columns = AIC_headers)
+    AIC_df_20 = pd.DataFrame(AIC_20,columns = AIC_headers_20)
+    AIC_df = AIC_df_.join(AIC_df_20)
     AIC_df["station"] = df_parameters.station
     AIC_df.to_csv(AIC_savename,index = False)
 else:
@@ -778,27 +785,40 @@ plt.show()
 ###############################################################################
 #AIC
 AIC_df_sm = AIC_df.drop(columns = "station")
-number_AIC = len(AIC_df_sm.columns)
+number_AIC = int(len(AIC_df_sm.columns)/2)
 
 cmap = "seismic"
-norm = mcolors.Normalize(vmin=-50, vmax=50)
+norm = mcolors.Normalize(vmin=-200, vmax=200)
 
 
-fig,axs = plt.subplots(number_AIC - 1,1,figsize = ((number_AIC - 1)*6,6), subplot_kw={'projection': proj})
+fig,axs = plt.subplots(number_AIC - 1,2,figsize = (12,(number_AIC - 1)*6), subplot_kw={'projection': proj})
 
 for n in range(number_AIC - 1):
-    axs[n].coastlines()
-    axs[n].add_feature(cfeature.BORDERS, linestyle=':')
+    axs[n,0].coastlines()
+    axs[n,0].add_feature(cfeature.BORDERS, linestyle=':')
     
-    sc = axs[n].scatter(df_parameters.longitude,
+    sc = axs[n,0].scatter(df_parameters.longitude,
                 df_parameters.latitude,
                 c = AIC_df_sm[AIC_headers[n+1]] - AIC_df_sm[AIC_headers[0]],
                 cmap=cmap,
                 norm = norm,
-                s = s,
+                s = 3,
                 )
     plt.colorbar(sc,extend = "both")
-    axs[n].set_title(f"{AIC_headers[n+1]} - {AIC_headers[0]}4")
+    axs[n,0].set_title(f"{AIC_headers[n+1]} - {AIC_headers[0]}4")
+    
+    axs[n,1].coastlines()
+    axs[n,1].add_feature(cfeature.BORDERS, linestyle=':')
+    
+    sc = axs[n,1].scatter(df_parameters.longitude,
+                df_parameters.latitude,
+                c = AIC_df_sm[AIC_headers_20[n+1]] - AIC_df_sm[AIC_headers_20[0]],
+                cmap=cmap,
+                norm = norm,
+                s = 3,
+                )
+    plt.colorbar(sc,extend = "both")
+    axs[n,1].set_title(f"{AIC_headers[n+1]} - {AIC_headers[0]}4 top 20% temperature")
     
 plt.show()
 
