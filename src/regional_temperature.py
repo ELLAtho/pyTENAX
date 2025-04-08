@@ -221,7 +221,7 @@ distance_savename = f"{drive}:/outputs/{country_save}\\distances_matrix.npy"
 distances_matrix = np.load(distance_savename)
 
 #calculate b as average
-radius = 50
+radius = 80
 
 
 [0]*len(new_df.latitude)
@@ -440,5 +440,69 @@ plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
 plt.show()
 
 
+interp_x = np.arange(-4,4.1,0.1)
+interp_y = [np.nan] * len(df_parameters)
+for i in np.arange(0,len(df_parameters)):  
+    if np.isnan(aves[i]):
+        interp_y[i] = [np.nan]*len(interp_x)
+    else:  
+        interp_func = interp1d((eTs[i]-aves[i])/sds[i],df.iloc[i][1:])
+        interp_y[i] = np.zeros(len(interp_x))
+        interp_x_here = interp_x[interp_x>=np.min((eTs[i]-aves[i])/sds[i])]
+        interp_x_here = interp_x_here[interp_x_here<=np.max((eTs[i]-aves[i])/sds[i])]
+        
+        interp_y[i][(interp_x>=np.min((eTs[i]-aves[i])/sds[i])) & (interp_x<=np.max((eTs[i]-aves[i])/sds[i]))] = interp_func(interp_x_here)*sds[i]
+        
+
+
+if country == "Japan":
+    
+    fig = plt.figure(figsize=(4 * 5, n_lat * 5))
+
+    axs = []  # We'll manually fill this with Axes
+    for row in range(n_lat):
+        row_axes = []
+        for col in range(4):
+            index = row * 4 + col + 1  # subplot index is 1-based
+            if col % 2 == 1:  # Map subplot (1, 3)
+                ax = fig.add_subplot(n_lat, 4, index, projection=proj)
+            else:  # Regular line plot (0, 2)
+                ax = fig.add_subplot(n_lat, 4, index)
+            row_axes.append(ax)
+        axs.append(row_axes)
+
+    for lat_i in range(n_lat):
+        for pwr in range(2):
+            mask = (
+                (df_parameters.latitude <= region_lats[lat_i + 1]) &
+                (df_parameters.latitude > region_lats[lat_i]) &
+                ((pd.DataFrame(FRMSE_skew_4_20_roll)[0]) * (-1) ** pwr > 0)
+            )
+
+            interp_y_region = np.array(interp_y)[mask]
+            aves_region = np.array(aves)[mask]
+            loc_region = df_parameters[mask]
+
+            ax_line = axs[n_lat - 1 - lat_i][pwr * 2]
+            for i in range(len(interp_y_region)):
+                if not np.isnan(aves_region[i]):
+                    ax_line.plot(interp_x, interp_y_region[i], alpha=0.1, color="b")
+
+            ax_line.plot(interp_x, np.nanmean(interp_y_region, axis=0), color="r")
+            words = "worse" if pwr == 0 else "better"
+            ax_line.set_title(f"Lat: {region_lats[lat_i]}–{region_lats[lat_i + 1]} | Skew {words}")
+            ax_line.set_ylim(0, 0.5)
+
+            ax_map = axs[n_lat - 1 - lat_i][pwr * 2 + 1]
+            ax_map.coastlines()
+            ax_map.add_feature(cfeature.BORDERS, linestyle=':')
+            ax_map.scatter(loc_region.longitude, loc_region.latitude, transform=ccrs.PlateCarree())
+            ax_map.set_ylim(minlat,maxlat)
+            ax_map.set_xlim(minlon,maxlon)
+
+    plt.tight_layout()
+    plt.show()
+    
+    
 
 
