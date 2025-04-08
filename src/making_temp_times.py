@@ -33,20 +33,20 @@ from geopy.distance import geodesic
 
 drive = 'D'  #specify name of external drive 
 
-# country = 'US' #TODO: may need to redefine for e.g. hawaii, folder name and save name?
-# ERA_country = 'US'
-# code_str = 'US_'
-# minlat,minlon,maxlat,maxlon = 24, -125, 56, -66 #mainland US
-# name_len = 6
-# min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
-
-
-
-country = 'UK'
-ERA_country = 'UK'
-code_str = 'UK_' #string from beginning of file names
-name_len = 8 #how long the numbers are at the end of the files
+country = 'US' #TODO: may need to redefine for e.g. hawaii, folder name and save name?
+ERA_country = 'US'
+code_str = 'US_'
+minlat,minlon,maxlat,maxlon = 24, -125, 56, -66 #mainland US
+name_len = 6
 min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+
+
+
+# country = 'UK'
+# ERA_country = 'UK'
+# code_str = 'UK_' #string from beginning of file names
+# name_len = 8 #how long the numbers are at the end of the files
+# min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
  
 
 # country = 'Israel'

@@ -1206,7 +1206,7 @@ for i in np.arange(0,len(df_parameters)):
 plt.plot(non_event_eTs[100],df_nonevent.iloc[100][1:])
 plt.ylim(0,ymax)
 plt.xlim(-30,40)
-plt.title(f"Temperature distributions {country_save}")
+plt.title(f"Temperature distributions {country_save} (non event)")
 plt.xlabel("Temperature (°C)")
 
 
