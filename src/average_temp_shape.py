@@ -1090,6 +1090,7 @@ for lat_i in range(n_lat):
                     axs[n_lat-1-lat_i,lon_i].plot(interp_x ,interp_y_region[i],alpha = 0.01,color =  "b")
             axs[n_lat-1-lat_i,lon_i].plot(interp_x,np.nanmean(interp_y_region,axis=0),color = "r")
             axs[n_lat-1-lat_i,lon_i].set_title(f"latitude: {region_lats[lat_i]} to {region_lats[lat_i+1]}. longitude: {region_lons[lon_i]} to {region_lons[lon_i+1]} ")
+            axs[n_lat-1-lat_i,lon_i].set_ylim(0,0.5)
         else:
             for i in np.arange(0,len(interp_y_region)):  
                 if np.isnan(aves_region[i]):
@@ -1098,6 +1099,7 @@ for lat_i in range(n_lat):
                     axs[n_lat-1-lat_i].plot(interp_x ,interp_y_region[i],alpha = 0.01,color =  "b")
             axs[n_lat-1-lat_i].plot(interp_x,np.nanmean(interp_y_region,axis=0),color = "r")
             axs[n_lat-1-lat_i].set_title(f"latitude: {region_lats[lat_i]} to {region_lats[lat_i+1]}. longitude: {region_lons[lon_i]} to {region_lons[lon_i+1]} ")
+            axs[n_lat-1-lat_i].set_ylim(0,0.5)
 
 plt.show()
 
@@ -1125,6 +1127,7 @@ for lat_i in range(n_lat):
                     axs[n_lat-1-lat_i,lon_i].plot(interp_x ,interp_y_region[i],alpha = 0.01,color =  "b")
             axs[n_lat-1-lat_i,lon_i].plot(interp_x,np.nanmean(interp_y_region,axis=0),color = "r")
             axs[n_lat-1-lat_i,lon_i].set_title(f"latitude: {region_lats[lat_i]} to {region_lats[lat_i+1]}. longitude: {region_lons[lon_i]} to {region_lons[lon_i+1]} ")
+            axs[n_lat-1-lat_i,lon_i].set_ylim(0,0.5)
         else:
             for i in np.arange(0,len(interp_y_region)):  
                 if np.isnan(aves_region[i]):
@@ -1133,6 +1136,7 @@ for lat_i in range(n_lat):
                     axs[n_lat-1-lat_i].plot(interp_x ,interp_y_region[i],alpha = 0.01,color =  "b")
             axs[n_lat-1-lat_i].plot(interp_x,np.nanmean(interp_y_region,axis=0),color = "r")
             axs[n_lat-1-lat_i].set_title(f"latitude: {region_lats[lat_i]} to {region_lats[lat_i+1]}. longitude: {region_lons[lon_i]} to {region_lons[lon_i+1]} ")
+            axs[n_lat-1-lat_i].set_ylim(0,0.5)
 plt.suptitle("Full temperature (not events)")
 plt.show()
 
@@ -1157,7 +1161,7 @@ for lat_i in range(n_lat):
                 else:    
                     axs[n_lat-1-lat_i,lon_i].plot(interp_x ,interp_y_region[i],alpha = 0.01,color =  "b")
             axs[n_lat-1-lat_i,lon_i].plot(interp_x,np.nanmean(interp_y_region,axis=0),color = "r")
-            axs[n_lat-1-lat_i,lon_i].set_title(f"latitude: {region_lats[lat_i]} to {region_lats[lat_i+1]}. longitude: {region_lons[lon_i]} to {region_lons[lon_i+1]} ")
+            axs[n_lat-1-lat_i,lon_i].set_ylim(0,0.5)
         else:
             for i in np.arange(0,len(interp_y_region)):  
                 if np.isnan(aves_region[i]):
@@ -1166,8 +1170,61 @@ for lat_i in range(n_lat):
                     axs[n_lat-1-lat_i].plot(interp_x ,interp_y_region[i],alpha = 0.01,color =  "b")
             axs[n_lat-1-lat_i].plot(interp_x,np.nanmean(interp_y_region,axis=0),color = "r")
             axs[n_lat-1-lat_i].set_title(f"latitude: {region_lats[lat_i]} to {region_lats[lat_i+1]}. longitude: {region_lons[lon_i]} to {region_lons[lon_i+1]} ")
+            axs[n_lat-1-lat_i].set_ylim(0,0.5)
 plt.suptitle("Full temperature (not events, daily mean)")
 plt.show()
+
+
+# DIFFERENCE BETWEEN FULL AND EVENTS
+
+fig,axs = plt.subplots(n_lat,n_lon,figsize = (n_lon*5,n_lat*5))
+for lat_i in range(n_lat):
+    for lon_i in range(n_lon):
+        interp_y_region_day = np.array(non_event_interp_y_day)[(df_parameters.longitude<=region_lons[lon_i+1])
+                                              & (df_parameters.longitude>region_lons[lon_i])
+                                              & (df_parameters.latitude<=region_lats[lat_i+1])
+                                              & (df_parameters.latitude>region_lats[lat_i])
+                                             ]
+        aves_region_day = np.array(non_event_aves_day)[(df_parameters.longitude<=region_lons[lon_i+1])
+                                              & (df_parameters.longitude>region_lons[lon_i])
+                                              & (df_parameters.latitude<=region_lats[lat_i+1])
+                                              & (df_parameters.latitude>region_lats[lat_i])
+                                             ]
+        
+        interp_y_region = np.array(interp_y)[(df_parameters.longitude<=region_lons[lon_i+1])
+                                              & (df_parameters.longitude>region_lons[lon_i])
+                                              & (df_parameters.latitude<=region_lats[lat_i+1])
+                                              & (df_parameters.latitude>region_lats[lat_i])
+                                             ]
+        aves_region = np.array(aves)[(df_parameters.longitude<=region_lons[lon_i+1])
+                                              & (df_parameters.longitude>region_lons[lon_i])
+                                              & (df_parameters.latitude<=region_lats[lat_i+1])
+                                              & (df_parameters.latitude>region_lats[lat_i])
+                                             ]
+        
+        full_take_events_y = interp_y_region_day - interp_y_region
+        full_take_events_ave = aves_region_day - aves_region
+        
+        if n_lon>1:
+            for i in np.arange(0,len(interp_y_region)):  
+                if np.isnan(aves_region[i]):
+                    pass
+                else:    
+                    axs[n_lat-1-lat_i,lon_i].plot(interp_x ,full_take_events_y[i],alpha = 0.01,color =  "b")
+            axs[n_lat-1-lat_i,lon_i].plot(interp_x,np.nanmean(full_take_events_y,axis=0),color = "r")
+            axs[n_lat-1-lat_i,lon_i].set_title(f"latitude: {region_lats[lat_i]} to {region_lats[lat_i+1]}. longitude: {region_lons[lon_i]} to {region_lons[lon_i+1]} ")
+        else:
+            for i in np.arange(0,len(interp_y_region)):  
+                if np.isnan(aves_region[i]):
+                    pass
+                else:    
+                    axs[n_lat-1-lat_i].plot(interp_x ,full_take_events_y[i],alpha = 0.01,color =  "b")
+            axs[n_lat-1-lat_i].plot(interp_x,np.nanmean(full_take_events_y,axis=0),color = "r")
+            axs[n_lat-1-lat_i].set_title(f"latitude: {region_lats[lat_i]} to {region_lats[lat_i+1]}. longitude: {region_lons[lon_i]} to {region_lons[lon_i+1]} ")
+plt.suptitle("Full daily average - events")
+plt.show()
+
+
 
 # PLOT WITH LON RAINBOW
 cmap = colormaps['jet']

@@ -60,23 +60,23 @@ else:
 # censor_thr = 0.9
 
 
-# country = 'Japan'
-# ERA_country = 'Japan'
-# country_save = 'Japan'
-# code_str = 'JP_'
-# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
-# name_len = 5
-# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-# censor_thr = 0.9
-
-country = 'US'
-ERA_country = 'US'
-country_save = 'US_main'
-code_str = 'US_'
-minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
-name_len = 6
-min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+country = 'Japan'
+ERA_country = 'Japan'
+country_save = 'Japan'
+code_str = 'JP_'
+minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+name_len = 5
+min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 censor_thr = 0.9
+
+# country = 'US'
+# ERA_country = 'US'
+# country_save = 'US_main'
+# code_str = 'US_'
+# minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
+# name_len = 6
+# min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+# censor_thr = 0.9
 
 
 name_col = 'ppt' 

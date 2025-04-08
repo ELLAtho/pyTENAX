@@ -58,27 +58,27 @@ alpha_set = 0
 # max_lat = 50
 
 
-# country = 'Japan'
-# ERA_country = 'Japan'
-# country_save = 'Japan'
-# code_str = 'JP_'
-# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
-# name_len = 5
-# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-# censor_thr = 0.9
-# max_lat = 30
-
-
-
-country = 'US' 
-ERA_country = 'US'
-country_save = 'US_main'
-code_str = 'US_'
-minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
-name_len = 6
-min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+country = 'Japan'
+ERA_country = 'Japan'
+country_save = 'Japan'
+code_str = 'JP_'
+minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+name_len = 5
+min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 censor_thr = 0.9
 max_lat = 30
+
+
+
+# country = 'US' 
+# ERA_country = 'US'
+# country_save = 'US_main'
+# code_str = 'US_'
+# minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
+# name_len = 6
+# min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+# censor_thr = 0.9
+# max_lat = 30
 
 # country = 'UK' 
 # ERA_country = 'UK'
@@ -149,7 +149,6 @@ peaks_df = pd.DataFrame({
 
     
     })
-
 
 cmap = 'plasma'
 bounds = [0.5,1.5,2.5,3.5,4.5]  # 3 discrete levels
@@ -384,8 +383,8 @@ print(f"min skew: {np.min(skew_df.skewness)}")
 
 
 
-n_peak = 2
-sel_lat = [32,40]
+n_peak = 1
+sel_lat = [40,50]
 sel_lon = [-115,-105]
 peak1 = df_parameters[(peaks_df.n_peaks01 == n_peak)&
                       (df_parameters.latitude.between(sel_lat[0],sel_lat[1]))&
