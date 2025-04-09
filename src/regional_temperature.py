@@ -61,31 +61,31 @@ alpha_set = 0
 # region_lons = [minlon,9,maxlon]
 
 
-country = 'Japan'
-ERA_country = 'Japan'
-country_save = 'Japan'
-code_str = 'JP_'
-minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
-name_len = 5
-min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-censor_thr = 0.9
-max_lat = 30
-region_lats = [minlat,31,35,41.3,maxlat]
-region_lons = [minlon,maxlon]
-
-
-
-# country = 'US' 
-# ERA_country = 'US'
-# country_save = 'US_main'
-# code_str = 'US_'
-# minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
-# name_len = 6
-# min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+# country = 'Japan'
+# ERA_country = 'Japan'
+# country_save = 'Japan'
+# code_str = 'JP_'
+# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+# name_len = 5
+# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 # censor_thr = 0.9
 # max_lat = 30
-# region_lats = [minlat,37.5,maxlat]
-# region_lons = [minlon,-116,-105,-90,maxlon]
+# region_lats = [minlat,31,35,41.3,maxlat]
+# region_lons = [minlon,maxlon]
+
+
+
+country = 'US' 
+ERA_country = 'US'
+country_save = 'US_main'
+code_str = 'US_'
+minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
+name_len = 6
+min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+censor_thr = 0.9
+max_lat = 30
+region_lats = [minlat,40,maxlat]
+region_lons = [minlon,-100,-90,maxlon]
 
 # country = 'UK' 
 # ERA_country = 'UK'
@@ -96,6 +96,9 @@ region_lons = [minlon,maxlon]
 # censor_thr = 0.9
 # max_lat = 50
 
+
+
+radius = 150
 
 
 name_col = 'ppt' 
@@ -221,7 +224,6 @@ distance_savename = f"{drive}:/outputs/{country_save}\\distances_matrix.npy"
 distances_matrix = np.load(distance_savename)
 
 #calculate b as average
-radius = 80
 
 
 [0]*len(new_df.latitude)
@@ -232,6 +234,7 @@ FRMSE_skew_4_20_roll =  [0]*len(new_df.latitude)
 
 AIC_6_4_roll = [0]*len(new_df.latitude)
 AIC_skew_4_roll = [0]*len(new_df.latitude)
+skew_roll = [0]*len(new_df.latitude)
 
 for i in range(len(new_df.latitude)):
     if pd.isna(new_df.b.iloc[i]):
@@ -263,10 +266,13 @@ for i in range(len(new_df.latitude)):
 
         AIC_6_4_roll[i] = np.mean(AIC_6_4.iloc[close_locs])
         AIC_skew_4_roll[i] = np.mean(AIC_skew_4.iloc[close_locs])
+        skew_roll[i] = np.mean(skew_df.skewness.iloc[close_locs])
 
 lon_lims = [truncate_neg(np.min(df_parameters.longitude),2.5),np.ceil(np.max(df_parameters.longitude/2.5))*2.5]
 lat_lims = [truncate_neg(np.min(df_parameters.latitude),2.5),np.ceil(np.max(df_parameters.latitude/2.5))*2.5]
 s = 5
+n_lat = len(region_lats)-1
+n_lon = len(region_lons)-1
 
 
 fig = plt.figure(figsize=(15, 16))
@@ -293,6 +299,11 @@ sc = ax1.scatter(
 ax1.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
 ax1.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
 ax1.tick_params(labelsize=12)  
+for lat_i in range(n_lat-1):
+    ax1.plot([minlon-3,maxlon+3],[region_lats[lat_i+1],region_lats[lat_i+1]],  'r', linewidth=2, transform=ccrs.PlateCarree())
+
+for lon_i in range(n_lon-1):
+    ax1.plot([region_lons[lon_i+1],region_lons[lon_i+1]],[minlat-3,maxlat+3],  'r', linewidth=2, transform=ccrs.PlateCarree())
 
 plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
 plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
@@ -338,6 +349,11 @@ sc = ax3.scatter(
 ax3.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
 ax3.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
 ax3.tick_params(labelsize=12)  
+for lat_i in range(n_lat-1):
+    ax3.plot([minlon-3,maxlon+3],[region_lats[lat_i+1],region_lats[lat_i+1]],  'r', linewidth=2, transform=ccrs.PlateCarree())
+
+for lon_i in range(n_lon-1):
+    ax3.plot([region_lons[lon_i+1],region_lons[lon_i+1]],[minlat-3,maxlat+3],  'r', linewidth=2, transform=ccrs.PlateCarree())
 
 plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
 plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
@@ -388,6 +404,14 @@ sc = ax5.scatter(
 ax5.set_title("number of peaks (prominence = 0.001)")
 ax5.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,5), crs=proj)
 ax5.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
+for lat_i in range(n_lat-1):
+    ax5.plot([minlon-3,maxlon+3],[region_lats[lat_i+1],region_lats[lat_i+1]],  'r', linewidth=2, transform=ccrs.PlateCarree())
+
+for lon_i in range(n_lon-1):
+    ax5.plot([region_lons[lon_i+1],region_lons[lon_i+1]],[minlat-3,maxlat+3],  'r', linewidth=2, transform=ccrs.PlateCarree())
+
+plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
 plt.colorbar(sc,ticks=[1, 2, 3, 4])
 
 cmap = "seismic"
@@ -419,26 +443,6 @@ plt.colorbar(sc,extend = "both")
 plt.show()
 
 ################################################################################
-#lat lon regions
-n_lat = len(region_lats)-1
-n_lon = len(region_lons)-1
-
-fig = plt.figure()
-ax1 = fig.add_subplot(1, 1, 1, projection=proj)
-
-ax1.coastlines()
-ax1.add_feature(cfeature.BORDERS, linestyle=':')
-
-for lat_i in range(n_lat-1):
-    ax1.plot([minlon-3,maxlon+3],[region_lats[lat_i+1],region_lats[lat_i+1]],  'r', linewidth=2, transform=ccrs.PlateCarree())
-
-for lon_i in range(n_lon-1):
-    ax1.plot([region_lons[lon_i+1],region_lons[lon_i+1]],[minlat-3,maxlat+3],  'r', linewidth=2, transform=ccrs.PlateCarree())
-
-plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
-plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
-plt.show()
-
 
 interp_x = np.arange(-4,4.1,0.1)
 interp_y = [np.nan] * len(df_parameters)
@@ -502,7 +506,150 @@ if country == "Japan":
 
     plt.tight_layout()
     plt.show()
-    
-    
 
 
+elif country == "US": #TODO: switch the pwr to the other axis
+    fig = plt.figure(figsize=(n_lon * 2 * 4, n_lat * 2 * 3))  # Adjust as needed
+
+    for lat_i in range(n_lat):
+        for lon_i in range(n_lon):
+            for pwr in range(2):  # 0 = worse, 1 = better
+                row = (n_lat - 1 - lat_i) * 2 + pwr
+                col_line = lon_i * 2       # Even col: line plot
+                col_map = lon_i * 2 + 1    # Odd col: map plot
+                
+                # === Index into subplot grid ===
+                nrows, ncols = n_lat * 2, n_lon * 2
+                idx_line = row * ncols + col_line + 1
+                idx_map  = row * ncols + col_map + 1
+                
+                # === Filter region & skew ===
+                mask = (
+                    (df_parameters.latitude <= region_lats[lat_i + 1]) &
+                    (df_parameters.latitude > region_lats[lat_i]) &
+                    (df_parameters.longitude <= region_lons[lon_i + 1]) &
+                    (df_parameters.longitude > region_lons[lon_i]) &
+                    ((pd.DataFrame(FRMSE_skew_4_roll)[0]) * (-1) ** pwr > 0)
+                )
+                interp_y_region = np.array(interp_y)[mask]
+                aves_region = np.array(aves)[mask]
+                loc_region = df_parameters[mask]
+                
+                # === Line plot ===
+                ax_line = fig.add_subplot(nrows, ncols, idx_line)
+                for i in range(len(interp_y_region)):
+                    if not np.isnan(aves_region[i]):
+                        ax_line.plot(interp_x, interp_y_region[i], alpha=0.1, color="b")
+                if interp_y_region.size > 0:
+                    ax_line.plot(interp_x, np.nanmean(interp_y_region, axis=0), color="r")
+                words = "worse" if pwr == 0 else "better"
+                ax_line.set_title(f"Lat: {region_lats[lat_i]}–{region_lats[lat_i + 1]} | Skew {words}")
+                ax_line.set_ylim(0, 0.5)
+                
+                # === Map plot (with projection) ===
+                ax_map = fig.add_subplot(nrows, ncols, idx_map, projection=ccrs.PlateCarree())
+                ax_map.coastlines()
+                ax_map.add_feature(cfeature.BORDERS, linestyle=':')
+                ax_map.scatter(loc_region.longitude, loc_region.latitude,
+                               color = "r" if pwr == 0 else "b",
+                               transform=ccrs.PlateCarree())
+                ax_map.set_xlim(minlon, maxlon)
+                ax_map.set_ylim(minlat, maxlat)
+    
+    plt.tight_layout()
+    plt.show()    
+    
+    
+    fig = plt.figure(figsize = (10,5))
+    
+    pwr = 0
+    mask = ((skew_df.skewness > 0) &
+        (peaks_df.n_peaks01 != 1) &
+        (df_parameters.longitude < -90))
+    
+    interp_y_region = np.array(interp_y)[mask]
+    aves_region = np.array(aves)[mask]
+    loc_region = df_parameters[mask]
+    
+    ax_line = fig.add_subplot(1, 2, 1)
+    for i in range(len(interp_y_region)):
+        if not np.isnan(aves_region[i]):
+            ax_line.plot(interp_x, interp_y_region[i], alpha=0.1, color="b")
+    if interp_y_region.size > 0:
+        ax_line.plot(interp_x, np.nanmean(interp_y_region, axis=0), color="r")
+    ax_line.set_title("positive skew, 2 peaks")
+    ax_line.set_ylim(0, 0.5)
+    
+    ax_map = fig.add_subplot(1,2,2, projection=ccrs.PlateCarree())
+    ax_map.coastlines()
+    ax_map.add_feature(cfeature.BORDERS, linestyle=':')
+    ax_map.scatter(loc_region.longitude, loc_region.latitude,
+                   color = "r" if pwr == 0 else "b",
+                   transform=ccrs.PlateCarree())
+    ax_map.set_xlim(minlon, maxlon)
+    ax_map.set_ylim(minlat, maxlat)
+    plt.tight_layout()
+    plt.show() 
+    
+    
+    
+    fig = plt.figure(figsize = (10,5))
+    
+    pwr = 1
+    mask = ((skew_df.skewness > 0) &
+        (peaks_df.n_peaks01 == 1))
+    
+    interp_y_region = np.array(interp_y)[mask]
+    aves_region = np.array(aves)[mask]
+    loc_region = df_parameters[mask]
+    
+    ax_line = fig.add_subplot(1, 2, 1)
+    for i in range(len(interp_y_region)):
+        if not np.isnan(aves_region[i]):
+            ax_line.plot(interp_x, interp_y_region[i], alpha=0.1, color="b")
+    if interp_y_region.size > 0:
+        ax_line.plot(interp_x, np.nanmean(interp_y_region, axis=0), color="r")
+    ax_line.set_title("positive skew, one peak")
+    ax_line.set_ylim(0, 0.5)
+    
+    ax_map = fig.add_subplot(1,2,2, projection=ccrs.PlateCarree())
+    ax_map.coastlines()
+    ax_map.add_feature(cfeature.BORDERS, linestyle=':')
+    ax_map.scatter(loc_region.longitude, loc_region.latitude,
+                   color = "r" if pwr == 0 else "b",
+                   transform=ccrs.PlateCarree())
+    ax_map.set_xlim(minlon, maxlon)
+    ax_map.set_ylim(minlat, maxlat)
+    plt.tight_layout()
+    plt.show()
+    
+    
+    fig = plt.figure(figsize = (10,5))
+    
+    pwr = 0
+    mask = (((pd.DataFrame(FRMSE_skew_4_roll)[0]) * (-1) ** pwr > 0) &
+        (pd.DataFrame(skew_roll)[0] > 0))
+    
+    interp_y_region = np.array(interp_y)[mask]
+    aves_region = np.array(aves)[mask]
+    loc_region = df_parameters[mask]
+    
+    ax_line = fig.add_subplot(1, 2, 1)
+    for i in range(len(interp_y_region)):
+        if not np.isnan(aves_region[i]):
+            ax_line.plot(interp_x, interp_y_region[i], alpha=0.1, color="b")
+    if interp_y_region.size > 0:
+        ax_line.plot(interp_x, np.nanmean(interp_y_region, axis=0), color="r")
+    ax_line.set_title("positive skew, skew bad")
+    ax_line.set_ylim(0, 0.5)
+    
+    ax_map = fig.add_subplot(1,2,2, projection=ccrs.PlateCarree())
+    ax_map.coastlines()
+    ax_map.add_feature(cfeature.BORDERS, linestyle=':')
+    ax_map.scatter(loc_region.longitude, loc_region.latitude,
+                   color = "r" if pwr == 0 else "b",
+                   transform=ccrs.PlateCarree())
+    ax_map.set_xlim(minlon, maxlon)
+    ax_map.set_ylim(minlat, maxlat)
+    plt.tight_layout()
+    plt.show() 

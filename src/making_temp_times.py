@@ -35,6 +35,7 @@ drive = 'D'  #specify name of external drive
 
 country = 'US' #TODO: may need to redefine for e.g. hawaii, folder name and save name?
 ERA_country = 'US'
+folder_name = "USmain_24_m125_50_m66"
 code_str = 'US_'
 minlat,minlon,maxlat,maxlon = 24, -125, 56, -66 #mainland US
 name_len = 6
@@ -88,7 +89,7 @@ else:
 
 
 #READ IN ERA5 DATA
-T_files = sorted(glob.glob(drive+':/ERA5_land/'+ERA_country+'*/*')) #make list of era5 files
+T_files = sorted(glob.glob(drive+':/ERA5_land/'+folder_name+'/*')) #make list of era5 files
 saved_files = glob.glob(drive+':/'+country+'_temp/*') #files already saved
 nan_files = []
 dist_to_point = []
