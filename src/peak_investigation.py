@@ -36,6 +36,7 @@ import cartopy.feature as cfeature
 from matplotlib.colors import LinearSegmentedColormap
 import matplotlib.patches as patches
 from scipy.stats import kendalltau, pearsonr, spearmanr
+from scipy.stats import norm, skewnorm
 from scipy.interpolate import interp1d
 from matplotlib import cm
 from matplotlib import colormaps
@@ -400,59 +401,47 @@ for i in range(6):
     oe_save = f"{drive}:/ordinary_events/{country_save}\\T_{peak1.station.iloc[i]}.csv"
     T = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/T_{peak1.station.iloc[i]}.csv")
     P = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/P_{peak1.station.iloc[i]}.csv")
-    file_name = f"{drive}:/{country}/{code_str}{peak1.station.iloc[i]}"
+    oe_time = pd.read_csv(f"{drive}:/ordinary_events/{country_save}/time_{peak1.station.iloc[i]}.csv",parse_dates = ["oe_time"])
 
-    if 'code_str' in locals():
-        G,data_meta = read_GSDR_file(f"{file_name}.txt",name_col)
-    else:
-        G = pd.read_csv(f"{file_name}.csv")
-        G['prec_time'] = pd.to_datetime(G['prec_time'])
-        G.set_index('prec_time', inplace=True)
-
-    ######################################################################
-    #TENAX  AMS
-
-    data = G 
-    data = S.remove_incomplete_years(data, name_col)
-
-    df_arr = np.array(data[name_col])
-    df_dates = np.array(data.index)
     
-    idx_ordinary=S.get_ordinary_events(data=df_arr,dates=df_dates, name_col=name_col,  check_gaps=False)
-
-
-    #get ordinary events by removing too short events
-    #returns boolean array, dates of OE in TO, FROM format, and count of OE in each years
-    arr_vals,arr_dates,n_ordinary_per_year=S.remove_short(idx_ordinary)
-
-    #assign ordinary events values by given durations, values are in depth per duration, NOT in intensity mm/h
-    dict_ordinary, dict_AMS = S.get_ordinary_events_values(data=df_arr,dates=df_dates, arr_dates_oe=arr_dates)
-
-    AMS = dict_AMS['60']
-
-
-    df_arr_t_data = np.array(t_data[temp_name_col])
-    df_dates_t_data = np.array(t_data.index)
-
-    dict_ordinary, _ , n_ordinary_per_year = S.associate_vars(dict_ordinary, df_arr_t_data, df_dates_t_data)
+    
     #SPLITTING INTO SUMMER/WINTER
     season_separations = [5, 10]
-    months = dict_ordinary["60"]["oe_time"].dt.month
-    winter_inds = months.index[(months>season_separations[1]) | (months<season_separations[0])]
-    summer_inds = months.index[(months<season_separations[1]+1)&(months>season_separations[0]-1)]
+    day_separations = [dt.timedelta(100), dt.timedelta(300)]
+    months = oe_time["oe_time"].dt.month
+    years = oe_time["oe_time"].dt.year
+    jans = pd.to_datetime(years.astype(str) + '-01-01') #make dataframe with 1st jan of each year
+    days_since_jan = oe_time["oe_time"] - jans
+    
+    
+    
+    # winter_inds = months.index[(months>season_separations[1]) | (months<season_separations[0])]
+    # summer_inds = months.index[(months<season_separations[1]+1)&(months>season_separations[0]-1)]
+    
+    winter_inds = days_since_jan.index[(days_since_jan>day_separations[1]) | (days_since_jan<=day_separations[0])]
+    summer_inds = days_since_jan.index[(days_since_jan<=day_separations[1])&(days_since_jan>day_separations[0])]
+    
+    
     T_winter = T[winter_inds]
     T_summer = T[summer_inds]
 
 
     g_phat_winter = S.temperature_model(T_winter,beta = 2)
     g_phat_summer = S.temperature_model(T_summer,beta = 2)
-
+    
+    
+    g_phat_winter_skew = S.temperature_model(T_winter,method = "skewnorm")
+    g_phat_summer_skew = S.temperature_model(T_summer,method = "skewnorm")
 
     eT = np.arange(np.min(T),np.max(T)+4)
     winter_pdf = gen_norm_pdf(eT, g_phat_winter[0], g_phat_winter[1], 2)
     summer_pdf = gen_norm_pdf(eT, g_phat_summer[0], g_phat_summer[1], 2)
+    
+    winter_pdf_skew = skewnorm.pdf(eT, *g_phat_winter_skew)
+    summer_pdf_skew = skewnorm.pdf(eT, *g_phat_summer_skew)
 
     combined_pdf = (winter_pdf*np.size(T_winter)+summer_pdf*np.size(T_summer))/(np.size(T_winter)+np.size(T_summer))
+    combined_pdf_skew = (winter_pdf_skew*np.size(T_winter)+summer_pdf_skew*np.size(T_summer))/(np.size(T_winter)+np.size(T_summer))
 
     
     
@@ -473,6 +462,7 @@ for i in range(6):
     g_phat6 = S.temperature_model(T)
     plt.plot(eT,gen_norm_pdf(eT, g_phat[0], g_phat[1], 6),label = "beta = 6")
     plt.plot(eT,combined_pdf,label = "summer and winter")
+    plt.plot(eT,combined_pdf_skew,label = "summer and winter skewnorms",color = "m")
     plt.ylim(0,np.max(df1.iloc[i][1:])+0.01)
     
     plt.legend()
