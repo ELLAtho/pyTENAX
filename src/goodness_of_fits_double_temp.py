@@ -42,24 +42,24 @@ from scipy.stats import kendalltau, pearsonr, spearmanr, skewnorm
 drive = 'D'
 alpha_set = 0.05
 
-country = 'Germany' 
-ERA_country = 'Germany'
-country_save = 'Germany'
-code_str = 'DE_'
-minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
-name_len = 5
-min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-censor_thr = 0.9
-
-
-# country = 'Japan'
-# ERA_country = 'Japan'
-# country_save = 'Japan'
-# code_str = 'JP_'
-# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+# country = 'Germany' 
+# ERA_country = 'Germany'
+# country_save = 'Germany'
+# code_str = 'DE_'
+# minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
 # name_len = 5
 # min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 # censor_thr = 0.9
+
+
+country = 'Japan'
+ERA_country = 'Japan'
+country_save = 'Japan'
+code_str = 'JP_'
+minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+name_len = 5
+min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+censor_thr = 0.9
 
 # country = 'US'
 # ERA_country = 'US'
@@ -369,19 +369,19 @@ if save_name not in output_files:
         })
 
     FRMSE_double_df.to_csv(save_name,index = False)
-    log_liks_double_df.to_csv('D:/outputs/Japan/doubles\\log_likelihood.csv',index = False)
+    log_liks_double_df.to_csv(f'D:/outputs/{country_save}/doubles\\log_likelihood.csv',index = False)
     
-    g_phats_double_df.to_csv('D:/outputs/Japan/doubles\\g_phat_double.csv',index = False)
-    g_phats_summer_winter_df.to_csv('D:/outputs/Japan/doubles\\g_phat_summer_winter.csv',index = False)
-    g_phats_summer_winter_skew_df.to_csv('D:/outputs/Japan/doubles\\g_phat_summer_winter_skew.csv',index = False)
+    g_phats_double_df.to_csv(f'D:/outputs/{country_save}/doubles\\g_phat_double.csv',index = False)
+    g_phats_summer_winter_df.to_csv(f'D:/outputs/{country_save}/doubles\\g_phat_summer_winter.csv',index = False)
+    g_phats_summer_winter_skew_df.to_csv(f'D:/outputs/{country_save}/doubles\\g_phat_summer_winter_skew.csv',index = False)
 
 else:
     FRMSE_double_df = pd.read_csv(save_name,dtype = {"station":str})
-    log_liks_double_df = pd.read_csv('D:/outputs/Japan/doubles\\log_likelihood.csv',dtype = {"station":str})
+    log_liks_double_df = pd.read_csv(f'D:/outputs/{country_save}/doubles\\log_likelihood.csv',dtype = {"station":str})
     
-    g_phats_double_df = pd.read_csv('D:/outputs/Japan/doubles\\g_phat_double.csv',dtype = {"station":str})
-    g_phats_summer_winter_df = pd.read_csv('D:/outputs/Japan/doubles\\g_phat_summer_winter.csv',dtype = {"station":str})
-    g_phats_summer_winter_skew_df = pd.read_csv('D:/outputs/Japan/doubles\\g_phat_summer_winter_skew.csv',dtype = {"station":str})
+    g_phats_double_df = pd.read_csv(f'D:/outputs/{country_save}/doubles\\g_phat_double.csv',dtype = {"station":str})
+    g_phats_summer_winter_df = pd.read_csv(f'D:/outputs/{country_save}/doubles\\g_phat_summer_winter.csv',dtype = {"station":str})
+    g_phats_summer_winter_skew_df = pd.read_csv(f'D:/outputs/{country_save}/doubles\\g_phat_summer_winter_skew.csv',dtype = {"station":str})
 
 
 
@@ -467,6 +467,12 @@ for n in range(number_AIC - 1):
     plt.colorbar(sc,extend = "both")
     axs[n,1].set_title(f"{FRMSE_headers[n]} - 4  FRMSE")
     
+    gl = axs[n,1].gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+    gl.top_labels = False
+    gl.right_labels = False
+    gl.xlabel_style = {'size': 8}
+    gl.ylabel_style = {'size': 8}
+    
 plt.show()
 
 
@@ -507,8 +513,134 @@ for i in range(n):
 
         plt.colorbar(sc, extend="both")
         ax.set_title(f"{AIC_double.columns[i]} - {AIC_double.columns[j]}")
+        gl = ax.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+        gl.top_labels = False
+        gl.right_labels = False
+        gl.xlabel_style = {'size': 8}
+        gl.ylabel_style = {'size': 8}
 
 plt.show()
+###############################################################################
+
+# station examples
+
+#read in the temp shapes and stuff
+
+df = pd.read_csv(f"{drive}:/outputs/{country_save}\\average_temp_shape.csv",dtype = {0:str})
+eTs_df = pd.read_csv(f"{drive}:/outputs/{country_save}\\eTs_df.csv",dtype = {"station":str})
+
+
+
+sel_lat = [36,37]
+sel_lon = [139,141]
+df_sel = df_parameters[(df_parameters.latitude.between(sel_lat[0],sel_lat[1]))&
+                      (df_parameters.longitude.between(sel_lon[0],sel_lon[1]))]
+df1 = df[(df_parameters.latitude.between(sel_lat[0],sel_lat[1]))&
+                      (df_parameters.longitude.between(sel_lon[0],sel_lon[1]))]
+
+g_phats_double1 = g_phats_double_df[(df_parameters.latitude.between(sel_lat[0],sel_lat[1]))&
+                      (df_parameters.longitude.between(sel_lon[0],sel_lon[1]))]
+
+eTs_df1 = eTs_df[(df_parameters.latitude.between(sel_lat[0],sel_lat[1]))&
+                      (df_parameters.longitude.between(sel_lon[0],sel_lon[1]))]
+
+for i in range(6):
+    oe_save = f"{drive}:/ordinary_events/{country_save}\\T_{df_sel.station.iloc[i]}.csv"
+    T = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/T_{df_sel.station.iloc[i]}.csv")
+    P = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/P_{df_sel.station.iloc[i]}.csv")
+    oe_time = pd.read_csv(f"{drive}:/ordinary_events/{country_save}/time_{df_sel.station.iloc[i]}.csv",parse_dates = ["oe_time"])
+
+    
+    
+    #SPLITTING INTO SUMMER/WINTER
+    season_separations = [5, 10]
+    day_separations = [dt.timedelta(100), dt.timedelta(300)]
+    months = oe_time["oe_time"].dt.month
+    years = oe_time["oe_time"].dt.year
+    jans = pd.to_datetime(years.astype(str) + '-01-01') #make dataframe with 1st jan of each year
+    days_since_jan = oe_time["oe_time"] - jans
+    
+    
+    
+    winter_inds = months.index[(months>season_separations[1]) | (months<season_separations[0])]
+    summer_inds = months.index[(months<season_separations[1]+1)&(months>season_separations[0]-1)]
+    
+    T_winter = T[winter_inds]
+    T_summer = T[summer_inds]
+
+
+    g_phat_winter = S.temperature_model(T_winter,beta = 2)
+    g_phat_summer = S.temperature_model(T_summer,beta = 2)
+    
+    
+    g_phat_winter_skew = S.temperature_model(T_winter,method = "skewnorm")
+    g_phat_summer_skew = S.temperature_model(T_summer,method = "skewnorm")
+
+    eT = np.arange(np.min(T),np.max(T)+4)
+    winter_pdf = gen_norm_pdf(eT, g_phat_winter[0], g_phat_winter[1], 2)
+    summer_pdf = gen_norm_pdf(eT, g_phat_summer[0], g_phat_summer[1], 2)
+    
+    winter_pdf_skew = skewnorm.pdf(eT, *g_phat_winter_skew)
+    summer_pdf_skew = skewnorm.pdf(eT, *g_phat_summer_skew)
+
+    combined_pdf = (winter_pdf*np.size(T_winter)+summer_pdf*np.size(T_summer))/(np.size(T_winter)+np.size(T_summer))
+    combined_pdf_skew = (winter_pdf_skew*np.size(T_winter)+summer_pdf_skew*np.size(T_summer))/(np.size(T_winter)+np.size(T_summer))
+    
+    g_phat_double = g_phats_double1[g_phats_double1.columns[1:]].iloc[i].to_numpy()
+    double_pdf = bimodal(eT,*g_phat_double)
+    
+    
+    
+    eT_edges = np.concatenate([np.array([eT[0]-(eT[1]-eT[0])/2]),(eT + (eT[1]-eT[0])/2)]) #convert bin centres into bin edges
+    hist, bin_edges = np.histogram(T, bins=eT_edges, density=True)
+    plt.plot(eT, hist, '--', color="r")
+    
+    
+    
+    plt.plot(eTs_df1.iloc[i][1:],df1.iloc[i][1:],color = "r", label = "kernel density (OBSERVATIONS)")
+    plt.plot(eT,combined_pdf,label = "summer and winter")
+    plt.plot(eT,combined_pdf_skew,label = "summer and winter skewnorms",color = "m")
+    plt.plot(eT,double_pdf,label = "free double normal")
+    plt.ylim(0,np.max(df1.iloc[i][1:])+0.01)
+    plt.xlim(np.min(T)-3,np.max(T)+3)
+    plt.legend()
+    plt.title(f"{country_save}. station {df_sel.station.iloc[i]}. lat {df_sel.latitude.iloc[i]}. lon {df_sel.longitude.iloc[i]}")
+    plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
