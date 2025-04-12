@@ -129,16 +129,168 @@ plt.show()
 ################################################################################
 # 5b1 (Germany)
 
+df = pd.read_csv(f"{drive}:/outputs/{country_save}\\average_temp_shape.csv",dtype = {0:str})
+
+eTs_df = pd.read_csv(f"{drive}:/outputs/{country_save}\\eTs_df.csv",dtype = {"station":str})
+average_df = pd.read_csv(f"{drive}:/outputs/{country_save}\\average_temp_shape_ave_std.csv",dtype = {"station":str})
+aves = average_df.aves.to_numpy()
+sds = average_df.sds.to_numpy()
+eTs = eTs_df.drop(columns = "station").to_numpy()
+
+interp_x = np.arange(-4,4.1,0.1)
+interp_y = [np.nan] * len(df)
+for i in np.arange(0,len(df)):  
+    if np.isnan(aves[i]):
+        interp_y[i] = [np.nan]*len(interp_x)
+    else:  
+        interp_func = interp1d((eTs[i]-aves[i])/sds[i],df.iloc[i][1:])
+        interp_y[i] = np.zeros(len(interp_x))
+        interp_x_here = interp_x[interp_x>=np.min((eTs[i]-aves[i])/sds[i])]
+        interp_x_here = interp_x_here[interp_x_here<=np.max((eTs[i]-aves[i])/sds[i])]
+        
+        interp_y[i][(interp_x>=np.min((eTs[i]-aves[i])/sds[i])) & (interp_x<=np.max((eTs[i]-aves[i])/sds[i]))] = interp_func(interp_x_here)*sds[i]
+        
+
+temp_aves_proper = np.nanmean(interp_y,axis =0)
 
 
 
+fig = plt.figure(figsize = (3,3))
+ax = fig.add_subplot(1,1,1)
+
+for i in np.arange(0,len(df)):  
+    if np.isnan(aves[i]):
+        pass
+    else:    
+        ax.plot(interp_x ,interp_y[i],alpha = 0.01,color = "b")
+
+plt.plot(interp_x,temp_aves_proper,label = "mean",color = "r")
+ax.set_title("Germany temperature distributions")
+ax.set_xlabel("(T - μ)/σ")
+ax.set_ylabel("Probability density")
+plt.show()
 
 
+# 5a1 USA
+country = 'US' 
+ERA_country = 'US'
+country_save = 'US_main'
+code_str = 'US_'
+minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
+df = pd.read_csv(f"{drive}:/outputs/{country_save}\\average_temp_shape.csv",dtype = {0:str})
+df_parameters = pd.read_csv(drive + ':/outputs/'+country_save+'\\parameters.csv', dtype={'station': str}) 
 
 
+eTs_df = pd.read_csv(f"{drive}:/outputs/{country_save}\\eTs_df.csv",dtype = {"station":str})
+average_df = pd.read_csv(f"{drive}:/outputs/{country_save}\\average_temp_shape_ave_std.csv",dtype = {"station":str})
+aves = average_df.aves.to_numpy()
+sds = average_df.sds.to_numpy()
+eTs = eTs_df.drop(columns = "station").to_numpy()
+
+interp_x = np.arange(-4,4.1,0.1)
+interp_y = [np.nan] * len(df)
+for i in np.arange(0,len(df)):  
+    if np.isnan(aves[i]):
+        interp_y[i] = [np.nan]*len(interp_x)
+    else:  
+        interp_func = interp1d((eTs[i]-aves[i])/sds[i],df.iloc[i][1:])
+        interp_y[i] = np.zeros(len(interp_x))
+        interp_x_here = interp_x[interp_x>=np.min((eTs[i]-aves[i])/sds[i])]
+        interp_x_here = interp_x_here[interp_x_here<=np.max((eTs[i]-aves[i])/sds[i])]
+        
+        interp_y[i][(interp_x>=np.min((eTs[i]-aves[i])/sds[i])) & (interp_x<=np.max((eTs[i]-aves[i])/sds[i]))] = interp_func(interp_x_here)*sds[i]
+        
 
 
+peaks_df = pd.read_csv(f"{drive}:/outputs/{country_save}\\peaks.csv")
+skew_df = pd.read_csv(f"{drive}:/outputs/{country_save}\\temp_skew.csv", dtype={"station":str})
 
 
+temp_aves_proper = np.nanmean(interp_y,axis =0)
+fig = plt.figure(figsize = (3,3))
+
+mask = ((skew_df.skewness > 0) &
+    (peaks_df.n_peaks01 == 1) &
+    (df_parameters.longitude < -110))
+
+interp_y_region = np.array(interp_y)[mask]
+aves_region = np.array(aves)[mask]
+loc_region = df_parameters[mask]
+
+ax_line = fig.add_subplot(1, 1, 1)
+for i in range(len(interp_y_region)):
+    if not np.isnan(aves_region[i]):
+        ax_line.plot(interp_x, interp_y_region[i], alpha=0.1, color="b")
+if interp_y_region.size > 0:
+    ax_line.plot(interp_x, np.nanmean(interp_y_region, axis=0), color="r")
+ax_line.set_title(u"USA temperature distributions \n West coast single peak")
+ax_line.set_ylim(0, 0.5)
+ax_line.set_xlabel("(T - μ)/σ")
+ax_line.set_ylabel("Probability density")
+
+fig = plt.figure()
+ax_map = fig.add_subplot(1,2,2, projection=ccrs.PlateCarree())
+ax_map.coastlines()
+ax_map.add_feature(cfeature.BORDERS, linestyle=':')
+ax_map.scatter(loc_region.longitude, loc_region.latitude,
+               color = "b",
+               transform=ccrs.PlateCarree())
+ax_map.set_xlim(minlon, maxlon)
+ax_map.set_ylim(minlat, maxlat)
+gl = ax_map.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': 8}
+gl.ylabel_style = {'size': 8}
+plt.tight_layout()
+plt.show()
+
+
+# 5a2 USA
+
+skew_FRMSE_df = pd.read_csv(f"{drive}:/outputs/{country_save}\\temp_FRMSE_skew.csv",dtype = {"station":str})
+temp_FRMSE_df4 = pd.read_csv(f"{drive}:/outputs/{country_save}\\temp_FRMSE.csv",dtype = {"station":str})
+
+FRMSE_skew_4_20 =  skew_FRMSE_df.FRMSE_upper_perc - temp_FRMSE_df4.FRMSE_upper_perc
+
+mask = ((skew_df.skewness > 0) &
+    (peaks_df.n_peaks01 != 1) &
+    (df_parameters.longitude < -90) &
+    (FRMSE_skew_4_20 > 0)) #this is positive skew and 2 peaks and skew bad fit
+
+
+interp_y_region = np.array(interp_y)[mask]
+aves_region = np.array(aves)[mask]
+loc_region = df_parameters[mask]
+
+fig = plt.figure(figsize = (3,3))
+ax = fig.add_subplot(1, 1, 1)
+for i in range(len(interp_y_region)):
+    if not np.isnan(aves_region[i]):
+        ax.plot(interp_x, interp_y_region[i], alpha=0.1, color="b")
+if interp_y_region.size > 0:
+    ax.plot(interp_x, np.nanmean(interp_y_region, axis=0), color="r")
+ax.set_title(u"USA temperature distributions \n South mountains")
+ax.set_ylim(0, 0.5)
+ax.set_xlabel("(T - μ)/σ")
+ax.set_ylabel("Probability density")
+
+
+fig = plt.figure()
+ax_map = fig.add_subplot(1,2,2, projection=ccrs.PlateCarree())
+ax_map.coastlines()
+ax_map.add_feature(cfeature.BORDERS, linestyle=':')
+ax_map.scatter(loc_region.longitude, loc_region.latitude,
+               color = "r",
+               transform=ccrs.PlateCarree())
+ax_map.set_xlim(minlon, maxlon)
+ax_map.set_ylim(minlat, maxlat)
+gl = ax_map.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': 8}
+gl.ylabel_style = {'size': 8}
+plt.tight_layout()
+plt.show()
 
 
