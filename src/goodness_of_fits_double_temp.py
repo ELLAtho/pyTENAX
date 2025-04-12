@@ -42,24 +42,24 @@ from scipy.stats import kendalltau, pearsonr, spearmanr, skewnorm
 drive = 'D'
 alpha_set = 0.05
 
-# country = 'Germany' 
-# ERA_country = 'Germany'
-# country_save = 'Germany'
-# code_str = 'DE_'
-# minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
-# name_len = 5
-# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-# censor_thr = 0.9
-
-
-country = 'Japan'
-ERA_country = 'Japan'
-country_save = 'Japan'
-code_str = 'JP_'
-minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+country = 'Germany' 
+ERA_country = 'Germany'
+country_save = 'Germany'
+code_str = 'DE_'
+minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
 name_len = 5
 min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 censor_thr = 0.9
+
+
+# country = 'Japan'
+# ERA_country = 'Japan'
+# country_save = 'Japan'
+# code_str = 'JP_'
+# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+# name_len = 5
+# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+# censor_thr = 0.9
 
 # country = 'US'
 # ERA_country = 'US'
@@ -187,7 +187,7 @@ if save_name not in output_files:
     print("temp FRMSE not calculated yet for splits. here we gooooooo")
     
 
-    FRMSE_upper_perc = [[0,0,0]] * len(new_df)
+    FRMSE_upper_perc = [[0, 0, 0] for _ in range(len(new_df))]
     start_time = [0] * len(new_df)
     FRMSE_doub = [0] * len(new_df)
     FRMSE_summer_winter = [0] * len(new_df)
@@ -198,14 +198,14 @@ if save_name not in output_files:
     g_phat_winter_skew = [0] * len(new_df)
     g_phat_summer_skew = [0] * len(new_df)
     
-    log_liks = [[0,0,0]] * len(new_df)
+    log_liks = [[0, 0, 0] for _ in range(len(new_df))]
     
     
     for i in np.arange(0, len(new_df)):
         start_time[i] = time.time()
     
         oe_save = f"{drive}:/ordinary_events/{country_save}\\T_{df_parameters.station.iloc[i]}.csv"
-        if oe_save not in glob.glob(f"{drive}:/ordinary_events/{country_save}/*"):
+        if oe_save not in glob.glob(f"{drive}:/ordinary_events/{country_save}/*"): #save as nans if not in
             
             FRMSE_upper_perc[i] = [np.nan,np.nan,np.nan]
             FRMSE_doub[i] = np.nan
@@ -382,6 +382,134 @@ else:
     g_phats_double_df = pd.read_csv('D:/outputs/Japan/doubles\\g_phat_double.csv',dtype = {"station":str})
     g_phats_summer_winter_df = pd.read_csv('D:/outputs/Japan/doubles\\g_phat_summer_winter.csv',dtype = {"station":str})
     g_phats_summer_winter_skew_df = pd.read_csv('D:/outputs/Japan/doubles\\g_phat_summer_winter_skew.csv',dtype = {"station":str})
+
+
+
+
+###############################################################################
+# read other FRMSEs and AICs
+
+skew_FRMSE_df = pd.read_csv(f"{drive}:/outputs/{country_save}\\temp_FRMSE_skew.csv",dtype = {"station":str})
+AIC_df = pd.read_csv(f"{drive}:/outputs/{country_save}\\AIC.csv",dtype = {"station":str})
+
+
+temp_FRMSE_df = pd.read_csv(f"{drive}:/outputs/{country_save}\\temp_FRMSE.csv",dtype = {"station":str})
+temp_FRMSE_df6 = pd.read_csv(f"{drive}:/outputs/{country_save}\\temp_FRMSE6.csv",dtype = {"station":str})
+
+###############################################################################
+# convert log_lik to AIC
+n_params = {
+    "double" : 6, #might actually be 5 because A1 and A2 depend on eachother
+    "summer_winter" : 4,
+    "summer_winter_skew" : 6,
+    }
+
+
+AIC_double = pd.concat([2 * n_params[name] - 2 * log_liks_double_df[name] for name in log_liks_double_df.columns[1:]],axis = 1)
+
+
+
+###############################################################################
+#plots
+
+#AIC
+AIC_df_sm = AIC_df.drop(columns = "station")
+AIC_df_sm = pd.concat([AIC_double,AIC_df_sm],axis = 1) #combine all AIC dataframes
+AIC_df_sm = AIC_df_sm.drop(columns = [string for string in AIC_df_sm.columns if "_20" in string ]) #drop the top 20% ones because they're bs
+number_AIC = int(len(AIC_df_sm.columns))
+
+
+
+skew_FRMSE_df.rename(columns={"FRMSE_upper_perc": "skew_upper", "FRMSE": "skew"},inplace = True)
+temp_FRMSE_df.rename(columns={"FRMSE_upper_perc": "beta4_upper", "FRMSE": "beta4"},inplace = True)
+temp_FRMSE_df6.rename(columns={"FRMSE_upper_perc": "beta6_upper", "FRMSE": "beta6"},inplace = True)
+
+
+FRMSE_df_sm = pd.concat([FRMSE_double_df,skew_FRMSE_df,temp_FRMSE_df6,temp_FRMSE_df],axis = 1).drop(columns = ["station","difference"])
+FRMSE_df_sm = FRMSE_df_sm.drop(columns = [string for string in FRMSE_df_sm.columns if "_upper" in string ]) #drop the top 20% ones because they're bs
+
+
+proj = ccrs.PlateCarree()
+cmap = "seismic"
+norm = mcolors.Normalize(vmin=-200, vmax=200)
+norm2 = mcolors.Normalize(vmin=-0.3, vmax=0.3)
+
+AIC_headers = AIC_df_sm.columns.drop("AIC")
+FRMSE_headers = FRMSE_df_sm.columns.drop("beta4")
+
+#compare to beta = 4
+fig,axs = plt.subplots(number_AIC - 1,2,figsize = (12,(number_AIC - 1)*6), subplot_kw={'projection': proj})
+
+for n in range(number_AIC - 1):
+    axs[n,0].coastlines()
+    axs[n,0].add_feature(cfeature.BORDERS, linestyle=':')
+    
+    sc = axs[n,0].scatter(df_parameters.longitude,
+                df_parameters.latitude,
+                c = AIC_df_sm[AIC_headers[n]] - AIC_df_sm["AIC"],
+                cmap=cmap,
+                norm = norm,
+                s = 3,
+                )
+    plt.colorbar(sc,extend = "both")
+    axs[n,0].set_title(f"{AIC_headers[n]} - 4")
+    
+    axs[n,1].coastlines()
+    axs[n,1].add_feature(cfeature.BORDERS, linestyle=':')
+    
+    sc = axs[n,1].scatter(df_parameters.longitude,
+                df_parameters.latitude,
+                c = FRMSE_df_sm[FRMSE_headers[n]] - FRMSE_df_sm["beta4"],
+                cmap=cmap,
+                norm = norm2,
+                s = 3,
+                )
+    plt.colorbar(sc,extend = "both")
+    axs[n,1].set_title(f"{FRMSE_headers[n]} - 4  FRMSE")
+    
+plt.show()
+
+
+###############################################################################
+# Doubles intercomparison
+
+FRMSE_double_sm = FRMSE_double_df.drop(columns = ["station"])
+
+
+AIC_headers = AIC_df_sm.columns.drop("AIC")
+FRMSE_headers = FRMSE_df_sm.columns.drop("beta4")
+
+
+n = len(AIC_double.columns)
+num_plots = int((n * (n - 1)) / 2)
+fig, axs = plt.subplots(num_plots, 1, figsize=(6, num_plots * 6), subplot_kw={'projection': proj})
+
+axs = axs if num_plots > 1 else [axs]  # ensure axs is always iterable
+
+plot_idx = 0
+for i in range(n):
+    for j in range(n):
+        if i >= j:  # skip self-comparisons and duplicates
+            continue
+
+        ax = axs[plot_idx]
+        plot_idx += 1
+
+        ax.coastlines()
+        ax.add_feature(cfeature.BORDERS, linestyle=':')
+
+        sc = ax.scatter(df_parameters.longitude,
+                        df_parameters.latitude,
+                        c=AIC_double[AIC_double.columns[i]] - AIC_double[AIC_double.columns[j]],
+                        cmap=cmap,
+                        norm=norm,
+                        s=3)
+
+        plt.colorbar(sc, extend="both")
+        ax.set_title(f"{AIC_double.columns[i]} - {AIC_double.columns[j]}")
+
+plt.show()
+
 
 
 
