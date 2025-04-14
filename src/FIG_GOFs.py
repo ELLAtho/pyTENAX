@@ -1242,7 +1242,7 @@ if "temp_FRMSE6" in all_temp_FRMSE.columns:
         
         plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
         plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
-        ax1.set_title(f"beta = {high_columns[2*high_beta+1+2][10]} - beta = {high_columns[2*high_beta+1][10]}. full")
+        ax1.set_title(f"beta = {high_columns[2*high_beta+1+2][10:]} - beta = {high_columns[2*high_beta+1][10:]}. full")
         cb = plt.colorbar(sc,extend = "both")
         cb.set_label('FRMSE', fontsize=10)
         
@@ -1265,7 +1265,7 @@ if "temp_FRMSE6" in all_temp_FRMSE.columns:
         ax2.tick_params(labelsize=12)  
         plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
         plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
-        ax2.set_title(f"beta = {high_columns[2*high_beta+2][10]} - beta = {high_columns[2*high_beta][10]}. Upper 20%")
+        ax2.set_title(f"beta = {high_columns[2*high_beta+2][10:-11]} - beta = {high_columns[2*high_beta][10:-11]}. Upper 20%")
         cb = plt.colorbar(sc,extend = "both")
         cb.set_label('FRMSE', fontsize=10)
         plt.show()
@@ -1409,13 +1409,18 @@ for j in np.arange(0,5):
     T = dict_ordinary["60"]["T"].to_numpy() 
     
     g_phat = [df_parameters.mu.iloc[j], df_parameters.sigma.iloc[j]]
-    
+    S.beta = 9
+    g_phat9 = S.temperature_model(T,)
+    S.beta = 4
     
     eT = np.arange(np.min(T),np.max(T)+4,1) # define T values to calculate distributions. +4 to go beyond graph end
     
     _,_ =TNX_FIG_temp_model(T, g_phat, 4, eT, obscol='r',valcol='b',
                            obslabel = 'observations',
                            vallabel = 'beta = 4')
+    
+    pdf_values = gen_norm_pdf(eT, g_phat6[0], g_phat6[1], 9)
+    plt.plot(eT, pdf_values, '-', color="y", label="beta = 9")
     if "g_phats6" in locals():
         g_phat6 = [g_phats6.mu.iloc[j],g_phats6.sigma.iloc[j]]
         pdf_values = gen_norm_pdf(eT, g_phat6[0], g_phat6[1], 6)
