@@ -523,6 +523,9 @@ interp_y_region = np.array(interp_y)[mask]
 aves_region = np.array(aves)[mask]
 loc_region = df_parameters[mask]
 
+pdf4 = gen_norm_pdf(interp_x,0,2,4)
+pdf6 = gen_norm_pdf(interp_x,0,2,6)
+
 fig = plt.figure(figsize = (3,3))
 ax = fig.add_subplot(1, 1, 1)
 for i in range(len(interp_y_region)):
@@ -530,6 +533,8 @@ for i in range(len(interp_y_region)):
         ax.plot(interp_x, interp_y_region[i], alpha=0.1, color="b")
 if interp_y_region.size > 0:
     ax.plot(interp_x, np.nanmean(interp_y_region, axis=0), color="r")
+ax.plot(interp_x,pdf4,label = "temp model beta = 4")
+ax.plot(interp_x,pdf6,label = "temp model beta = 6")
 ax.set_title(u"Japan temperature distributions \n Western side")
 ax.set_ylim(0, 0.5)
 ax.set_xlabel("(T - μ)/σ")
