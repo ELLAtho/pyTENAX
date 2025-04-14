@@ -37,8 +37,10 @@ from matplotlib.colors import LinearSegmentedColormap
 import matplotlib.patches as patches
 from scipy.stats import kendalltau, pearsonr, spearmanr
 from scipy.interpolate import interp1d
+from scipy.spatial import ConvexHull
 from matplotlib import cm
-
+import alphashape
+from shapely.geometry import Polygon
 
 
 drive = 'D'
@@ -467,7 +469,7 @@ FRMSE_skew_4_20 =  skew_FRMSE_df.FRMSE_upper_perc - temp_FRMSE_df4.FRMSE_upper_p
 
 mask = ((skew_df.skewness < 0) &
     (peaks_df.n_peaks01 == 1) &
-    (df_parameters.latitude > 31)) #this is positive skew and 2 peaks and skew bad fit
+    (df_parameters.latitude > 31)) #1 peak, neg skew
 
 
 interp_y_region = np.array(interp_y)[mask]
@@ -481,7 +483,7 @@ for i in range(len(interp_y_region)):
         ax.plot(interp_x, interp_y_region[i], alpha=0.1, color="b")
 if interp_y_region.size > 0:
     ax.plot(interp_x, np.nanmean(interp_y_region, axis=0), color="r")
-ax.set_title(u"USA temperature distributions \n South mountains")
+ax.set_title(u"Japan temperature distributions \n Eastern side")
 ax.set_ylim(0, 0.5)
 ax.set_xlabel("(T - μ)/σ")
 ax.set_ylabel("Probability density")
@@ -528,10 +530,14 @@ for i in range(len(interp_y_region)):
         ax.plot(interp_x, interp_y_region[i], alpha=0.1, color="b")
 if interp_y_region.size > 0:
     ax.plot(interp_x, np.nanmean(interp_y_region, axis=0), color="r")
-ax.set_title(u"USA temperature distributions \n South mountains")
+ax.set_title(u"Japan temperature distributions \n Western side")
 ax.set_ylim(0, 0.5)
 ax.set_xlabel("(T - μ)/σ")
 ax.set_ylabel("Probability density")
+
+points = np.column_stack((loc_region.longitude, loc_region.latitude))
+alpha = 1.0  # Smaller alpha = tighter wrap. Try tuning this value.
+shape = alphashape.alphashape(points, alpha)
 
 
 fig = plt.figure()
@@ -540,7 +546,14 @@ ax_map.coastlines()
 ax_map.add_feature(cfeature.BORDERS, linestyle=':')
 ax_map.scatter(loc_region.longitude, loc_region.latitude,
                color = "r",
-               transform=ccrs.PlateCarree())
+               transform=ccrs.PlateCarree()
+               )
+
+if isinstance(shape, Polygon):
+    x, y = shape.exterior.xy
+    ax_map.plot(x, y, color='b', linewidth=2, label='Alpha Shape', transform=ccrs.PlateCarree())
+
+
 ax_map.set_xlim(minlon, maxlon)
 ax_map.set_ylim(minlat, maxlat)
 gl = ax_map.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
@@ -551,7 +564,8 @@ gl.ylabel_style = {'size': 8}
 plt.tight_layout()
 plt.show()
 
-
+###############################################################################
+#
 
 
 
