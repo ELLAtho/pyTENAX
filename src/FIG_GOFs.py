@@ -1212,65 +1212,9 @@ if "temp_FRMSE6" in all_temp_FRMSE.columns:
     cb = plt.colorbar(sc,extend = "both")
     cb.set_label('FRMSE', fontsize=10)
     plt.show()
-    if "temp_FRMSE7_upper_perc" in all_temp_FRMSE.columns:
-        fig = plt.figure(figsize=(10, 10))
-        norm = mcolors.Normalize(vmin=-0.3, vmax=0.3)
-        cmap = 'seismic'
-        
-        
-        proj = ccrs.PlateCarree()
-        ax1 = fig.add_subplot(2, 2, 1, projection=proj)
-        
-        # Add map features
-        ax1.coastlines()
-        ax1.add_feature(cfeature.BORDERS, linestyle=':')
-        
-        
-        sc = ax1.scatter(
-            df_parameters.longitude,
-            df_parameters.latitude,
-            c = all_temp_FRMSE.temp_FRMSE7 - all_temp_FRMSE.temp_FRMSE6,
-            cmap=cmap,
-            norm = norm,
-            s = s,
-        )
-        ax1.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
-        ax1.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
-        ax1.tick_params(labelsize=12)  
-        
-        plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
-        plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
-        ax1.set_title("beta = 7 - beta = 6. full")
-        cb = plt.colorbar(sc,extend = "both")
-        cb.set_label('FRMSE', fontsize=10)
-        
-        
-        ax2 = fig.add_subplot(2, 2, 2, projection=proj)
-        ax2.coastlines()
-        ax2.add_feature(cfeature.BORDERS, linestyle=':')
-        
-        
-        sc = ax2.scatter(
-            df_parameters.longitude,
-            df_parameters.latitude,
-            c=all_temp_FRMSE.temp_FRMSE7_upper_perc - all_temp_FRMSE.temp_FRMSE6_upper_perc,
-            cmap=cmap,
-            norm = norm,
-            s = s,
-        )
-        ax2.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
-        ax2.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
-        ax2.tick_params(labelsize=12)  
-        plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
-        plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
-        ax2.set_title("beta = 7 - beta = 6. Upper 20%")
-        cb = plt.colorbar(sc,extend = "both")
-        cb.set_label('FRMSE', fontsize=10)
-        plt.show()
-    else:
-        pass
     
-    if "temp_FRMSE8_upper_perc" in all_temp_FRMSE.columns:
+    high_columns = all_temp_FRMSE.columns[5:]
+    for high_beta in range(int((len(all_temp_FRMSE.columns)-5)/2 - 1)):
         fig = plt.figure(figsize=(10, 10))
         norm = mcolors.Normalize(vmin=-0.3, vmax=0.3)
         cmap = 'seismic'
@@ -1287,7 +1231,7 @@ if "temp_FRMSE6" in all_temp_FRMSE.columns:
         sc = ax1.scatter(
             df_parameters.longitude,
             df_parameters.latitude,
-            c = all_temp_FRMSE.temp_FRMSE8 - all_temp_FRMSE.temp_FRMSE7,
+            c = all_temp_FRMSE[high_columns[2*high_beta+1+2]] - all_temp_FRMSE[high_columns[2*high_beta+1]],
             cmap=cmap,
             norm = norm,
             s = s,
@@ -1298,7 +1242,7 @@ if "temp_FRMSE6" in all_temp_FRMSE.columns:
         
         plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
         plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
-        ax1.set_title("beta = 8 - beta = 7. full")
+        ax1.set_title(f"beta = {high_columns[2*high_beta+1+2][10]} - beta = {high_columns[2*high_beta+1][10]}. full")
         cb = plt.colorbar(sc,extend = "both")
         cb.set_label('FRMSE', fontsize=10)
         
@@ -1311,7 +1255,7 @@ if "temp_FRMSE6" in all_temp_FRMSE.columns:
         sc = ax2.scatter(
             df_parameters.longitude,
             df_parameters.latitude,
-            c=all_temp_FRMSE.temp_FRMSE8_upper_perc - all_temp_FRMSE.temp_FRMSE7_upper_perc,
+            c=all_temp_FRMSE[high_columns[2*high_beta+2]] - all_temp_FRMSE[high_columns[2*high_beta]],
             cmap=cmap,
             norm = norm,
             s = s,
@@ -1321,12 +1265,11 @@ if "temp_FRMSE6" in all_temp_FRMSE.columns:
         ax2.tick_params(labelsize=12)  
         plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
         plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
-        ax2.set_title("beta = 8 - beta = 7. Upper 20%")
+        ax2.set_title(f"beta = {high_columns[2*high_beta+2][10]} - beta = {high_columns[2*high_beta][10]}. Upper 20%")
         cb = plt.colorbar(sc,extend = "both")
         cb.set_label('FRMSE', fontsize=10)
         plt.show()
-    else:
-        pass
+    
 else:
     pass
 
