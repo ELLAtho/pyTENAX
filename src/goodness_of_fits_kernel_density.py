@@ -299,6 +299,558 @@ if "return_levels_kernal" not in RL_df.columns:
     RL_df["return_levels_kernal"] = RL
     RL_df["return_levels_kernal_exp"] = RL_exp
     RL_df["return_levels_kernal_0"] = RL_0
-    #RL_df.to_csv(f"{drive}:/outputs/{country_save}/return_levels.csv",index=False)
+    RL_df.to_csv(f"{drive}:/outputs/{country_save}/return_levels.csv",index=False)
+
+else:
+    FRMSE_df = pd.read_csv(f"{drive}:/outputs/{country_save}/FRMSE_kernel.csv", dtype={'station': str})
+
+
+FRMSE_df4 = pd.read_csv(f"{drive}:/outputs/{country_save}/FRMSE.csv", dtype={'station': str})
+
+###############################################################################
+# Plot FRMSE comparisons
+
+lon_lims = [truncate_neg(np.min(df_parameters.longitude),2.5),np.ceil(np.max(df_parameters.longitude/2.5))*2.5]
+lat_lims = [truncate_neg(np.min(df_parameters.latitude),2.5),np.ceil(np.max(df_parameters.latitude/2.5))*2.5]
+
+fig = plt.figure(figsize=(15, 10))
+norm = mcolors.Normalize(vmin=-0.2, vmax=0.2)
+s = 3
+cmap = 'seismic'
+
+
+proj = ccrs.PlateCarree()
+ax1 = fig.add_subplot(2, 2, 1, projection=proj)
+
+# Add map features
+ax1.coastlines()
+ax1.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc = ax1.scatter(
+    df_parameters.longitude,
+    df_parameters.latitude,
+    c=(FRMSE_df.FRMSE - FRMSE_df.FRMSE_exp),
+    cmap=cmap,
+    norm = norm,
+    s = s,
+)
+
+plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+
+gl = ax1.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': 8}
+gl.ylabel_style = {'size': 8}
+
+ax1.set_title("b free - exp")
+
+
+
+ax2 = fig.add_subplot(2, 2, 2, projection=proj)
+ax2.coastlines()
+ax2.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc = ax2.scatter(
+    df_parameters.longitude,
+    df_parameters.latitude,
+    c=(FRMSE_df.FRMSE - FRMSE_df.FRMSE_0),
+    cmap=cmap,
+    norm = norm,  
+    s = s,
+)
+
+gl = ax2.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': 8}
+gl.ylabel_style = {'size': 8}
+
+ax2.set_title("b free - b 0")
+
+
+ax3 = fig.add_subplot(2, 2, 3, projection=proj)
+ax3.coastlines()
+ax3.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc = ax3.scatter(
+    df_parameters.longitude,
+    df_parameters.latitude,
+    c=(FRMSE_df.FRMSE_exp - FRMSE_df.FRMSE_0),
+    cmap=cmap,
+    norm = norm,  
+    s = s,  
+)
+
+
+gl = ax3.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': 8}
+gl.ylabel_style = {'size': 8}
+
+ax3.set_title("b exp - b 0")
+
+ax4 = fig.add_subplot(2, 2, 4, projection=proj)
+ax4.coastlines()
+ax4.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc4 = ax4.scatter(
+    val_info.longitude,
+    val_info.latitude,
+    c=val_info.cleaned_years,
+    cmap="viridis",
+    s = s,  
+)
+
+gl = ax4.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': 8}
+gl.ylabel_style = {'size': 8}
+
+fig.subplots_adjust(right=0.85)
+
+cbar_ax4 = fig.add_axes([0.87, 0.12, 0.03, 0.32])  # Position for the colorbar outside
+cb4 = plt.colorbar(sc4, cax=cbar_ax4)  # Colorbar for ax4
+cb4.set_label('Number of complete years', fontsize=14)
+cb4.ax.tick_params(labelsize=12)
+
+ax4.set_title("cleaned years")
+
+
+
+
+
+# Add a colorbar at the bottom
+cbar_ax = fig.add_subplot([0.15, 0.02, 0.7, 0.03])  # Position for the colorbar
+cb = plt.colorbar(sc, cax=cbar_ax, orientation='horizontal')
+cb.set_label(r'$\Delta$FRMSE', fontsize=14)
+cb.ax.tick_params(labelsize=12)
+
+# Set x and y ticks
+
+
+#fig.tight_layout()
+fig.suptitle(f'GSDR: {ERA_country}. FRMSE on RL with kernel density temperature', fontsize=16)
+plt.show()
+
+
+
+fig = plt.figure(figsize=(15, 10))
+norm = mcolors.Normalize(vmin=-0.2, vmax=0.2)
+s = 3
+cmap = 'seismic'
+
+
+proj = ccrs.PlateCarree()
+ax1 = fig.add_subplot(2, 2, 1, projection=proj)
+
+# Add map features
+ax1.coastlines()
+ax1.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc = ax1.scatter(
+    df_parameters.longitude,
+    df_parameters.latitude,
+    c=(FRMSE_df4.FRMSE - FRMSE_df4.FRMSE_bexp),
+    cmap=cmap,
+    norm = norm,
+    s = s,
+)
+
+plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+
+gl = ax1.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': 8}
+gl.ylabel_style = {'size': 8}
+
+ax1.set_title("b free - exp")
+
+
+
+ax2 = fig.add_subplot(2, 2, 2, projection=proj)
+ax2.coastlines()
+ax2.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc = ax2.scatter(
+    df_parameters.longitude,
+    df_parameters.latitude,
+    c=(FRMSE_df4.FRMSE - FRMSE_df4.FRMSE_0),
+    cmap=cmap,
+    norm = norm,  
+    s = s,
+)
+
+gl = ax2.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': 8}
+gl.ylabel_style = {'size': 8}
+
+ax2.set_title("b free - b 0")
+
+
+ax3 = fig.add_subplot(2, 2, 3, projection=proj)
+ax3.coastlines()
+ax3.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc = ax3.scatter(
+    df_parameters.longitude,
+    df_parameters.latitude,
+    c=(FRMSE_df4.FRMSE_bexp - FRMSE_df4.FRMSE_0),
+    cmap=cmap,
+    norm = norm,  
+    s = s,  
+)
+
+
+gl = ax3.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': 8}
+gl.ylabel_style = {'size': 8}
+
+ax3.set_title("b exp - b 0")
+
+ax4 = fig.add_subplot(2, 2, 4, projection=proj)
+ax4.coastlines()
+ax4.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc4 = ax4.scatter(
+    val_info.longitude,
+    val_info.latitude,
+    c=val_info.cleaned_years,
+    cmap="viridis",
+    s = s,  
+)
+
+gl = ax4.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': 8}
+gl.ylabel_style = {'size': 8}
+
+fig.subplots_adjust(right=0.85)
+
+cbar_ax4 = fig.add_axes([0.87, 0.12, 0.03, 0.32])  # Position for the colorbar outside
+cb4 = plt.colorbar(sc4, cax=cbar_ax4)  # Colorbar for ax4
+cb4.set_label('Number of complete years', fontsize=14)
+cb4.ax.tick_params(labelsize=12)
+
+ax4.set_title("cleaned years")
+
+
+
+
+
+# Add a colorbar at the bottom
+cbar_ax = fig.add_subplot([0.15, 0.02, 0.7, 0.03])  # Position for the colorbar
+cb = plt.colorbar(sc, cax=cbar_ax, orientation='horizontal')
+cb.set_label(r'$\Delta$FRMSE', fontsize=14)
+cb.ax.tick_params(labelsize=12)
+
+# Set x and y ticks
+
+
+#fig.tight_layout()
+fig.suptitle(f'GSDR: {ERA_country}. FRMSE on RL with beta 4 temperature', fontsize=16)
+plt.show()
+###############################################################################
+# Plot plain FRMSEs
+
+
+s = 3
+cmap = 'magma_r'
+
+
+fig = plt.figure(figsize=(15, 10))
+norm = mcolors.Normalize(vmin=0, vmax=1)
+
+
+proj = ccrs.PlateCarree()
+ax1 = fig.add_subplot(2, 2, 1, projection=proj)
+
+# Add map features
+ax1.coastlines()
+ax1.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc = ax1.scatter(
+    df_parameters.longitude,
+    df_parameters.latitude,
+    c=FRMSE_df.FRMSE,
+    cmap=cmap,
+    norm = norm,
+    s = s,
+)
+gl = ax1.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': 8}
+gl.ylabel_style = {'size': 8}
+plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+ax1.set_title("b free")
+
+
+
+ax2 = fig.add_subplot(2, 2, 2, projection=proj)
+ax2.coastlines()
+ax2.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc = ax2.scatter(
+    df_parameters.longitude,
+    df_parameters.latitude,
+    c=FRMSE_df.FRMSE_exp,
+    cmap=cmap,
+    norm = norm,  
+    s = s,
+)
+
+#plot the locations of significant stations
+
+gl = ax2.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': 8}
+gl.ylabel_style = {'size': 8}
+
+  
+plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+ax2.set_title("b exp")
+
+
+ax3 = fig.add_subplot(2, 2, 3, projection=proj)
+ax3.coastlines()
+ax3.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc = ax3.scatter(
+    df_parameters.longitude,
+    df_parameters.latitude,
+    c=FRMSE_df.FRMSE_0,
+    cmap=cmap,
+    norm = norm,  
+    s = s,  
+)
+gl = ax3.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': 8}
+gl.ylabel_style = {'size': 8}
+ 
+plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+ax3.set_title("b = 0")
+
+ax4 = fig.add_subplot(2, 2, 4, projection=proj)
+ax4.coastlines()
+ax4.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc4 = ax4.scatter(
+    val_info.longitude,
+    val_info.latitude,
+    c=val_info.cleaned_years,
+    cmap="viridis",
+    s = s,  
+)
+
+gl = ax4.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': 8}
+gl.ylabel_style = {'size': 8}
+
+plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+
+fig.subplots_adjust(right=0.85)
+
+cbar_ax4 = fig.add_axes([0.87, 0.12, 0.03, 0.32])  # Position for the colorbar outside
+cb4 = plt.colorbar(sc4, cax=cbar_ax4)  # Colorbar for ax4
+cb4.set_label('Number of complete years', fontsize=14)
+cb4.ax.tick_params(labelsize=12)
+
+ax4.set_title("cleaned years")
+
+
+
+
+
+# Add a colorbar at the bottom
+cbar_ax = fig.add_subplot([0.15, 0.02, 0.7, 0.03])  # Position for the colorbar
+cb = plt.colorbar(sc, cax=cbar_ax, orientation='horizontal')
+cb.set_label('FRMSE', fontsize=14)
+cb.ax.tick_params(labelsize=12)
+
+plt.suptitle("FRMSE with kernel density")
+
+plt.show()
+
+
+
+s = 3
+cmap = 'magma_r'
+
+
+fig = plt.figure(figsize=(15, 10))
+norm = mcolors.Normalize(vmin=0, vmax=1)
+
+
+proj = ccrs.PlateCarree()
+ax1 = fig.add_subplot(2, 2, 1, projection=proj)
+
+# Add map features
+ax1.coastlines()
+ax1.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc = ax1.scatter(
+    df_parameters.longitude,
+    df_parameters.latitude,
+    c=FRMSE_df4.FRMSE,
+    cmap=cmap,
+    norm = norm,
+    s = s,
+)
+gl = ax1.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': 8}
+gl.ylabel_style = {'size': 8}
+plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+ax1.set_title("b free")
+
+
+
+ax2 = fig.add_subplot(2, 2, 2, projection=proj)
+ax2.coastlines()
+ax2.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc = ax2.scatter(
+    df_parameters.longitude,
+    df_parameters.latitude,
+    c=FRMSE_df4.FRMSE_bexp,
+    cmap=cmap,
+    norm = norm,  
+    s = s,
+)
+
+#plot the locations of significant stations
+
+gl = ax2.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': 8}
+gl.ylabel_style = {'size': 8}
+
+  
+plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+ax2.set_title("b exp")
+
+
+ax3 = fig.add_subplot(2, 2, 3, projection=proj)
+ax3.coastlines()
+ax3.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc = ax3.scatter(
+    df_parameters.longitude,
+    df_parameters.latitude,
+    c=FRMSE_df4.FRMSE_0,
+    cmap=cmap,
+    norm = norm,  
+    s = s,  
+)
+gl = ax3.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': 8}
+gl.ylabel_style = {'size': 8}
+ 
+plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+ax3.set_title("b = 0")
+
+ax4 = fig.add_subplot(2, 2, 4, projection=proj)
+ax4.coastlines()
+ax4.add_feature(cfeature.BORDERS, linestyle=':')
+
+norm = mcolors.Normalize(vmin=-0.1, vmax=0.1)
+
+sc4 = ax4.scatter(
+    val_info.longitude,
+    val_info.latitude,
+    c=FRMSE_df4.FRMSE - FRMSE_df.FRMSE,
+    cmap="seismic",
+    s = s,  
+    norm = norm
+)
+
+gl = ax4.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': 8}
+gl.ylabel_style = {'size': 8}
+
+plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+
+fig.subplots_adjust(right=0.85)
+
+cbar_ax4 = fig.add_axes([0.87, 0.12, 0.03, 0.32])  # Position for the colorbar outside
+cb4 = plt.colorbar(sc4, cax=cbar_ax4)  # Colorbar for ax4
+cb4.set_label(r'$\Delta$FRMSE', fontsize=14)
+cb4.ax.tick_params(labelsize=12)
+
+ax4.set_title("b = free. beta = 4 - kernal")
+
+
+
+
+
+# Add a colorbar at the bottom
+cbar_ax = fig.add_subplot([0.15, 0.02, 0.7, 0.03])  # Position for the colorbar
+cb = plt.colorbar(sc, cax=cbar_ax, orientation='horizontal')
+cb.set_label('FRMSE', fontsize=14)
+cb.ax.tick_params(labelsize=12)
+
+plt.suptitle("FRMSE with beta = 4")
+
+plt.show()
+
+###############################################################################
+# check some stations incl magnitude
+
+df_high = df_parameters[FRMSE_df.FRMSE > np.nanquantile(FRMSE_df.FRMSE,0.9)] #stations with top 10% FRMSE b free
+FRMSE_df_high = FRMSE_df[FRMSE_df.FRMSE > np.nanquantile(FRMSE_df.FRMSE,0.9)]
+
+
+df_high_north = df_high[df_high.latitude > 35]
+FRMSE_df_high_north = FRMSE_df_high[df_high.latitude > 35]
+
+
+
+
+
 
 

@@ -182,7 +182,7 @@ nan_locs = RL_df.return_levels[RL_df.return_levels.isna()].index
 replace_range = np.arange(0,len(RL_df))
 for k in range(len(nan_locs)):
     replace_range = np.delete(replace_range, np.where(replace_range == nan_locs[k]))
-for j in replace_range:
+for j in replace_range: #TODO: change this so it includes the kernal and skew and does it by looping through "return_levels"
     RL_df.loc[j, "return_levels"] = np.fromstring(RL_df.return_levels.iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'), sep=' ')
     RL_df.loc[j, "return_levels_5"] = np.fromstring(RL_df["return_levels_5"].iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'), sep=' ')
     RL_df.loc[j, "return_levels_b0"] = np.fromstring(RL_df.return_levels_b0.iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'), sep=' ')
@@ -234,7 +234,6 @@ if "return_levels_skew" not in RL_df.columns:
             T = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/T_{df_parameters.station.iloc[i]}.csv")
             P = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/P_{df_parameters.station.iloc[i]}.csv")
             times = pd.read_csv(f"{drive}:/ordinary_events/{country_save}/time_{df_parameters.station.iloc[i]}.csv",parse_dates = ["oe_time"])
-            kde  = gaussian_kde(T) #use kernel density to get probability
             
             F_phat = [new_df.kappa.iloc[i],new_df.b.iloc[i],
                       new_df["lambda"].iloc[i],new_df.a.iloc[i]]
