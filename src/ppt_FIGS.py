@@ -41,6 +41,7 @@ from scipy.spatial import ConvexHull
 from matplotlib import cm
 import alphashape
 from shapely.geometry import Polygon
+import matplotlib.ticker as mticker
 
 
 drive = 'D'
@@ -131,7 +132,7 @@ plt.show()
 ################################################################################
 # 5b1 (Germany)
 
-df = pd.read_csv(f"{drive}:/outputs/{country_save}\\average_temp_shape.csv",dtype = {0:str})
+df_germany = pd.read_csv(f"{drive}:/outputs/{country_save}\\average_temp_shape.csv",dtype = {0:str})
 
 eTs_df = pd.read_csv(f"{drive}:/outputs/{country_save}\\eTs_df.csv",dtype = {"station":str})
 average_df = pd.read_csv(f"{drive}:/outputs/{country_save}\\average_temp_shape_ave_std.csv",dtype = {"station":str})
@@ -140,12 +141,12 @@ sds = average_df.sds.to_numpy()
 eTs = eTs_df.drop(columns = "station").to_numpy()
 
 interp_x = np.arange(-4,4.1,0.1)
-interp_y = [np.nan] * len(df)
-for i in np.arange(0,len(df)):  
+interp_y = [np.nan] * len(df_germany)
+for i in np.arange(0,len(df_germany)):  
     if np.isnan(aves[i]):
         interp_y[i] = [np.nan]*len(interp_x)
     else:  
-        interp_func = interp1d((eTs[i]-aves[i])/sds[i],df.iloc[i][1:])
+        interp_func = interp1d((eTs[i]-aves[i])/sds[i],df_germany.iloc[i][1:])
         interp_y[i] = np.zeros(len(interp_x))
         interp_x_here = interp_x[interp_x>=np.min((eTs[i]-aves[i])/sds[i])]
         interp_x_here = interp_x_here[interp_x_here<=np.max((eTs[i]-aves[i])/sds[i])]
@@ -160,7 +161,7 @@ temp_aves_proper = np.nanmean(interp_y,axis =0)
 fig = plt.figure(figsize = (3,3))
 ax = fig.add_subplot(1,1,1)
 
-for i in np.arange(0,len(df)):  
+for i in np.arange(0,len(df_germany)):  
     if np.isnan(aves[i]):
         pass
     else:    
@@ -179,8 +180,8 @@ ERA_country = 'US'
 country_save = 'US_main'
 code_str = 'US_'
 minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
-df = pd.read_csv(f"{drive}:/outputs/{country_save}\\average_temp_shape.csv",dtype = {0:str})
-df_parameters = pd.read_csv(drive + ':/outputs/'+country_save+'\\parameters.csv', dtype={'station': str}) 
+df_US = pd.read_csv(f"{drive}:/outputs/{country_save}\\average_temp_shape.csv",dtype = {0:str})
+df_parameters_US = pd.read_csv(drive + ':/outputs/'+country_save+'\\parameters.csv', dtype={'station': str}) 
 
 
 eTs_df = pd.read_csv(f"{drive}:/outputs/{country_save}\\eTs_df.csv",dtype = {"station":str})
@@ -190,12 +191,12 @@ sds = average_df.sds.to_numpy()
 eTs = eTs_df.drop(columns = "station").to_numpy()
 
 interp_x = np.arange(-4,4.1,0.1)
-interp_y = [np.nan] * len(df)
-for i in np.arange(0,len(df)):  
+interp_y = [np.nan] * len(df_US)
+for i in np.arange(0,len(df_US)):  
     if np.isnan(aves[i]):
         interp_y[i] = [np.nan]*len(interp_x)
     else:  
-        interp_func = interp1d((eTs[i]-aves[i])/sds[i],df.iloc[i][1:])
+        interp_func = interp1d((eTs[i]-aves[i])/sds[i],df_US.iloc[i][1:])
         interp_y[i] = np.zeros(len(interp_x))
         interp_x_here = interp_x[interp_x>=np.min((eTs[i]-aves[i])/sds[i])]
         interp_x_here = interp_x_here[interp_x_here<=np.max((eTs[i]-aves[i])/sds[i])]
@@ -204,20 +205,20 @@ for i in np.arange(0,len(df)):
         
 
 
-peaks_df = pd.read_csv(f"{drive}:/outputs/{country_save}\\peaks.csv")
-skew_df = pd.read_csv(f"{drive}:/outputs/{country_save}\\temp_skew.csv", dtype={"station":str})
+peaks_df_US = pd.read_csv(f"{drive}:/outputs/{country_save}\\peaks.csv")
+skew_df_US = pd.read_csv(f"{drive}:/outputs/{country_save}\\temp_skew.csv", dtype={"station":str})
 
 
 temp_aves_proper = np.nanmean(interp_y,axis =0)
 fig = plt.figure(figsize = (3,3))
 
-mask = ((skew_df.skewness > 0) &
-    (peaks_df.n_peaks01 == 1) &
-    (df_parameters.longitude < -110))
+mask = ((skew_df_US.skewness > 0) &
+    (peaks_df_US.n_peaks01 == 1) &
+    (df_parameters_US.longitude < -110))
 
 interp_y_region = np.array(interp_y)[mask]
 aves_region = np.array(aves)[mask]
-loc_region = df_parameters[mask]
+loc_region = df_parameters_US[mask]
 
 ax_line = fig.add_subplot(1, 1, 1)
 for i in range(len(interp_y_region)):
@@ -229,6 +230,12 @@ ax_line.set_title(u"USA temperature distributions \n West coast single peak")
 ax_line.set_ylim(0, 0.5)
 ax_line.set_xlabel("(T - μ)/σ")
 ax_line.set_ylabel("Probability density")
+
+points = np.column_stack((loc_region.longitude, loc_region.latitude))
+alpha = 0.5  # Smaller alpha = tighter wrap. Try tuning this value.
+shape_a1 = alphashape.alphashape(points, alpha)
+
+
 
 fig = plt.figure()
 ax_map = fig.add_subplot(1,2,2, projection=ccrs.PlateCarree())
@@ -255,15 +262,15 @@ temp_FRMSE_df4 = pd.read_csv(f"{drive}:/outputs/{country_save}\\temp_FRMSE.csv",
 
 FRMSE_skew_4_20 =  skew_FRMSE_df.FRMSE_upper_perc - temp_FRMSE_df4.FRMSE_upper_perc
 
-mask = ((skew_df.skewness > 0) &
-    (peaks_df.n_peaks01 != 1) &
-    (df_parameters.longitude < -90) &
+mask = ((skew_df_US.skewness > 0) &
+    (peaks_df_US.n_peaks01 != 1) &
+    (df_parameters_US.longitude < -90) &
     (FRMSE_skew_4_20 > 0)) #this is positive skew and 2 peaks and skew bad fit
 
 
 interp_y_region = np.array(interp_y)[mask]
 aves_region = np.array(aves)[mask]
-loc_region = df_parameters[mask]
+loc_region = df_parameters_US[mask]
 
 fig = plt.figure(figsize = (3,3))
 ax = fig.add_subplot(1, 1, 1)
@@ -276,6 +283,10 @@ ax.set_title(u"USA temperature distributions \n South mountains")
 ax.set_ylim(0, 0.5)
 ax.set_xlabel("(T - μ)/σ")
 ax.set_ylabel("Probability density")
+
+points = np.column_stack((loc_region.longitude, loc_region.latitude))
+alpha = 0.3  # Smaller alpha = tighter wrap. Try tuning this value.
+shape_a2 = alphashape.alphashape(points, alpha)
 
 
 fig = plt.figure()
@@ -297,15 +308,15 @@ plt.show()
 
 # 5a3 USA
 
-mask = ((skew_df.skewness < 0) &
-    (peaks_df.n_peaks01 == 1) &
-    (df_parameters.longitude > -110)
+mask = ((skew_df_US.skewness < 0) &
+    (peaks_df_US.n_peaks01 == 1) &
+    (df_parameters_US.longitude > -110)
     ) #negative skew, one peak
 
 
 interp_y_region = np.array(interp_y)[mask]
 aves_region = np.array(aves)[mask]
-loc_region = df_parameters[mask]
+loc_region = df_parameters_US[mask]
 
 fig = plt.figure(figsize = (3,3))
 ax = fig.add_subplot(1, 1, 1)
@@ -318,6 +329,10 @@ ax.set_title(u"USA temperature distributions \n South East")
 ax.set_ylim(0, 0.5)
 ax.set_xlabel("(T - μ)/σ")
 ax.set_ylabel("Probability density")
+
+points = np.column_stack((loc_region.longitude, loc_region.latitude))
+alpha = 0.5  # Smaller alpha = tighter wrap. Try tuning this value.
+shape_a3 = alphashape.alphashape(points, alpha)
 
 
 fig = plt.figure()
@@ -341,16 +356,16 @@ plt.show()
 
 # 5a4 USA
 
-mask = ((skew_df.skewness < 0) &
-    (peaks_df.n_peaks01 != 1) &
-    (df_parameters.longitude > -100) &
-    (df_parameters.latitude > 35)
+mask = ((skew_df_US.skewness < 0) &
+    (peaks_df_US.n_peaks01 != 1) &
+    (df_parameters_US.longitude > -100) &
+    (df_parameters_US.latitude > 35)
     ) #negative skew, one peak
 
 
 interp_y_region = np.array(interp_y)[mask]
 aves_region = np.array(aves)[mask]
-loc_region = df_parameters[mask]
+loc_region = df_parameters_US[mask]
 
 fig = plt.figure(figsize = (3,3))
 ax = fig.add_subplot(1, 1, 1)
@@ -363,6 +378,10 @@ ax.set_title(u"USA temperature distributions \n North East")
 ax.set_ylim(0, 0.5)
 ax.set_xlabel("(T - μ)/σ")
 ax.set_ylabel("Probability density")
+
+points = np.column_stack((loc_region.longitude, loc_region.latitude))
+alpha = 0.5  # Smaller alpha = tighter wrap. Try tuning this value.
+shape_a4 = alphashape.alphashape(points, alpha)
 
 
 fig = plt.figure()
@@ -393,8 +412,8 @@ code_str = 'JP_'
 minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
 name_len = 5
  
-df = pd.read_csv(f"{drive}:/outputs/{country_save}\\average_temp_shape.csv",dtype = {0:str})
-df_parameters = pd.read_csv(drive + ':/outputs/'+country_save+'\\parameters.csv', dtype={'station': str}) 
+df_JP = pd.read_csv(f"{drive}:/outputs/{country_save}\\average_temp_shape.csv",dtype = {0:str})
+df_parameters_JP = pd.read_csv(drive + ':/outputs/'+country_save+'\\parameters.csv', dtype={'station': str}) 
 
 
 eTs_df = pd.read_csv(f"{drive}:/outputs/{country_save}\\eTs_df.csv",dtype = {"station":str})
@@ -404,12 +423,12 @@ sds = average_df.sds.to_numpy()
 eTs = eTs_df.drop(columns = "station").to_numpy()
 
 interp_x = np.arange(-4,4.1,0.1)
-interp_y = [np.nan] * len(df)
-for i in np.arange(0,len(df)):  
+interp_y = [np.nan] * len(df_JP)
+for i in np.arange(0,len(df_JP)):  
     if np.isnan(aves[i]):
         interp_y[i] = [np.nan]*len(interp_x)
     else:  
-        interp_func = interp1d((eTs[i]-aves[i])/sds[i],df.iloc[i][1:])
+        interp_func = interp1d((eTs[i]-aves[i])/sds[i],df_JP.iloc[i][1:])
         interp_y[i] = np.zeros(len(interp_x))
         interp_x_here = interp_x[interp_x>=np.min((eTs[i]-aves[i])/sds[i])]
         interp_x_here = interp_x_here[interp_x_here<=np.max((eTs[i]-aves[i])/sds[i])]
@@ -418,18 +437,18 @@ for i in np.arange(0,len(df)):
         
 
 
-peaks_df = pd.read_csv(f"{drive}:/outputs/{country_save}\\peaks.csv")
-skew_df = pd.read_csv(f"{drive}:/outputs/{country_save}\\temp_skew.csv", dtype={"station":str})
+peaks_df_JP = pd.read_csv(f"{drive}:/outputs/{country_save}\\peaks.csv")
+skew_df_JP = pd.read_csv(f"{drive}:/outputs/{country_save}\\temp_skew.csv", dtype={"station":str})
 
 
 temp_aves_proper = np.nanmean(interp_y,axis =0)
 fig = plt.figure(figsize = (3,3))
 
-mask = ((df_parameters.latitude < 30)) # The islands South
+mask = ((df_parameters_JP.latitude < 30)) # The islands South
 
 interp_y_region = np.array(interp_y)[mask]
 aves_region = np.array(aves)[mask]
-loc_region = df_parameters[mask]
+loc_region = df_parameters_JP[mask]
 
 ax_line = fig.add_subplot(1, 1, 1)
 for i in range(len(interp_y_region)):
@@ -441,6 +460,11 @@ ax_line.set_title(u"Japan temperature distributions \n South islands")
 ax_line.set_ylim(0, 0.5)
 ax_line.set_xlabel("(T - μ)/σ")
 ax_line.set_ylabel("Probability density")
+
+points = np.column_stack((loc_region.longitude, loc_region.latitude))
+alpha = 1.0  # Smaller alpha = tighter wrap. Try tuning this value.
+shape_c1 = alphashape.alphashape(points, alpha)
+
 
 fig = plt.figure()
 ax_map = fig.add_subplot(1,2,2, projection=ccrs.PlateCarree())
@@ -460,21 +484,21 @@ plt.tight_layout()
 plt.show()
 
 
-# 5a2 Japan
+# 5c2 Japan
 
 skew_FRMSE_df = pd.read_csv(f"{drive}:/outputs/{country_save}\\temp_FRMSE_skew.csv",dtype = {"station":str})
 temp_FRMSE_df4 = pd.read_csv(f"{drive}:/outputs/{country_save}\\temp_FRMSE.csv",dtype = {"station":str})
 
 FRMSE_skew_4_20 =  skew_FRMSE_df.FRMSE_upper_perc - temp_FRMSE_df4.FRMSE_upper_perc
 
-mask = ((skew_df.skewness < 0) &
-    (peaks_df.n_peaks01 == 1) &
-    (df_parameters.latitude > 31)) #1 peak, neg skew
+mask = ((skew_df_JP.skewness < 0) &
+    (peaks_df_JP.n_peaks01 == 1) &
+    (df_parameters_JP.latitude > 31)) #1 peak, neg skew
 
 
 interp_y_region = np.array(interp_y)[mask]
 aves_region = np.array(aves)[mask]
-loc_region = df_parameters[mask]
+loc_region = df_parameters_JP[mask]
 
 fig = plt.figure(figsize = (3,3))
 ax = fig.add_subplot(1, 1, 1)
@@ -487,6 +511,10 @@ ax.set_title(u"Japan temperature distributions \n Eastern side")
 ax.set_ylim(0, 0.5)
 ax.set_xlabel("(T - μ)/σ")
 ax.set_ylabel("Probability density")
+
+points = np.column_stack((loc_region.longitude, loc_region.latitude))
+alpha = 1.0  # Smaller alpha = tighter wrap. Try tuning this value.
+shape_c2 = alphashape.alphashape(points, alpha)
 
 
 fig = plt.figure()
@@ -507,21 +535,21 @@ plt.tight_layout()
 plt.show()
 
 
-# 5a3 Japan
+# 5c3 Japan
 
 skew_FRMSE_df = pd.read_csv(f"{drive}:/outputs/{country_save}\\temp_FRMSE_skew.csv",dtype = {"station":str})
 temp_FRMSE_df4 = pd.read_csv(f"{drive}:/outputs/{country_save}\\temp_FRMSE.csv",dtype = {"station":str})
 
 FRMSE_skew_4_20 =  skew_FRMSE_df.FRMSE_upper_perc - temp_FRMSE_df4.FRMSE_upper_perc
 
-mask = ((skew_df.skewness > 0) &
-    (peaks_df.n_peaks01 != 1) &
-    (df_parameters.latitude > 31)) #this is positive skew and 2 peaks and skew bad fit
+mask = ((skew_df_JP.skewness > 0) &
+    (peaks_df_JP.n_peaks01 != 1) &
+    (df_parameters_JP.latitude > 31)) #this is positive skew and 2 peaks and skew bad fit
 
 
 interp_y_region = np.array(interp_y)[mask]
 aves_region = np.array(aves)[mask]
-loc_region = df_parameters[mask]
+loc_region = df_parameters_JP[mask]
 
 pdf4 = gen_norm_pdf(interp_x,0,2,4)
 pdf6 = gen_norm_pdf(interp_x,0,2,6)
@@ -533,8 +561,8 @@ for i in range(len(interp_y_region)):
         ax.plot(interp_x, interp_y_region[i], alpha=0.1, color="b")
 if interp_y_region.size > 0:
     ax.plot(interp_x, np.nanmean(interp_y_region, axis=0), color="r")
-ax.plot(interp_x,pdf4,label = "temp model beta = 4")
-ax.plot(interp_x,pdf6,label = "temp model beta = 6")
+# ax.plot(interp_x,pdf4,label = "temp model beta = 4")
+# ax.plot(interp_x,pdf6,label = "temp model beta = 6")
 ax.set_title(u"Japan temperature distributions \n Western side")
 ax.set_ylim(0, 0.5)
 ax.set_xlabel("(T - μ)/σ")
@@ -542,7 +570,7 @@ ax.set_ylabel("Probability density")
 
 points = np.column_stack((loc_region.longitude, loc_region.latitude))
 alpha = 1.0  # Smaller alpha = tighter wrap. Try tuning this value.
-shape = alphashape.alphashape(points, alpha)
+shape_c3 = alphashape.alphashape(points, alpha)
 
 
 fig = plt.figure()
@@ -554,8 +582,8 @@ ax_map.scatter(loc_region.longitude, loc_region.latitude,
                transform=ccrs.PlateCarree()
                )
 
-if isinstance(shape, Polygon):
-    x, y = shape.exterior.xy
+if isinstance(shape_c3, Polygon):
+    x, y = shape_c3.exterior.xy
     ax_map.plot(x, y, color='b', linewidth=2, label='Alpha Shape', transform=ccrs.PlateCarree())
 
 
@@ -570,7 +598,178 @@ plt.tight_layout()
 plt.show()
 
 ###############################################################################
-#
+
+colors = ['m', 'g']
+# fig 5a
+# USA map
+lon_lims = [truncate_neg(np.min(df_parameters_US.longitude),5),np.ceil(np.max(df_parameters_US.longitude/5))*5]
+lat_lims = [truncate_neg(np.min(df_parameters_US.latitude),2.5),np.ceil(np.max(df_parameters_US.latitude/2.5))*2.5]
+fontsize = 15
+
+cmap = "seismic"
+s = 3
+norm = mcolors.Normalize(vmin=np.min(skew_df_US.skewness)*0.4, vmax=np.min(skew_df_US.skewness)*-0.4)
+fig = plt.figure(figsize=(7, 3))
+
+proj = ccrs.PlateCarree()
+ax1 = fig.add_subplot(1, 1, 1, projection=proj)
+
+# Add map features
+ax1.coastlines()
+ax1.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc = ax1.scatter(
+    df_parameters_US.longitude,
+    df_parameters_US.latitude,
+    c=skew_df_US.skewness,
+    cmap=cmap,
+    norm = norm,
+    s = s
+)
+
+#plot outlines of temps
+
+shape_list = [shape_a1, shape_a2, shape_a3, shape_a4]
+
+for i, shape in enumerate(shape_list):
+    color = colors[i % 2]  # Alternate between 'm' and 'g'
+    if isinstance(shape, Polygon):
+        x, y = shape.exterior.xy
+        plt.plot(x, y, color=color, linewidth=2, label='Alpha Shape', transform=ccrs.PlateCarree())
+    else:
+        for polygon in shape.geoms:
+            x, y = polygon.exterior.xy
+            plt.plot(x, y, color=color, linewidth=2, label='Alpha Shape', transform=ccrs.PlateCarree())
+
+ax1.set_title("Skewness of temperature distribution", fontsize = fontsize)
+
+
+gl = ax1.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': fontsize-2}
+gl.ylabel_style = {'size': fontsize-2}
+cb = plt.colorbar(sc,extend = "both")
+cb.set_label("skewness [°C]")
+
+plt.show()
+
+
+
+# fig 5b
+#Germany
+skew_df_DE = pd.read_csv(f"{drive}:/outputs/Germany\\temp_skew.csv", dtype={"station":str})
+df_parameters_DE = pd.read_csv('D:/outputs/Germany\\parameters.csv', dtype={'station': str}) 
+
+#merging the dataframes to ensure station consistency
+missing_rows = pd.merge(df_parameters_DE.station, skew_df_DE.station, how='left', indicator=True).query('_merge == "left_only"').drop('_merge', axis=1)
+if len(missing_rows) != 0:
+    print("miss-match, dropping")
+    df_parameters_DE = df_parameters_DE.drop(missing_rows.index)
+else:
+    pass
+
+
+lon_lims = [truncate_neg(np.min(df_parameters_DE.longitude),5),np.ceil(np.max(df_parameters_DE.longitude/5))*5]
+lat_lims = [truncate_neg(np.min(df_parameters_DE.latitude),2.5),np.ceil(np.max(df_parameters_DE.latitude/2.5))*2.5]
+fontsize = 15
+
+cmap = "seismic"
+s = 3
+norm = mcolors.Normalize(vmin=np.min(skew_df_DE.skewness)*0.4, vmax=np.min(skew_df_DE.skewness)*-0.4)
+fig = plt.figure(figsize=(7, 3))
+
+proj = ccrs.PlateCarree()
+ax1 = fig.add_subplot(1, 1, 1, projection=proj)
+
+# Add map features
+ax1.coastlines()
+ax1.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc = ax1.scatter(
+    df_parameters_DE.longitude,
+    df_parameters_DE.latitude,
+    c=skew_df_DE.skewness,
+    cmap=cmap,
+    norm = norm,
+    s = s
+)
+
+#plot outlines of temps
+
+ax1.set_title("Skewness of temperature distribution", fontsize = fontsize)
+
+
+gl = ax1.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': fontsize-2}
+gl.ylabel_style = {'size': fontsize-2}
+gl.xlocator = mticker.FixedLocator(np.arange(6, 16, 3))
+gl.ylocator = mticker.FixedLocator(np.arange(48, 56, 2))
+cb = plt.colorbar(sc,extend = "both")
+cb.set_label("skewness [°C]")
+
+plt.show()
+
+
+# fig 5c
+#Japan
+
+
+
+cmap = "seismic"
+s = 3
+norm = mcolors.Normalize(vmin=np.min(skew_df_JP.skewness)*0.4, vmax=np.min(skew_df_JP.skewness)*-0.4)
+fig = plt.figure(figsize=(7, 3))
+
+proj = ccrs.PlateCarree()
+ax1 = fig.add_subplot(1, 1, 1, projection=proj)
+
+# Add map features
+ax1.coastlines()
+ax1.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc = ax1.scatter(
+    df_parameters_JP.longitude,
+    df_parameters_JP.latitude,
+    c=skew_df_JP.skewness,
+    cmap=cmap,
+    norm = norm,
+    s = s
+)
+
+#plot outlines of temps
+
+shape_list = [shape_c1, shape_c2, shape_c3]
+
+for i, shape in enumerate(shape_list):
+    color = colors[i % 2]  # Alternate between 'm' and 'g'
+    if isinstance(shape, Polygon):
+        x, y = shape.exterior.xy
+        plt.plot(x, y, color=color, linewidth=2, label='Alpha Shape', transform=ccrs.PlateCarree())
+    else:
+        for polygon in shape.geoms:
+            x, y = polygon.exterior.xy
+            plt.plot(x, y, color=color, linewidth=2, label='Alpha Shape', transform=ccrs.PlateCarree())
+
+ax1.set_title("Skewness of temperature distribution", fontsize = fontsize)
+
+
+gl = ax1.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': fontsize-2}
+gl.ylabel_style = {'size': fontsize-2}
+cb = plt.colorbar(sc,extend = "both")
+cb.set_label("skewness [°C]")
+
+plt.show()
+
+
 
 
 
