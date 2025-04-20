@@ -145,7 +145,7 @@ if np.size(glob.glob(save_path_neg)) != 0:
     df_parameters_neg = pd.read_csv(save_path_neg, dtype={'station': str})
 
     #dataframe with all values
-    new_df = df_parameters[['station','latitude','longitude','b','kappa','lambda','a','thr']].copy()
+    new_df = df_parameters[['station','latitude','longitude','b','kappa','lambda','a','thr','mu','sigma','n_events_per_yr']].copy()
     
     mask = new_df['b'] == 0
     
@@ -956,9 +956,23 @@ for i in range(6):
     station = df_low_north_long.station.iloc[i]
     T = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/T_{station}.csv")
     P = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/P_{station}.csv")
+    eT = np.arange(np.min(T),np.max(T)+4,1)
+    
+    T_min = np.min(T)
+    T_max = np.max(T)
+    Ts = np.arange(T_min - S.temp_delta, T_max + S.temp_delta, S.temp_res_monte_carlo)
+    
+    
+    g_phat = [df_low_north_long.mu.iloc[i],df_low_north_long.sigma.iloc[i]]
+    g_phat6 = S.temperature_model(T,beta = 6)
+    
+    TNX_FIG_temp_model(T, g_phat, 4, eT)
+    plt.plot(eT,gen_norm_pdf(eT,g_phat6[0],g_phat6[1],6))
+    plt.show()
     
     F_phat = [df_low_north_long.kappa.iloc[i],df_low_north_long.b.iloc[i],df_low_north_long["lambda"].iloc[i],df_low_north_long.a.iloc[i]]
     thr = df_low_north_long.thr.iloc[i]
+    n = df_low_north_long.n_events_per_yr.iloc[i]
     
     RL = RL_df_low_north_long.return_levels.iloc[i]
     AMS = RL_df_low_north_long.obs_AMS.iloc[i]
@@ -967,7 +981,11 @@ for i in range(6):
     
     eRP = 1/(1-plot_pos)
     
-    eT = np.arange(np.min(T),np.max(T)+4,1)
+    S.beta = 6
+    S.return_period = eRP
+    RL6, __, __ = S.model_inversion(F_phat, g_phat6, n, Ts)
+   
+    
     TNX_FIG_magn_model(P,T,F_phat,thr,eT,qs)
     plt.title(f"({info_low_north_long.latitude.iloc[i]},{info_low_north_long.longitude.iloc[i]}). FRMSE = {FRMSE_df_low_north_long.FRMSE.iloc[i]}")
     plt.show()
@@ -977,6 +995,7 @@ for i in range(6):
     plt.plot(eRP,RL_df_low_north_long.return_levels_kernal.iloc[i],label = f"b = free, temperature kernal")
     plt.plot(eRP,RL_df_low_north_long.return_levels_kernal_0.iloc[i],label = f"b = 0, temperature kernal")
     plt.plot(eRP,RL_df_low_north_long.return_levels_kernal_exp.iloc[i],label = f"b = exp, temperature kernal")
+    plt.plot(eRP,RL6, label = "beta = 6, b free")
     
     plt.legend()
     plt.show()
