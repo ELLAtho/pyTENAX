@@ -987,7 +987,7 @@ for i in range(6):
    
     
     TNX_FIG_magn_model(P,T,F_phat,thr,eT,qs)
-    plt.title(f"({info_low_north_long.latitude.iloc[i]},{info_low_north_long.longitude.iloc[i]}). FRMSE = {FRMSE_df_low_north_long.FRMSE.iloc[i]}")
+    plt.title(f"({station}. {info_low_north_long.latitude.iloc[i]},{info_low_north_long.longitude.iloc[i]}). FRMSE = {FRMSE_df_low_north_long.FRMSE.iloc[i]}")
     plt.show()
     
     
