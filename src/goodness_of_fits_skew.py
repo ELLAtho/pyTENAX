@@ -438,6 +438,7 @@ plt.show()
 
 ##############################################################################
 #Station plots
+val_info.index = range(len(val_info))
 
 qs = [.85,.95,.99,.999]
 
@@ -446,7 +447,8 @@ peaks_df = pd.read_csv(f"{drive}:/outputs/{country_save}\\peaks.csv")
 mask = ((temp_skew_df.skewness > 0) &
     (peaks_df.n_peaks01 == 1) &
     (df_parameters.longitude < -110) &
-    (df_parameters.latitude > 40))
+    (df_parameters.latitude > 40) &
+    (val_info.cleaned_years > 20))
 
 RL_westcoast = RL_df[mask]
 FRMSE_westcoast = FRMSE_df[mask]
@@ -490,13 +492,13 @@ for i in range(6):
     eRP = 1/(1-plot_pos)
     
     TNX_FIG_magn_model(P,T,F_phat,thr,eT,qs)
-    #plt.title(f"({info_low_north_long.latitude.iloc[i]},{info_low_north_long.longitude.iloc[i]}). FRMSE = {FRMSE_df_low_north_long.FRMSE.iloc[i]}")
+    plt.title(f"station: {station}. westcoast, low FRMSE")
     plt.show()
     
     
     TNX_FIG_valid(AMS,eRP,RL,TENAXlabel = f"b = free, beta = 4",obslabel='AMS',ylimits = [0,np.max(AMS)+1])
     plt.plot(eRP,RL_westcoast_low.return_levels_skew.iloc[i],label = f"b = free, temperature skew")
-    # plt.plot(eRP,RL_westcoast_low.return_levels_kernal_0.iloc[i],label = f"b = 0, temperature kernal")
+    plt.plot(eRP,RL_westcoast_low.return_levels_skew_0.iloc[i],label = f"b = 0, temperature skew")
     # plt.plot(eRP,RL_westcoast_low.return_levels_kernal_exp.iloc[i],label = f"b = exp, temperature kernal")
     
     plt.legend()
@@ -525,15 +527,114 @@ for i in range(6):
     eRP = 1/(1-plot_pos)
     
     TNX_FIG_magn_model(P,T,F_phat,thr,eT,qs)
-    #plt.title(f"({info_high_north_long.latitude.iloc[i]},{info_high_north_long.longitude.iloc[i]}). FRMSE = {FRMSE_df_high_north_long.FRMSE.iloc[i]}")
+    plt.title(f"station: {station}. westcoast, high FRMSE")
     plt.show()
     
     
     TNX_FIG_valid(AMS,eRP,RL,TENAXlabel = f"b = free, beta = 4",obslabel='AMS',ylimits = [0,np.max(AMS)+1])
     plt.plot(eRP,RL_westcoast_high.return_levels_skew.iloc[i],label = f"b = free, temperature skew")
-    # plt.plot(eRP,RL_westcoast_high.return_levels_kernal_0.iloc[i],label = f"b = 0, temperature kernal")
+    plt.plot(eRP,RL_westcoast_high.return_levels_skew_0.iloc[i],label = f"b = 0, temperature skew")
     # plt.plot(eRP,RL_westcoast_high.return_levels_kernal_exp.iloc[i],label = f"b = exp, temperature kernal")
     
     plt.legend()
     plt.show()
+
+
+mask = ((temp_skew_df.skewness < 0) &
+    (peaks_df.n_peaks01 == 1) &
+    (df_parameters.longitude > -110) &
+    (val_info.cleaned_years > 20)
+    ) #negative skew, one peak
+
+RL_southeast = RL_df[mask]
+FRMSE_southeast = FRMSE_df[mask]
+parameters_southeast = df_parameters[mask]
+df_southeast = new_df[mask]
+skew_southeast = temp_skew_df[mask]
+
+RL_southeast_high = RL_southeast[FRMSE_southeast.FRMSE > np.nanquantile(FRMSE_southeast.FRMSE,0.9)]
+FRMSE_southeast_high = FRMSE_southeast[FRMSE_southeast.FRMSE > np.nanquantile(FRMSE_southeast.FRMSE,0.9)]
+parameters_southeast_high = parameters_southeast[FRMSE_southeast.FRMSE > np.nanquantile(FRMSE_southeast.FRMSE,0.9)]
+df_southeast_high = df_southeast[FRMSE_southeast.FRMSE > np.nanquantile(FRMSE_southeast.FRMSE,0.9)]
+skew_southeast_high = skew_southeast[FRMSE_southeast.FRMSE > np.nanquantile(FRMSE_southeast.FRMSE,0.9)]
+
+
+RL_southeast_low = RL_southeast[FRMSE_southeast.FRMSE < np.nanquantile(FRMSE_southeast.FRMSE,0.1)]
+FRMSE_southeast_low = FRMSE_southeast[FRMSE_southeast.FRMSE < np.nanquantile(FRMSE_southeast.FRMSE,0.1)]
+parameters_southeast_low = parameters_southeast[FRMSE_southeast.FRMSE < np.nanquantile(FRMSE_southeast.FRMSE,0.1)]
+df_southeast_low = df_southeast[FRMSE_southeast.FRMSE < np.nanquantile(FRMSE_southeast.FRMSE,0.1)]
+skew_southeast_low = skew_southeast[FRMSE_southeast.FRMSE < np.nanquantile(FRMSE_southeast.FRMSE,0.1)]
+
+
+    
+for i in range(6):
+    station = RL_southeast_low.station.iloc[i]
+    T = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/T_{station}.csv")
+    P = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/P_{station}.csv")
+    
+    eT = np.arange(np.min(T),np.max(T)+4,1)
+    g_phat = [skew_southeast_low.skewness.iloc[i],skew_southeast_low.g_phat1.iloc[i],skew_southeast_low.g_phat2.iloc[i]]
+    
+    TNX_FIG_temp_model(T, g_phat, 4, eT,method = "skewnorm")
+    plt.xlim(np.min(T),np.max(T))
+    plt.ylim(0,4/(np.max(T)-np.min(T)))
+    plt.show()
+    F_phat = [df_southeast_low.kappa.iloc[i],df_southeast_low.b.iloc[i],df_southeast_low["lambda"].iloc[i],df_southeast_low.a.iloc[i]]
+    thr = df_southeast_low.thr.iloc[i]
+    
+    RL = RL_southeast_low.return_levels.iloc[i]
+    AMS = RL_southeast_low.obs_AMS.iloc[i]
+    
+    plot_pos = np.arange(1,np.size(AMS)+1)/(1+np.size(AMS))
+    
+    eRP = 1/(1-plot_pos)
+    
+    TNX_FIG_magn_model(P,T,F_phat,thr,eT,qs)
+    plt.title(f"station: {station}. southest, low FRMSE")
+    plt.show()
+    
+    
+    TNX_FIG_valid(AMS,eRP,RL,TENAXlabel = f"b = free, beta = 4",obslabel='AMS',ylimits = [0,np.max(AMS)+1])
+    plt.plot(eRP,RL_southeast_low.return_levels_skew.iloc[i],label = f"b = free, temperature skew")
+    plt.plot(eRP,RL_southeast_low.return_levels_skew_0.iloc[i],label = f"b = 0, temperature skew")
+    # plt.plot(eRP,RL_southeast_low.return_levels_kernal_exp.iloc[i],label = f"b = exp, temperature kernal")
+    
+    plt.legend()
+    plt.show()
+
+for i in range(6):
+    station = RL_southeast_high.station.iloc[i]
+    T = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/T_{station}.csv")
+    P = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/P_{station}.csv")
+    
+    eT = np.arange(np.min(T),np.max(T)+4,1)
+    g_phat = [skew_southeast_high.skewness.iloc[i],skew_southeast_high.g_phat1.iloc[i],skew_southeast_high.g_phat2.iloc[i]]
+    
+    TNX_FIG_temp_model(T, g_phat, 4, eT,method = "skewnorm")
+    plt.xlim(np.min(T),np.max(T))
+    plt.ylim(0,4/(np.max(T)-np.min(T)))
+    plt.show()
+    F_phat = [df_southeast_high.kappa.iloc[i],df_southeast_high.b.iloc[i],df_southeast_high["lambda"].iloc[i],df_southeast_high.a.iloc[i]]
+    thr = df_southeast_high.thr.iloc[i]
+    
+    RL = RL_southeast_high.return_levels.iloc[i]
+    AMS = RL_southeast_high.obs_AMS.iloc[i]
+    
+    plot_pos = np.arange(1,np.size(AMS)+1)/(1+np.size(AMS))
+    
+    eRP = 1/(1-plot_pos)
+    
+    TNX_FIG_magn_model(P,T,F_phat,thr,eT,qs)
+    plt.title(f"station: {station}. southest, high FRMSE")
+    plt.show()
+    
+    
+    TNX_FIG_valid(AMS,eRP,RL,TENAXlabel = f"b = free, beta = 4",obslabel='AMS',ylimits = [0,np.max(AMS)+1])
+    plt.plot(eRP,RL_southeast_high.return_levels_skew.iloc[i],label = f"b = free, temperature skew")
+    plt.plot(eRP,RL_southeast_high.return_levels_skew_0.iloc[i],label = f"b = 0, temperature skew")
+    # plt.plot(eRP,RL_southeast_high.return_levels_kernal_exp.iloc[i],label = f"b = exp, temperature kernal")
+    
+    plt.legend()
+    plt.show()
+
 
