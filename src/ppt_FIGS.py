@@ -156,9 +156,12 @@ for i in np.arange(0,len(df_germany)):
 
 temp_aves_proper = np.nanmean(interp_y,axis =0)
 
+T_mc = randdf(S.n_monte_carlo, np.vstack([temp_aves_proper, interp_x]), 'pdf').T
 
+g_phat = S.temperature_model(T_mc)
+pdf4 = gen_norm_pdf(interp_x,g_phat[0],g_phat[1],4)
 
-fig = plt.figure(figsize = (3,3))
+fig = plt.figure(figsize = (2,2))
 ax = fig.add_subplot(1,1,1)
 
 for i in np.arange(0,len(df_germany)):  
@@ -166,13 +169,33 @@ for i in np.arange(0,len(df_germany)):
         pass
     else:    
         ax.plot(interp_x ,interp_y[i],alpha = 0.01,color = "b")
-
+plt.ylim(0,0.5)
 plt.plot(interp_x,temp_aves_proper,label = "mean",color = "r")
+
 ax.set_title("Germany temperature distributions")
 ax.set_xlabel("(T - μ)/σ")
 ax.set_ylabel("Probability density")
 plt.show()
 
+#5b1.1
+fig = plt.figure(figsize = (2,2))
+ax = fig.add_subplot(1,1,1)
+
+for i in np.arange(0,len(df_germany)):  
+    if np.isnan(aves[i]):
+        pass
+    else:    
+        ax.plot(interp_x ,interp_y[i],alpha = 0.01,color = "b")
+plt.ylim(0,0.5)
+plt.plot(interp_x,temp_aves_proper,label = "mean",color = "r")
+
+ax.plot(interp_x,pdf4,color = "lime",label = "temp model beta = 4")
+
+plt.legend()
+ax.set_title("Germany temperature distributions")
+ax.set_xlabel("(T - μ)/σ")
+ax.set_ylabel("Probability density")
+plt.show()
 
 # 5a1 USA
 country = 'US' 
@@ -210,7 +233,7 @@ skew_df_US = pd.read_csv(f"{drive}:/outputs/{country_save}\\temp_skew.csv", dtyp
 
 
 temp_aves_proper = np.nanmean(interp_y,axis =0)
-fig = plt.figure(figsize = (3,3))
+fig = plt.figure(figsize = (2,2))
 
 mask = ((skew_df_US.skewness > 0) &
     (peaks_df_US.n_peaks01 == 1) &
@@ -272,7 +295,7 @@ interp_y_region = np.array(interp_y)[mask]
 aves_region = np.array(aves)[mask]
 loc_region = df_parameters_US[mask]
 
-fig = plt.figure(figsize = (3,3))
+fig = plt.figure(figsize = (2,2))
 ax = fig.add_subplot(1, 1, 1)
 for i in range(len(interp_y_region)):
     if not np.isnan(aves_region[i]):
@@ -318,7 +341,7 @@ interp_y_region = np.array(interp_y)[mask]
 aves_region = np.array(aves)[mask]
 loc_region = df_parameters_US[mask]
 
-fig = plt.figure(figsize = (3,3))
+fig = plt.figure(figsize = (2,2))
 ax = fig.add_subplot(1, 1, 1)
 for i in range(len(interp_y_region)):
     if not np.isnan(aves_region[i]):
@@ -367,7 +390,7 @@ interp_y_region = np.array(interp_y)[mask]
 aves_region = np.array(aves)[mask]
 loc_region = df_parameters_US[mask]
 
-fig = plt.figure(figsize = (3,3))
+fig = plt.figure(figsize = (2,2))
 ax = fig.add_subplot(1, 1, 1)
 for i in range(len(interp_y_region)):
     if not np.isnan(aves_region[i]):
@@ -442,7 +465,7 @@ skew_df_JP = pd.read_csv(f"{drive}:/outputs/{country_save}\\temp_skew.csv", dtyp
 
 
 temp_aves_proper = np.nanmean(interp_y,axis =0)
-fig = plt.figure(figsize = (3,3))
+fig = plt.figure(figsize = (2,2))
 
 mask = ((df_parameters_JP.latitude < 30)) # The islands South
 
@@ -500,7 +523,7 @@ interp_y_region = np.array(interp_y)[mask]
 aves_region = np.array(aves)[mask]
 loc_region = df_parameters_JP[mask]
 
-fig = plt.figure(figsize = (3,3))
+fig = plt.figure(figsize = (2,2))
 ax = fig.add_subplot(1, 1, 1)
 for i in range(len(interp_y_region)):
     if not np.isnan(aves_region[i]):
@@ -551,10 +574,44 @@ interp_y_region = np.array(interp_y)[mask]
 aves_region = np.array(aves)[mask]
 loc_region = df_parameters_JP[mask]
 
-pdf4 = gen_norm_pdf(interp_x,0,2,4)
-pdf6 = gen_norm_pdf(interp_x,0,2,6)
 
-fig = plt.figure(figsize = (3,3))
+T_mc = randdf(S.n_monte_carlo, np.vstack([np.nanmean(interp_y_region, axis=0), interp_x]), 'pdf').T
+
+g_phat = S.temperature_model(T_mc)
+g_phat6 = S.temperature_model(T_mc,beta = 6)
+g_phat8 = S.temperature_model(T_mc,beta = 8)
+
+pdf4 = gen_norm_pdf(interp_x,g_phat[0],g_phat[1],4)
+pdf6 = gen_norm_pdf(interp_x,g_phat6[0],g_phat6[1],6)
+pdf8 = gen_norm_pdf(interp_x,g_phat8[0],g_phat8[1],8)
+
+
+
+fig = plt.figure(figsize = (2,2))
+ax = fig.add_subplot(1, 1, 1)
+for i in range(len(interp_y_region)):
+    if not np.isnan(aves_region[i]):
+        ax.plot(interp_x, interp_y_region[i], alpha=0.1, color="b")
+if interp_y_region.size > 0:
+    ax.plot(interp_x, np.nanmean(interp_y_region, axis=0), color="r", label = "mean")
+ax.plot(interp_x,pdf4,color = "lime",label = "temp model beta = 4")
+# ax.plot(interp_x,pdf6,color = "lime",label = "temp model beta = 6")
+# ax.plot(interp_x,pdf8,color = "lime",label = "temp model beta = 8")
+
+
+ax.set_title(u"Japan temperature distributions \n Western side")
+ax.set_ylim(0, 0.5)
+ax.set_xlabel("(T - μ)/σ")
+ax.set_ylabel("Probability density")
+plt.legend()
+plt.show() 
+
+points = np.column_stack((loc_region.longitude, loc_region.latitude))
+alpha = 1.0  # Smaller alpha = tighter wrap. Try tuning this value.
+shape_c3 = alphashape.alphashape(points, alpha)
+
+#version 2
+fig = plt.figure(figsize = (2,2))
 ax = fig.add_subplot(1, 1, 1)
 for i in range(len(interp_y_region)):
     if not np.isnan(aves_region[i]):
@@ -567,10 +624,7 @@ ax.set_title(u"Japan temperature distributions \n Western side")
 ax.set_ylim(0, 0.5)
 ax.set_xlabel("(T - μ)/σ")
 ax.set_ylabel("Probability density")
-
-points = np.column_stack((loc_region.longitude, loc_region.latitude))
-alpha = 1.0  # Smaller alpha = tighter wrap. Try tuning this value.
-shape_c3 = alphashape.alphashape(points, alpha)
+plt.show() 
 
 
 fig = plt.figure()
@@ -642,7 +696,7 @@ for i, shape in enumerate(shape_list):
             x, y = polygon.exterior.xy
             plt.plot(x, y, color=color, linewidth=2, label='Alpha Shape', transform=ccrs.PlateCarree())
 
-ax1.set_title("Skewness of temperature distribution", fontsize = fontsize)
+# ax1.set_title("Skewness of temperature distribution", fontsize = fontsize)
 
 
 gl = ax1.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
@@ -651,7 +705,7 @@ gl.right_labels = False
 gl.xlabel_style = {'size': fontsize-2}
 gl.ylabel_style = {'size': fontsize-2}
 cb = plt.colorbar(sc,extend = "both")
-cb.set_label("skewness [°C]")
+cb.set_label("skewness [°C]",fontsize = fontsize)
 
 plt.show()
 
@@ -710,7 +764,7 @@ gl.ylabel_style = {'size': fontsize-2}
 gl.xlocator = mticker.FixedLocator(np.arange(6, 16, 3))
 gl.ylocator = mticker.FixedLocator(np.arange(48, 56, 2))
 cb = plt.colorbar(sc,extend = "both")
-cb.set_label("skewness [°C]")
+cb.set_label("skewness [°C]",fontsize = fontsize)
 
 plt.show()
 
@@ -756,7 +810,7 @@ for i, shape in enumerate(shape_list):
             x, y = polygon.exterior.xy
             plt.plot(x, y, color=color, linewidth=2, label='Alpha Shape', transform=ccrs.PlateCarree())
 
-ax1.set_title("Skewness of temperature distribution", fontsize = fontsize)
+# ax1.set_title("Skewness of temperature distribution", fontsize = fontsize)
 
 
 gl = ax1.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
@@ -765,7 +819,7 @@ gl.right_labels = False
 gl.xlabel_style = {'size': fontsize-2}
 gl.ylabel_style = {'size': fontsize-2}
 cb = plt.colorbar(sc,extend = "both")
-cb.set_label("skewness [°C]")
+cb.set_label("skewness [°C]",fontsize = fontsize)
 
 plt.show()
 
