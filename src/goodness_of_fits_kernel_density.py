@@ -145,7 +145,7 @@ if np.size(glob.glob(save_path_neg)) != 0:
     df_parameters_neg = pd.read_csv(save_path_neg, dtype={'station': str})
 
     #dataframe with all values
-    new_df = df_parameters[['station','latitude','longitude','b','kappa','lambda','a']].copy()
+    new_df = df_parameters[['station','latitude','longitude','b','kappa','lambda','a','thr']].copy()
     
     mask = new_df['b'] == 0
     
@@ -153,6 +153,7 @@ if np.size(glob.glob(save_path_neg)) != 0:
     new_df.loc[mask, 'kappa'] = df_parameters_neg['kappa2'].to_numpy()
     new_df.loc[mask, 'lambda'] = df_parameters_neg['lambda2'].to_numpy()
     new_df.loc[mask, 'a'] = df_parameters_neg['a2'].to_numpy()
+    
 
 else:
     new_df = df_parameters.copy()
@@ -173,29 +174,28 @@ save_name = f"{drive}:/outputs/{country_save}\\return_levels.csv"
 RL_df = pd.read_csv(save_name, dtype={'station': str})
 nan_locs = RL_df.return_levels[RL_df.return_levels.isna()].index
 replace_range = np.arange(0,len(RL_df))
-for k in range(len(nan_locs)):
-    replace_range = np.delete(replace_range, np.where(replace_range == nan_locs[k]))
-for j in replace_range:
-    RL_df.loc[j, "return_levels"] = np.fromstring(RL_df.return_levels.iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'), sep=' ')
-    RL_df.loc[j, "return_levels_5"] = np.fromstring(RL_df["return_levels_5"].iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'), sep=' ')
-    RL_df.loc[j, "return_levels_b0"] = np.fromstring(RL_df.return_levels_b0.iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'), sep=' ')
-    RL_df.loc[j, "obs_AMS"] = np.fromstring(RL_df.obs_AMS.iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'), sep=' ')
 
-    
-    if "return_levels_bset" in RL_df.columns:
-        RL_df.loc[j, "return_levels_bset"] = np.fromstring(RL_df.return_levels_bset.iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'), sep=' ')
-    
-    if "return_levels_bexp" in RL_df.columns:
-        RL_df.loc[j, "return_levels_bexp"] = np.fromstring(RL_df.return_levels_bexp.iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'), sep=' ')
-    
-if "return_levels_roll" in RL_df.columns:
-    nan_locs = RL_df.return_levels[RL_df.return_levels_roll.isna()].index
+RL_column_names = [col for col in RL_df.columns if "return_levels" in col]
+
+
+for col in RL_column_names:
+    nan_locs = RL_df[col][RL_df[col].isna()].index
     replace_range = np.arange(0,len(RL_df))
     for k in range(len(nan_locs)):
         replace_range = np.delete(replace_range, np.where(replace_range == nan_locs[k]))
     for j in replace_range:
-        RL_df.loc[j, "return_levels_roll"] = np.fromstring(RL_df.return_levels_roll.iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'), sep=' ')
     
+        RL_df.loc[j, col] = np.fromstring(RL_df[col].iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'), sep=' ')
+        
+nan_locs = RL_df.obs_AMS[RL_df.obs_AMS.isna()].index
+replace_range = np.arange(0,len(RL_df))
+for k in range(len(nan_locs)):
+    replace_range = np.delete(replace_range, np.where(replace_range == nan_locs[k]))
+for j in replace_range:
+    RL_df.loc[j, "obs_AMS"] = np.fromstring(RL_df.obs_AMS.iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'), sep=' ')
+
+
+
 
 if "return_levels_kernal" not in RL_df.columns:
     print("calculating return levels with temperature kernel")
@@ -840,17 +840,151 @@ plt.show()
 
 ###############################################################################
 # check some stations incl magnitude
+val_info.index = range(len(val_info))
 
-df_high = df_parameters[FRMSE_df.FRMSE > np.nanquantile(FRMSE_df.FRMSE,0.9)] #stations with top 10% FRMSE b free
+
+df_high = new_df[FRMSE_df.FRMSE > np.nanquantile(FRMSE_df.FRMSE,0.9)] #stations with top 10% FRMSE b free
 FRMSE_df_high = FRMSE_df[FRMSE_df.FRMSE > np.nanquantile(FRMSE_df.FRMSE,0.9)]
-
+info_high = val_info[FRMSE_df.FRMSE > np.nanquantile(FRMSE_df.FRMSE,0.9)]
+RL_df_high = RL_df[FRMSE_df.FRMSE > np.nanquantile(FRMSE_df.FRMSE,0.9)]
 
 df_high_north = df_high[df_high.latitude > 35]
 FRMSE_df_high_north = FRMSE_df_high[df_high.latitude > 35]
+info_high_north = info_high[df_high.latitude > 35]
+RL_df_high_north = RL_df_high[df_high.latitude > 35]
+
+
+df_high_north_long = df_high_north[info_high_north.cleaned_years > 30]
+FRMSE_df_high_north_long = FRMSE_df_high_north[info_high_north.cleaned_years > 30]
+info_high_north_long = info_high_north[info_high_north.cleaned_years > 30]
+RL_df_high_north_long = RL_df_high_north[info_high_north.cleaned_years > 30]
 
 
 
+qs = [.85,.95,.99,.999]
+
+
+for i in range(6):
+    station = df_high_north_long.station.iloc[i]
+    T = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/T_{station}.csv")
+    P = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/P_{station}.csv")
+    
+    F_phat = [df_high_north_long.kappa.iloc[i],df_high_north_long.b.iloc[i],df_high_north_long["lambda"].iloc[i],df_high_north_long.a.iloc[i]]
+    thr = df_high_north_long.thr.iloc[i]
+    
+    RL = RL_df_high_north_long.return_levels.iloc[i]
+    AMS = RL_df_high_north_long.obs_AMS.iloc[i]
+    
+    plot_pos = np.arange(1,np.size(AMS)+1)/(1+np.size(AMS))
+    
+    eRP = 1/(1-plot_pos)
+    
+    eT = np.arange(np.min(T),np.max(T)+4,1)
+    TNX_FIG_magn_model(P,T,F_phat,thr,eT,qs)
+    plt.title(f"({info_high_north_long.latitude.iloc[i]},{info_high_north_long.longitude.iloc[i]}). FRMSE = {FRMSE_df_high_north_long.FRMSE.iloc[i]:.2f}")
+    plt.show()
+    
+    
+    TNX_FIG_valid(AMS,eRP,RL,TENAXlabel = f"b = free, beta = 4",obslabel='AMS',ylimits = [0,np.max(AMS)+1])
+    plt.plot(eRP,RL_df_high_north_long.return_levels_kernal.iloc[i],label = f"b = free, temperature kernal")
+    plt.plot(eRP,RL_df_high_north_long.return_levels_kernal_0.iloc[i],label = f"b = 0, temperature kernal")
+    plt.plot(eRP,RL_df_high_north_long.return_levels_kernal_exp.iloc[i],label = f"b = exp, temperature kernal")
+    
+    plt.legend()
+    plt.show()
+    
+ 
+# as above but for stations with large bs
+RL_df_high_north_long_sig = RL_df_high_north_long[df_high_north_long.b < -0.02]
+df_high_north_long_sig = df_high_north_long[df_high_north_long.b < -0.02]
+FRMSE_df_high_north_long_sig = FRMSE_df_high_north_long[df_high_north_long.b < -0.02]
+info_high_north_long_sig = info_high_north_long[df_high_north_long.b < -0.02]
+ 
+    
+for i in range(6):
+    station = df_high_north_long_sig.station.iloc[i]
+    T = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/T_{station}.csv")
+    P = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/P_{station}.csv")
+    
+    F_phat = [df_high_north_long_sig.kappa.iloc[i],df_high_north_long_sig.b.iloc[i],df_high_north_long_sig["lambda"].iloc[i],df_high_north_long_sig.a.iloc[i]]
+    thr = df_high_north_long_sig.thr.iloc[i]
+    
+    RL = RL_df_high_north_long_sig.return_levels.iloc[i]
+    AMS = RL_df_high_north_long_sig.obs_AMS.iloc[i]
+    
+    plot_pos = np.arange(1,np.size(AMS)+1)/(1+np.size(AMS))
+    
+    eRP = 1/(1-plot_pos)
+    
+    eT = np.arange(np.min(T),np.max(T)+4,1)
+    TNX_FIG_magn_model(P,T,F_phat,thr,eT,qs)
+    plt.title(f"({info_high_north_long_sig.latitude.iloc[i]},{info_high_north_long_sig.longitude.iloc[i]}). FRMSE = {FRMSE_df_high_north_long_sig.FRMSE.iloc[i]:.2f}")
+    plt.show()
+    
+    
+    TNX_FIG_valid(AMS,eRP,RL,TENAXlabel = f"b = free, beta = 4",obslabel='AMS',ylimits = [0,np.max(AMS)+1])
+    plt.plot(eRP,RL_df_high_north_long_sig.return_levels_kernal.iloc[i],label = f"b = free, temperature kernal")
+    plt.plot(eRP,RL_df_high_north_long_sig.return_levels_kernal_0.iloc[i],label = f"b = 0, temperature kernal")
+    plt.plot(eRP,RL_df_high_north_long_sig.return_levels_kernal_exp.iloc[i],label = f"b = exp, temperature kernal")
+    
+    plt.legend()
+    plt.show()
+    
 
 
 
+# low FRMSE so good fit
+df_low = new_df[FRMSE_df.FRMSE < np.nanquantile(FRMSE_df.FRMSE,0.1)] #stations with top 10% FRMSE b free
+FRMSE_df_low = FRMSE_df[FRMSE_df.FRMSE < np.nanquantile(FRMSE_df.FRMSE,0.1)]
+info_low = val_info[FRMSE_df.FRMSE < np.nanquantile(FRMSE_df.FRMSE,0.1)]
+RL_df_low = RL_df[FRMSE_df.FRMSE < np.nanquantile(FRMSE_df.FRMSE,0.1)]
+
+df_low_north = df_low[df_low.latitude > 35]
+FRMSE_df_low_north = FRMSE_df_low[df_low.latitude > 35]
+info_low_north = info_low[df_low.latitude > 35]
+RL_df_low_north = RL_df_low[df_low.latitude > 35]
+
+
+df_low_north_long = df_low_north[info_low_north.cleaned_years > 30]
+FRMSE_df_low_north_long = FRMSE_df_low_north[info_low_north.cleaned_years > 30]
+info_low_north_long = info_low_north[info_low_north.cleaned_years > 30]
+RL_df_low_north_long = RL_df_low_north[info_low_north.cleaned_years > 30]
+    
+
+    
+for i in range(6):
+    station = df_low_north_long.station.iloc[i]
+    T = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/T_{station}.csv")
+    P = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/P_{station}.csv")
+    
+    F_phat = [df_low_north_long.kappa.iloc[i],df_low_north_long.b.iloc[i],df_low_north_long["lambda"].iloc[i],df_low_north_long.a.iloc[i]]
+    thr = df_low_north_long.thr.iloc[i]
+    
+    RL = RL_df_low_north_long.return_levels.iloc[i]
+    AMS = RL_df_low_north_long.obs_AMS.iloc[i]
+    
+    plot_pos = np.arange(1,np.size(AMS)+1)/(1+np.size(AMS))
+    
+    eRP = 1/(1-plot_pos)
+    
+    eT = np.arange(np.min(T),np.max(T)+4,1)
+    TNX_FIG_magn_model(P,T,F_phat,thr,eT,qs)
+    plt.title(f"({info_low_north_long.latitude.iloc[i]},{info_low_north_long.longitude.iloc[i]}). FRMSE = {FRMSE_df_low_north_long.FRMSE.iloc[i]}")
+    plt.show()
+    
+    
+    TNX_FIG_valid(AMS,eRP,RL,TENAXlabel = f"b = free, beta = 4",obslabel='AMS',ylimits = [0,np.max(AMS)+1])
+    plt.plot(eRP,RL_df_low_north_long.return_levels_kernal.iloc[i],label = f"b = free, temperature kernal")
+    plt.plot(eRP,RL_df_low_north_long.return_levels_kernal_0.iloc[i],label = f"b = 0, temperature kernal")
+    plt.plot(eRP,RL_df_low_north_long.return_levels_kernal_exp.iloc[i],label = f"b = exp, temperature kernal")
+    
+    plt.legend()
+    plt.show()
+    
+    
+
+    
+    
+    
+    
 
