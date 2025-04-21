@@ -1001,9 +1001,112 @@ for i in range(6):
     plt.show()
     
     
+###############################################################################
+#location with good and bad fit for free vs 0
 
+free_take_0 = FRMSE_df.FRMSE - FRMSE_df.FRMSE_0
+
+mask = ((free_take_0 < np.nanquantile(free_take_0,0.1)) & # where free is better
+        (val_info.cleaned_years > 30)
+        )
+
+df_free_better = new_df[mask]
+FRMSE_df_free_better = FRMSE_df[mask]
+info_free_better = val_info[mask]
+RL_df_free_better = RL_df[mask]
+
+
+
+for i in range(6):
+    station = df_free_better.station.iloc[i]
+    T = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/T_{station}.csv")
+    P = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/P_{station}.csv")
+    eT = np.arange(np.min(T),np.max(T)+4,1)
+    
+    T_min = np.min(T)
+    T_max = np.max(T)
+    Ts = np.arange(T_min - S.temp_delta, T_max + S.temp_delta, S.temp_res_monte_carlo)
     
     
+    g_phat = [df_free_better.mu.iloc[i],df_free_better.sigma.iloc[i]]
+    g_phat6 = S.temperature_model(T,beta = 6)
     
     
+    F_phat = [df_free_better.kappa.iloc[i],df_free_better.b.iloc[i],df_free_better["lambda"].iloc[i],df_free_better.a.iloc[i]]
+    thr = df_free_better.thr.iloc[i]
+    n = df_free_better.n_events_per_yr.iloc[i]
+    
+    RL = RL_df_free_better.return_levels.iloc[i]
+    AMS = RL_df_free_better.obs_AMS.iloc[i]
+    
+    plot_pos = np.arange(1,np.size(AMS)+1)/(1+np.size(AMS))
+    
+    eRP = 1/(1-plot_pos)
+    
+       
+    TNX_FIG_magn_model(P,T,F_phat,thr,eT,qs)
+    plt.title(f"({station}. {info_free_better.latitude.iloc[i]},{info_free_better.longitude.iloc[i]}). FRMSE = {FRMSE_df_free_better.FRMSE.iloc[i]}")
+    plt.show()
+    
+    
+    TNX_FIG_valid(AMS,eRP,RL,TENAXlabel = f"b = free, beta = 4",obslabel='AMS',ylimits = [0,np.max(AMS)+1])
+    plt.plot(eRP,RL_df_free_better.return_levels_kernal.iloc[i],label = f"b = free, temperature kernal")
+    plt.plot(eRP,RL_df_free_better.return_levels_kernal_0.iloc[i],label = f"b = 0, temperature kernal")
+    plt.plot(eRP,RL_df_free_better.return_levels_kernal_exp.iloc[i],label = f"b = exp, temperature kernal")
+    
+    plt.legend()
+    plt.show()
+
+
+# now the opposite
+mask = ((free_take_0 > np.nanquantile(free_take_0,0.9)) & # where free is better
+        (val_info.cleaned_years > 30)
+        )
+
+df_free_better = new_df[mask]
+FRMSE_df_free_better = FRMSE_df[mask]
+info_free_better = val_info[mask]
+RL_df_free_better = RL_df[mask]
+
+
+for i in range(6):
+    station = df_free_better.station.iloc[i]
+    T = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/T_{station}.csv")
+    P = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/P_{station}.csv")
+    eT = np.arange(np.min(T),np.max(T)+4,1)
+    
+    T_min = np.min(T)
+    T_max = np.max(T)
+    Ts = np.arange(T_min - S.temp_delta, T_max + S.temp_delta, S.temp_res_monte_carlo)
+    
+    
+    g_phat = [df_free_better.mu.iloc[i],df_free_better.sigma.iloc[i]]
+    g_phat6 = S.temperature_model(T,beta = 6)
+    
+    
+    F_phat = [df_free_better.kappa.iloc[i],df_free_better.b.iloc[i],df_free_better["lambda"].iloc[i],df_free_better.a.iloc[i]]
+    thr = df_free_better.thr.iloc[i]
+    n = df_free_better.n_events_per_yr.iloc[i]
+    
+    RL = RL_df_free_better.return_levels.iloc[i]
+    AMS = RL_df_free_better.obs_AMS.iloc[i]
+    
+    plot_pos = np.arange(1,np.size(AMS)+1)/(1+np.size(AMS))
+    
+    eRP = 1/(1-plot_pos)
+    
+       
+    TNX_FIG_magn_model(P,T,F_phat,thr,eT,qs)
+    plt.title(f"({station}. {info_free_better.latitude.iloc[i]},{info_free_better.longitude.iloc[i]}). FRMSE = {FRMSE_df_free_better.FRMSE.iloc[i]}")
+    plt.show()
+    
+    
+    TNX_FIG_valid(AMS,eRP,RL,TENAXlabel = f"b = free, beta = 4",obslabel='AMS',ylimits = [0,np.max(AMS)+1])
+    plt.plot(eRP,RL_df_free_better.return_levels_kernal.iloc[i],label = f"b = free, temperature kernal")
+    plt.plot(eRP,RL_df_free_better.return_levels_kernal_0.iloc[i],label = f"b = 0, temperature kernal")
+    plt.plot(eRP,RL_df_free_better.return_levels_kernal_exp.iloc[i],label = f"b = exp, temperature kernal")
+    
+    plt.legend()
+    plt.show()
+
 

@@ -31,7 +31,9 @@ import xarray as xr
 import time
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
+from matplotlib.ticker import FuncFormatter
 import cartopy.crs as ccrs
+import matplotlib.dates as mdates
 import cartopy.feature as cfeature
 from matplotlib.colors import LinearSegmentedColormap
 import matplotlib.patches as patches
@@ -58,6 +60,7 @@ station = "03811"
 
 T = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/T_{station}.csv")
 P = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/P_{station}.csv")
+times = pd.read_csv(f"{drive}:/ordinary_events/{country_save}/time_{station}.csv",parse_dates = ["oe_time"])
 
 
 S = TENAX(
@@ -129,6 +132,70 @@ plt.yticks(fontsize = fontsize-2)
 
 
 plt.show()
+####################################################################################
+# fig 4c
+
+file_name = f"{drive}:/{country}/DE_{station}"
+P_full,data_meta = read_GSDR_file(f"{file_name}.txt",name_col)
+T_path = f"{drive}:/{country}_temp\\DE_{station}.nc"
+T_ERA = xr.load_dataarray(T_path)
+T_full = (T_ERA.squeeze()-273.15).to_dataframe()
+
+dates_range = [dt.datetime(1998,7,15,1),dt.datetime(1998,8,15,1)]
+
+
+T_range = T[times.oe_time.between(dates_range[0],dates_range[1])]
+P_range = P[times.oe_time.between(dates_range[0],dates_range[1])]
+times_range = times[times.oe_time.between(dates_range[0],dates_range[1])]
+
+
+fig = plt.figure(figsize = (3.5,3.5))
+ax1 = fig.add_subplot(2,1,1)
+plt.plot(P_full,zorder = 1)
+plt.scatter(times_range,P_range,color = "r", marker = "x",zorder = 2)
+plt.xlim(dates_range)
+plt.ylim(0,15)
+
+# for i in range(2,len(T_range)):
+#     plt.text(times_range.oe_time.iloc[i]-dt.timedelta(days = 2),P_range[i]+0.5,f"P = {P_range[i]} mm/hr")
+
+
+ax1.xaxis.set_minor_locator(mdates.DayLocator(interval=1))
+ax1.xaxis.set_major_locator(mdates.DayLocator(interval=5))
+ax1.tick_params(labelbottom=False)
+
+
+plt.ylabel("Precipitation (mm/hr)")
+ax1.set_title("Event separation = 24 hours")
+
+
+ax2 = fig.add_subplot(2,1,2)
+plt.plot(T_full.t2m,zorder = 1)
+plt.scatter(times_range,T_range,color = "r", marker = "x",zorder = 2)
+
+for i in range(len(T_range)):
+    plt.plot([times_range.oe_time.iloc[i]-dt.timedelta(days = 1),times_range.oe_time.iloc[i]],[T_range[i],T_range[i]],color = "r")
+
+
+# for i in range(2,len(T_range)):
+#     plt.text(times_range.oe_time.iloc[i]-dt.timedelta(days = 2),T_range[i]+0.5,f"T = {T_range[i]:.1f} °C ")
+
+plt.xlim(dates_range)
+plt.ylim(5,35)
+
+ax2.yaxis.set_major_formatter(FuncFormatter(lambda x, _: f"{x:.0f}°C"))
+ax2.xaxis.set_minor_locator(mdates.DayLocator(interval=1))
+ax2.xaxis.set_major_locator(mdates.DayLocator(interval=5))
+ax2.xaxis.set_major_formatter(mdates.DateFormatter('%d/%m'))
+ax2.tick_params(axis='x', which='both', top=True, labeltop=False)
+
+plt.ylabel("Temperature")
+
+plt.subplots_adjust(hspace=0)
+plt.show()
+
+
+
 ################################################################################
 # 5b1 (Germany)
 
@@ -822,6 +889,21 @@ cb = plt.colorbar(sc,extend = "both")
 cb.set_label("skewness [°C]",fontsize = fontsize)
 
 plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

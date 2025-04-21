@@ -260,9 +260,9 @@ TNX_FIG_temp_model(T2, g_phat2, 6, eT,obscol='r',valcol='r',
 plt.show()
 
 
-RL1, _, _ = S.model_inversion(F_phat1, g_phat1, n1, Ts)
+RL1, _, _ = S.model_inversion(F_phat1_b0, g_phat1, n1, Ts)
 
-RL2, _, _ = S.model_inversion(F_phat1, g_phat2, n1, Ts) #calculated with the same F_phat and n
+RL2, _, _ = S.model_inversion(F_phat1_b0, g_phat2, n1, Ts) #calculated with the same F_phat and n
 
 TNX_FIG_valid(AMS1, S.return_period, RL1,TENAXcol='b',obscol_shape = 'b+',TENAXlabel = 'first period',obslabel='Observed annual maxima')
 TNX_FIG_valid(AMS2, S.return_period, RL2,TENAXcol='r',obscol_shape = 'r+',TENAXlabel = 'predicted second period',obslabel='Observed annual maxima')
