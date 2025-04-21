@@ -44,7 +44,7 @@ from matplotlib import cm
 import alphashape
 from shapely.geometry import Polygon
 import matplotlib.ticker as mticker
-
+from matplotlib.ticker import ScalarFormatter
 
 drive = 'D'
 
@@ -890,24 +890,319 @@ cb.set_label("skewness [°C]",fontsize = fontsize)
 
 plt.show()
 
+#################################################################################
+
+#fig 6a
+
+
+country = 'Japan'
+ERA_country = 'Japan'
+country_save = 'Japan'
+code_str = 'JP_'
+minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+name_len = 5
+min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+censor_thr = 0.9
+
+save_path_neg = drive + ':/outputs/'+country_save+'\\parameters_neg.csv'
+df_savename = drive + ':/outputs/'+country_save+'\\parameters.csv'
+
+
+df_parameters = pd.read_csv(df_savename, dtype={'station': str}) 
+TENAX_use = pd.read_csv(drive + ':/outputs/'+country_save+'/TENAX_parameters.csv') #save calculated parameters
+
+df_parameters_0 = pd.read_csv(f"{drive}:/outputs/{country_save}_b0/parameters.csv", dtype={'station': str})
+df_parameters_exp = pd.read_csv(f"{drive}:/outputs/{country_save}/parameters_exp.csv", dtype={'station': str})
+
+# for some reason in germany there is one less row...
+    
 
 
 
+if np.size(glob.glob(save_path_neg)) != 0:
+    df_parameters_neg = pd.read_csv(save_path_neg, dtype={'station': str})
+
+    #dataframe with all values
+    new_df = df_parameters[['station','latitude','longitude','b','kappa','lambda','a','mu','sigma','thr','n_events_per_yr']].copy()
+    
+    mask = new_df['b'] == 0
+    
+    new_df.loc[mask, 'b'] = df_parameters_neg['b2'].to_numpy()
+    new_df.loc[mask, 'kappa'] = df_parameters_neg['kappa2'].to_numpy()
+    new_df.loc[mask, 'lambda'] = df_parameters_neg['lambda2'].to_numpy()
+    new_df.loc[mask, 'a'] = df_parameters_neg['a2'].to_numpy()
+
+else:
+    new_df = df_parameters.copy()
+
+missing_rows = pd.merge(df_parameters.station, df_parameters_0.station, how='left', indicator=True).query('_merge == "left_only"').drop('_merge', axis=1)
+if len(missing_rows) != 0:
+    print("miss-match, dropping")
+    df_parameters = df_parameters.drop(missing_rows.index)
+    df_parameters = df_parameters.reindex(index = range(len(df_parameters)))
+    new_df = new_df.drop(missing_rows.index)
+    new_df = new_df.reindex(index = range(len(new_df)))
+else:
+    pass
+
+
+norm = mcolors.TwoSlopeNorm(vmin=-0.1, vcenter=0, vmax=0.1)
+s = 1
+
+#plot at 5% sig
+fig = plt.figure(figsize=(4, 4))
+proj = ccrs.PlateCarree()
+ax1 = fig.add_subplot(1, 1, 1, projection=proj)
+
+# Add map features
+ax1.coastlines()
+ax1.add_feature(cfeature.BORDERS, linestyle=':')
+
+# Choosing cmap
+
+
+sc = ax1.scatter(
+    df_parameters.longitude[df_parameters.b==0],
+    df_parameters.latitude[df_parameters.b==0],
+    s = s,
+    color = 'darkgrey',  
+)
+
+sc = ax1.scatter(
+    df_parameters.longitude[df_parameters.b!=0],
+    df_parameters.latitude[df_parameters.b!=0],
+    c=df_parameters.b[df_parameters.b!=0],
+    s = s,
+    cmap='seismic',  
+    norm=norm
+)
+
+# Add a colorbar at the bottom
+cb = plt.colorbar(sc, orientation='horizontal', pad=0.15,extend = "both")
+cb.set_label('b', fontsize=14)  
+cb.ax.tick_params(labelsize=12)
+
+# Set x and y ticks
+cb.ax.tick_params(labelsize=12)
+
+gl = ax1.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': fontsize-2}
+gl.ylabel_style = {'size': fontsize-2}
+
+plt.title("Significant b", fontsize=16)
+plt.show()
+
+fig = plt.figure(figsize=(4, 4))
+proj = ccrs.PlateCarree()
+ax1 = fig.add_subplot(1, 1, 1, projection=proj)
+
+# Add map features
+ax1.coastlines()
+ax1.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc = ax1.scatter( #plot the negligable at 5% lvl points
+    new_df.longitude,
+    new_df.latitude,
+    c = new_df.b,
+    s = s,
+    cmap = 'seismic',
+    norm = norm
+)
 
 
 
+# Add a colorbar at the bottom
+cb = plt.colorbar(sc, orientation='horizontal', pad=0.15,extend = "both")
+cb.set_label('b', fontsize=14)  
+cb.ax.tick_params(labelsize=12)
+
+gl = ax1.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': fontsize-2}
+gl.ylabel_style = {'size': fontsize-2}
+
+plt.title(f'All b', fontsize=16)
+plt.show()
 
 
 
+# fig 6b
+
+fig = plt.figure(figsize=(4, 4))
+proj = ccrs.PlateCarree()
+ax1 = fig.add_subplot(1, 1, 1, projection=proj)
+
+# Add map features
+ax1.coastlines()
+ax1.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc = ax1.scatter( #plot the negligable at 5% lvl points
+    df_parameters_exp.longitude,
+    df_parameters_exp.latitude,
+    c = df_parameters_exp.b,
+    s = s,
+    cmap = 'seismic',
+    norm = norm
+)
 
 
 
+# Add a colorbar at the bottom
+cb = plt.colorbar(sc, orientation='horizontal', pad=0.15,extend = "both")
+cb.set_label('b', fontsize=14)  
+cb.ax.tick_params(labelsize=12)
+
+gl = ax1.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': fontsize-2}
+gl.ylabel_style = {'size': fontsize-2}
+
+plt.title(f'All b exp', fontsize=16)
+plt.show()
+
+
+# fig 6 0
+
+RL_df = pd.read_csv(f"{drive}:/outputs/{country_save}\\return_levels.csv", dtype={'station': str})
+nan_locs = RL_df.return_levels[RL_df.return_levels.isna()].index
+replace_range = np.arange(0,len(RL_df))
+
+RL_column_names = [col for col in RL_df.columns if "return_levels" in col]
+
+
+for col in RL_column_names:
+    nan_locs = RL_df[col][RL_df[col].isna()].index
+    replace_range = np.arange(0,len(RL_df))
+    for k in range(len(nan_locs)):
+        replace_range = np.delete(replace_range, np.where(replace_range == nan_locs[k]))
+    for j in replace_range:
+    
+        RL_df.loc[j, col] = np.fromstring(RL_df[col].iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'), sep=' ')
+        
+nan_locs = RL_df.obs_AMS[RL_df.obs_AMS.isna()].index
+replace_range = np.arange(0,len(RL_df))
+for k in range(len(nan_locs)):
+    replace_range = np.delete(replace_range, np.where(replace_range == nan_locs[k]))
+for j in replace_range:
+    RL_df.loc[j, "obs_AMS"] = np.fromstring(RL_df.obs_AMS.iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'), sep=' ')
 
 
 
+station_free = "12261"
+station_0 = "19376"
+
+
+T = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/T_{station_0}.csv")
+P = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/P_{station_0}.csv")
+eT = np.arange(np.min(T),np.max(T)+4,1)
+
+T_min = np.min(T)
+T_max = np.max(T)
+Ts = np.arange(T_min - S.temp_delta, T_max + S.temp_delta, S.temp_res_monte_carlo)
+
+
+g_phat = [new_df[new_df.station == station_0].mu.to_numpy(),new_df[new_df.station == station_0].sigma.to_numpy()]
+
+F_phat = [new_df[new_df.station == station_0].kappa.to_numpy(),
+          new_df[new_df.station == station_0].b.to_numpy(),
+          new_df[new_df.station == station_0]["lambda"].to_numpy(),
+          new_df[new_df.station == station_0].a.to_numpy()]
+
+
+thr = new_df[new_df.station == station_0].thr
+n = new_df[new_df.station == station_0].n_events_per_yr
+
+AMS = RL_df[new_df.station == station_0].obs_AMS.to_numpy()[0]
+
+plot_pos = np.arange(1,np.size(AMS)+1)/(1+np.size(AMS))
+
+eRP = 1/(1-plot_pos)
+
+RL = RL_df[new_df.station == station_0].return_levels_kernal.to_numpy()[0]
+RL_0 = RL_df[new_df.station == station_0].return_levels_kernal_0.to_numpy()[0]
+RL_exp = RL_df[new_df.station == station_0].return_levels_kernal_exp.to_numpy()[0]
+
+   
+TNX_FIG_magn_model(P,T,F_phat,thr,eT,qs)
+plt.title(f"({station_0}. ")
+plt.show()
+
+fig = plt.figure(figsize = (4,4))
+ax = fig.add_subplot(1,1,1)
+plt.plot(eRP,RL_0,label = f"b = 0")
+plt.plot(eRP,RL,"--",label = "b = linear")  #plot TENAX return levels
+plt.plot(eRP,RL_exp,"--",label = f"b = exp")
+plt.plot(eRP,AMS,"k+",label = "annual maxima") #plot observed return levels
+
+plt.ylim(0,45)
+plt.xscale('log')
+plt.xlabel('return period (years)')
+
+plt.xticks([1,3,10,30])
+ax.xaxis.set_major_formatter(ScalarFormatter())
+
+plt.title("with temperature kernel for temperature model")
+plt.legend()
+plt.show()
 
 
 
+station_0 = station_free
+
+T = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/T_{station_0}.csv")
+P = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/P_{station_0}.csv")
+eT = np.arange(np.min(T),np.max(T)+4,1)
+
+T_min = np.min(T)
+T_max = np.max(T)
+Ts = np.arange(T_min - S.temp_delta, T_max + S.temp_delta, S.temp_res_monte_carlo)
 
 
+g_phat = [new_df[new_df.station == station_0].mu.to_numpy(),new_df[new_df.station == station_0].sigma.to_numpy()]
 
+F_phat = [new_df[new_df.station == station_0].kappa.to_numpy(),
+          new_df[new_df.station == station_0].b.to_numpy(),
+          new_df[new_df.station == station_0]["lambda"].to_numpy(),
+          new_df[new_df.station == station_0].a.to_numpy()]
+
+
+thr = new_df[new_df.station == station_0].thr
+n = new_df[new_df.station == station_0].n_events_per_yr
+
+RL = RL_df[new_df.station == station_0].return_levels_kernal.to_numpy()[0]
+AMS = RL_df[new_df.station == station_0].obs_AMS.to_numpy()[0]
+RL_0 = RL_df[new_df.station == station_0].return_levels_kernal_0.to_numpy()[0]
+RL_exp = RL_df[new_df.station == station_0].return_levels_kernal_exp.to_numpy()[0]
+
+plot_pos = np.arange(1,np.size(AMS)+1)/(1+np.size(AMS))
+
+eRP = 1/(1-plot_pos)
+
+
+TNX_FIG_magn_model(P,T,F_phat,thr,eT,qs)
+plt.title(f"({station_0}. ")
+plt.show()
+
+fig = plt.figure(figsize = (4,4))
+ax = fig.add_subplot(1,1,1)
+plt.plot(eRP,RL_0,label = f"b = 0")
+plt.plot(eRP,RL,"--",label = "b = linear")  #plot TENAX return levels
+plt.plot(eRP,RL_exp,"--",label = f"b = exp")
+plt.plot(eRP,AMS,"k+",label = "annual maxima") #plot observed return levels
+
+plt.ylim(0,45)
+plt.xscale('log')
+plt.xlabel('return period (years)')
+
+plt.xticks([1,3,10,30])
+ax.xaxis.set_major_formatter(ScalarFormatter())
+
+plt.title("with temperature kernel for temperature model")
+plt.legend()
+plt.show()
