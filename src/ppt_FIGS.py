@@ -1206,3 +1206,30 @@ ax.xaxis.set_major_formatter(ScalarFormatter())
 plt.title("with temperature kernel for temperature model")
 plt.legend()
 plt.show()
+
+
+
+fontsize = 10
+
+qs = [.85,.95,.99,.999]
+
+fig = plt.figure(figsize = (3,3))
+TNX_FIG_magn_model(P,T,F_phat,thr,eT,qs,xlimits = [eT[0],eT[-1]])
+plt.ylabel("Precipitation (mm/hr)",fontsize = fontsize)
+plt.xlabel("T (°C)",fontsize = fontsize)
+plt.xticks(fontsize = fontsize)
+plt.yticks(fontsize = fontsize)
+plt.legend(fontsize = fontsize)
+plt.title("The magnitude model",fontsize = fontsize)
+plt.show()
+
+
+
+
+
+
+
+
+
+
+
