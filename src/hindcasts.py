@@ -18,6 +18,7 @@ sys.path.append('D:')
 import numpy as np
 import pandas as pd
 from scipy.stats import gaussian_kde
+from scipy.stats import chi2
 
 import datetime as dt
 import glob
@@ -58,8 +59,9 @@ minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
 name_len = 5
 min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 censor_thr = 0.9
-station_chose = "18256"
-
+# station_chose = "18256"
+# station_chose = "12261"
+station_chose = "19376"
 
 # country = 'US' 
 # ERA_country = 'US'
@@ -234,6 +236,7 @@ AMS2 = pd.DataFrame(AMS[AMS.index > midyear]).rename(columns = {"P" : "AMS"})
 
 g_phat1 = S.temperature_model(T1)
 g_phat2 = S.temperature_model(T2)
+#g_phat2 = [g_phat1[0]+1,g_phat1[1]]
 
 
 F_phat1,_,_,_ = S.magnitude_model(P1, T1, thr1)
@@ -266,10 +269,85 @@ RL2, _, _ = S.model_inversion(F_phat1_b0, g_phat2, n1, Ts) #calculated with the 
 
 TNX_FIG_valid(AMS1, S.return_period, RL1,TENAXcol='b',obscol_shape = 'b+',TENAXlabel = 'first period',obslabel='Observed annual maxima')
 TNX_FIG_valid(AMS2, S.return_period, RL2,TENAXcol='r',obscol_shape = 'r+',TENAXlabel = 'predicted second period',obslabel='Observed annual maxima')
-
+plt.title("b = 0")
 plt.show()
 
+
+RL1, _, _ = S.model_inversion(F_phat1, g_phat1, n1, Ts)
+
+RL2, _, _ = S.model_inversion(F_phat1, g_phat2, n1, Ts) #calculated with the same F_phat and n
+
+
+TNX_FIG_valid(AMS1, S.return_period, RL1,TENAXcol='b',obscol_shape = 'b+',TENAXlabel = 'first period',obslabel='Observed annual maxima')
+TNX_FIG_valid(AMS2, S.return_period, RL2,TENAXcol='r',obscol_shape = 'r+',TENAXlabel = 'predicted second period',obslabel='Observed annual maxima')
+plt.title("free b")
+plt.show()
+
+
 ###############################################################################
+# calculate g_phat 1 and 2 for all stations
+
+hindcast_savename = f"{drive}:/outputs/{country_save}/hindcasts\\g_phat{S.beta}.csv"
+
+hindcast_files = glob.glob(f"{drive}:/outputs/{country_save}/hindcasts\\*.csv")
+if hindcast_savename not in hindcast_files:
+    
+    print(f"g_phat not calculated for two periods with beta = {S.beta}")
+    
+    g_phats1 = [0]*len(val_info)
+    g_phats2 = [0]*len(val_info)
+    
+    starttime = [0]*len(val_info)
+    
+    for i in range(len(val_info)):
+        
+        starttime[i] = time.time()
+        
+        
+        station = val_info.station.iloc[i]
+        
+        oe_save = f"{drive}:/ordinary_events/{country_save}\\T_{station}.csv"
+        if oe_save not in glob.glob(f"{drive}:/ordinary_events/{country_save}/*"):
+            g_phats1[i] = [np.nan,np.nan]
+            g_phats2[i] = [np.nan,np.nan]
+    
+        else:
+            T = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/T_{station}.csv")
+            
+            times = pd.read_csv(f"{drive}:/ordinary_events/{country_save}/time_{station}.csv",parse_dates = ["oe_time"])
+            
+            
+            
+            start_time = times.iloc[0]
+            end_time = times.iloc[-1]
+    
+            midyear = np.trunc((start_time.dt.year + (end_time.dt.year - start_time.dt.year)/2).to_numpy()[0])
+            T1 = T[times.oe_time.dt.year <= midyear]
+            T2 = T[times.oe_time.dt.year > midyear]
+            
+    
+            g_phats1[i] = S.temperature_model(T1)
+            g_phats2[i] = S.temperature_model(T2)
+            
+        
+        if i%50 == 0:
+            time_taken = (time.time()-starttime[i-9])/10
+            time_left = (len(new_df)-i)*time_taken/60
+            print(f"{i}/{len(new_df)}. Approx time left: {time_left:.0f} mins")
+    
+    hindcast_gphat = pd.DataFrame({"station" : val_info.station,
+                                   "mu1": np.array(g_phats1)[:,0],
+                                   "sigma1" : np.array(g_phats1)[:,1],
+                                   "mu2": np.array(g_phats2)[:,0],
+                                   "sigma2" : np.array(g_phats2)[:,1],
+        })
+    hindcast_gphat.to_csv(hindcast_savename, index = False)
+else:
+    print(f"gphats already saved for beta = {S.beta}, loading")
+    hindcast_gphat = pd.read_csv(hindcast_savename, dtype = {"station" : str})
+
+
+delta_mu = hindcast_gphat.mu2 - hindcast_gphat.mu1
 
 
 
@@ -277,17 +355,127 @@ plt.show()
 
 
 
+###############################################################################
+#hindcasts loop
+
+val_info.index = range(len(val_info))
+
+n_hindcasts = 16
+
+mask = ((val_info.cleaned_years >= 30) &
+        (delta_mu >= 1)
+        )
+
+info_mask = val_info[mask]
+parameters_mask = df_parameters[mask]
 
 
 
 
+for i in range(n_hindcasts):
+    station = info_mask.station.iloc[i]
+    T = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/T_{station}.csv")
+    P = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/P_{station}.csv")
+    times = pd.read_csv(f"{drive}:/ordinary_events/{country_save}/time_{station}.csv",parse_dates = ["oe_time"])
+    oe_df = pd.DataFrame({"year":times.oe_time.dt.year, "P": P, "T": T,})
+    AMS = oe_df.groupby(oe_df.year).P.max().rename({"P" : "AMS"})
+    thr = parameters_mask.thr.iloc[i]
+    
+    
+    start_time = times.iloc[0]
+    end_time = times.iloc[-1]
+
+    midyear = (start_time.dt.year + (end_time.dt.year - start_time.dt.year)/2).to_numpy()[0]
+    
+    S.alpha = 0
+    F_phat, loglik, _, _ = S.magnitude_model(P, T, thr)
+    
+    T1 = T[times.oe_time.dt.year <= midyear]
+    P1 = P[times.oe_time.dt.year <= midyear]
+    times1 = times[times.oe_time.dt.year <= midyear]
+    thr1 = np.quantile(P1,S.left_censoring[1])
+    n1 = len(T1)/(midyear - start_time.dt.year + 1)
+    AMS1 = pd.DataFrame(AMS[AMS.index <= midyear]).rename(columns = {"P" : "AMS"})
+
+
+    T2 = T[times.oe_time.dt.year > midyear]
+    P2 = P[times.oe_time.dt.year > midyear]
+    times2 = times[times.oe_time.dt.year > midyear]
+    thr2 = np.quantile(P2,S.left_censoring[1])
+    n2 = len(T2)/(end_time.dt.year - midyear)
+    AMS2 = pd.DataFrame(AMS[AMS.index > midyear]).rename(columns = {"P" : "AMS"})
+
+
+    g_phat1 = S.temperature_model(T1)
+    g_phat2 = S.temperature_model(T2)
+    #g_phat2 = [g_phat1[0]+1,g_phat1[1]]
+
+
+    F_phat1,loglik1,_,_ = S.magnitude_model(P1, T1, thr1)
+    F_phat2,loglik2,_,_ = S.magnitude_model(P2, T2, thr2)
+
+    S.alpha = 1
+    F_phat_b0, loglik_b0, _, _ = S.magnitude_model(P, T, thr)
+
+    F_phat1_b0,loglik1_b0,_,_ = S.magnitude_model(P1, T1, thr1)
+    F_phat2_b0,loglik2_b0,_,_ = S.magnitude_model(P2, T2, thr2)
+
+
+    eT = np.arange(np.min(T),np.max(T)+4)
+    Ts = np.arange(np.min(T)- S.temp_delta, np.max(T)+ S.temp_delta, S.temp_res_monte_carlo)
 
 
 
+    TNX_FIG_temp_model(T1, g_phat1, 6, eT,obscol='b',valcol='b',
+                           obslabel = f'observations {start_time.dt.year.to_numpy()[0]} - {int(midyear)}',
+                           vallabel = 'temperature model g(T) first period')
+
+    TNX_FIG_temp_model(T2, g_phat2, 6, eT,obscol='r',valcol='r',
+                           obslabel = f'observations {int(midyear+1)} - {end_time.dt.year.to_numpy()[0]}',
+                           vallabel = 'temperature model g(T) second period')
+    plt.title(f"{station}.")
+    plt.show()
 
 
+    RL1, _, _ = S.model_inversion(F_phat1_b0, g_phat1, n1, Ts)
+
+    RL2, _, _ = S.model_inversion(F_phat1_b0, g_phat2, n1, Ts) #calculated with the same F_phat and n
+    
+    lambda_LR = -2*( loglik - (loglik1+loglik2) )
+    pval = chi2.sf(lambda_LR, 4)
+    if pval > 5:
+        mag_str = f"p={pval}. Magnitude models not  different at 5% significance."
+    else:
+        mag_str = f"p={pval}. Magnitude models are different at 5% significance."
+    
+    
+    lambda_LR = -2*( loglik_b0 - (loglik1_b0+loglik2_b0) )
+    pval = chi2.sf(lambda_LR, 3)
+    if pval > 0.05:
+        mag_str_b0 = f"p={pval}. Magnitude models not  different at 5% significance."
+    else:
+        mag_str_b0 = f"p={pval}. Magnitude models are different at 5% significance."
+    
+    
+    
+    
+    TNX_FIG_valid(AMS1, S.return_period, RL1,TENAXcol='b',obscol_shape = 'b+',TENAXlabel = 'first period',obslabel='Observed annual maxima')
+    TNX_FIG_valid(AMS2, S.return_period, RL2,TENAXcol='r',obscol_shape = 'r+',TENAXlabel = 'predicted second period',obslabel='Observed annual maxima')
+    plt.ylim(0,np.max(RL2))
+    plt.title(f"{station}.b = 0.\n {mag_str_b0}")
+    plt.show()
 
 
+    RL1, _, _ = S.model_inversion(F_phat1, g_phat1, n1, Ts)
+
+    RL2, _, _ = S.model_inversion(F_phat1, g_phat2, n1, Ts) #calculated with the same F_phat and n
+
+
+    TNX_FIG_valid(AMS1, S.return_period, RL1,TENAXcol='b',obscol_shape = 'b+',TENAXlabel = 'first period',obslabel='Observed annual maxima')
+    TNX_FIG_valid(AMS2, S.return_period, RL2,TENAXcol='r',obscol_shape = 'r+',TENAXlabel = 'predicted second period',obslabel='Observed annual maxima')
+    plt.ylim(0,np.max(RL2))
+    plt.title(f"{station}.  free b. \n {mag_str}")
+    plt.show()
 
 
 
