@@ -306,7 +306,89 @@ else:
 
 
 FRMSE_df4 = pd.read_csv(f"{drive}:/outputs/{country_save}/FRMSE.csv", dtype={'station': str})
+###############################################################################
+# RL plus 2deg
 
+RL_future_10_savename = f"{drive}:/outputs/{country_save}\\RL_future_10_kernel.csv"
+output_files = glob.glob(f"{drive}:/outputs/{country_save}/*")
+
+if RL_future_10_savename  not in output_files:
+    print("making the 10 yr return levels")
+    S.return_period = [10]
+    
+    RL_2deg_0 = [0] * len(new_df)
+    start_time = [0] * len(new_df)
+    
+    
+    for i in np.arange(0, len(new_df)):
+        start_time[i] = time.time()
+        
+        oe_save = f"{drive}:/ordinary_events/{country_save}\\T_{df_parameters.station.iloc[i]}.csv"
+        if oe_save not in glob.glob(f"{drive}:/ordinary_events/{country_save}/*"):
+            RL_2deg_0[i] = np.nan
+        else:
+            T = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/T_{df_parameters.station.iloc[i]}.csv")
+            P = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/P_{df_parameters.station.iloc[i]}.csv")
+            times = pd.read_csv(f"{drive}:/ordinary_events/{country_save}/time_{df_parameters.station.iloc[i]}.csv",parse_dates = ["oe_time"])
+            kde  = gaussian_kde(T) #use kernel density to get probability
+            
+            #b always 0
+            F_phat_0 = [df_parameters_0.kappa.iloc[i],df_parameters_0.b.iloc[i],
+                        df_parameters_0["lambda"].iloc[i],df_parameters_0.a.iloc[i]]
+            
+            T_min = np.min(T)
+            T_max = np.max(T)
+            Ts = np.arange(T_min - S.temp_delta, T_max + S.temp_delta, S.temp_res_monte_carlo)
+            
+            n = df_parameters.n_events_per_yr.iloc[i]
+            
+            pdf_values = kde(Ts)
+            df = np.vstack([pdf_values, Ts + 2]) # shifted by 2 degrees
+            
+            T_mc = randdf(S.n_monte_carlo, df, 'pdf').T              
+           
+            
+            wbl_phat_0 = np.column_stack((
+                                        F_phat_0[2] * np.exp(F_phat_0[3] * T_mc),
+                                        F_phat_0[0] + F_phat_0[1] * T_mc
+                                        ))
+            
+            
+            
+            vguess = 10 ** np.arange(np.log10(0.05), np.log10(5e2), 0.05)
+            RL_2deg_0[i] = SMEV_Mc_inversion(wbl_phat_0, n, S.return_period, vguess, method_root_scalar="brentq")[0]
+            
+        print(f"original RL: \n {RL_df.return_levels_kernal_0.iloc[i]}")
+        print(f"10 year plus 2 : { RL_2deg_0[i]}")
+        time_taken = (time.time()-start_time[i-9])/10
+        time_left = (len(new_df)-i)*time_taken/60
+        print(f"{i}/{len(new_df)}. Approx time left: {time_left:.0f} mins") #this is only correct after 50 loops
+        
+            
+            
+    RL_future_10_kernel = pd.DataFrame({'station': df_parameters.station,
+                             'RL_10': RL_2deg_0,
+                             })
+    RL_future_10_kernel.to_csv(RL_future_10_savename, index = False)
+else:
+    RL_future_10_kernel = pd.read_csv(RL_future_10_savename, dtype = {"station" : str})
+
+
+
+
+
+
+
+
+S = TENAX(
+        return_period = [1.1,1.2,1.5,2,5,10,20,50,100, 200],
+        durations = [60, 180, 360, 720, 1440],
+        left_censoring = [0, censor_thr],
+        alpha = 0,
+        min_ev_dur = 60,
+        niter_smev = 1000, 
+        beta = 4
+    )
 ###############################################################################
 # Plot FRMSE comparisons
 

@@ -45,6 +45,7 @@ import alphashape
 from shapely.geometry import Polygon
 import matplotlib.ticker as mticker
 from matplotlib.ticker import ScalarFormatter
+from matplotlib.ticker import MultipleLocator
 
 drive = 'D'
 
@@ -85,7 +86,7 @@ eT = np.arange(np.min(T),np.max(T)+4,1)
 
 fontsize = 14
 
-qs = [.85,.95,.99,.999]
+qs = [.85,.99]
 TNX_FIG_magn_model(P,T,F_phat,thr,eT,qs,xlimits = [eT[0],eT[-1]])
 plt.ylabel("Hourly precipitation (mm)",fontsize = fontsize)
 plt.xlabel("T (°C)",fontsize = fontsize)
@@ -136,7 +137,7 @@ plt.show()
 # fig 4c
 
 file_name = f"{drive}:/{country}/DE_{station}"
-P_full,data_meta = read_GSDR_file(f"{file_name}.txt",name_col)
+P_full,data_meta = read_GSDR_file(f"{file_name}.txt","ppt")
 T_path = f"{drive}:/{country}_temp\\DE_{station}.nc"
 T_ERA = xr.load_dataarray(T_path)
 T_full = (T_ERA.squeeze()-273.15).to_dataframe()
@@ -732,6 +733,9 @@ s = 3
 norm = mcolors.Normalize(vmin=np.min(skew_df_US.skewness)*0.4, vmax=np.min(skew_df_US.skewness)*-0.4)
 fig = plt.figure(figsize=(7, 3))
 
+# delta_skew = skew_df_US.skewness/(np.sqrt(1 + (skew_df_US.skewness)**2))
+# act_skew_US = ((4 - np.pi) / 2) * (delta_skew * np.sqrt(2 / np.pi)) / ((1 - 2 * delta_skew**2 / np.pi) ** (3 / 2))
+
 proj = ccrs.PlateCarree()
 ax1 = fig.add_subplot(1, 1, 1, projection=proj)
 
@@ -772,7 +776,7 @@ gl.right_labels = False
 gl.xlabel_style = {'size': fontsize-2}
 gl.ylabel_style = {'size': fontsize-2}
 cb = plt.colorbar(sc,extend = "both")
-cb.set_label("skewness [°C]",fontsize = fontsize)
+cb.set_label("alpha",fontsize = fontsize)
 
 plt.show()
 
@@ -798,7 +802,7 @@ fontsize = 15
 
 cmap = "seismic"
 s = 3
-norm = mcolors.Normalize(vmin=np.min(skew_df_DE.skewness)*0.4, vmax=np.min(skew_df_DE.skewness)*-0.4)
+#norm = mcolors.Normalize(vmin=np.min(skew_df_DE.skewness)*0.4, vmax=np.min(skew_df_DE.skewness)*-0.4)
 fig = plt.figure(figsize=(7, 3))
 
 proj = ccrs.PlateCarree()
@@ -831,7 +835,7 @@ gl.ylabel_style = {'size': fontsize-2}
 gl.xlocator = mticker.FixedLocator(np.arange(6, 16, 3))
 gl.ylocator = mticker.FixedLocator(np.arange(48, 56, 2))
 cb = plt.colorbar(sc,extend = "both")
-cb.set_label("skewness [°C]",fontsize = fontsize)
+cb.set_label("alpha",fontsize = fontsize)
 
 plt.show()
 
@@ -843,7 +847,7 @@ plt.show()
 
 cmap = "seismic"
 s = 3
-norm = mcolors.Normalize(vmin=np.min(skew_df_JP.skewness)*0.4, vmax=np.min(skew_df_JP.skewness)*-0.4)
+#norm = mcolors.Normalize(vmin=np.min(skew_df_JP.skewness)*0.4, vmax=np.min(skew_df_JP.skewness)*-0.4)
 fig = plt.figure(figsize=(7, 3))
 
 proj = ccrs.PlateCarree()
@@ -886,7 +890,7 @@ gl.right_labels = False
 gl.xlabel_style = {'size': fontsize-2}
 gl.ylabel_style = {'size': fontsize-2}
 cb = plt.colorbar(sc,extend = "both")
-cb.set_label("skewness [°C]",fontsize = fontsize)
+cb.set_label("alpha",fontsize = fontsize)
 
 plt.show()
 
@@ -955,7 +959,7 @@ proj = ccrs.PlateCarree()
 ax1 = fig.add_subplot(1, 1, 1, projection=proj)
 
 # Add map features
-ax1.coastlines()
+ax1.coastlines(zorder = 3)
 ax1.add_feature(cfeature.BORDERS, linestyle=':')
 
 # Choosing cmap
@@ -963,19 +967,21 @@ ax1.add_feature(cfeature.BORDERS, linestyle=':')
 
 sc = ax1.scatter(
     df_parameters.longitude[df_parameters.b==0],
-    df_parameters.latitude[df_parameters.b==0],
+    df_parameters.latitude[df_parameters.b==0],transform=ccrs.PlateCarree(),
     s = s,
-    color = 'darkgrey',  
+    color = 'darkgrey',zorder = 1
 )
 
 sc = ax1.scatter(
     df_parameters.longitude[df_parameters.b!=0],
-    df_parameters.latitude[df_parameters.b!=0],
+    df_parameters.latitude[df_parameters.b!=0],transform=ccrs.PlateCarree(),
     c=df_parameters.b[df_parameters.b!=0],
     s = s,
     cmap='seismic',  
-    norm=norm
+    norm=norm,zorder = 2
 )
+
+
 
 # Add a colorbar at the bottom
 cb = plt.colorbar(sc, orientation='horizontal', pad=0.15,extend = "both")
@@ -984,6 +990,20 @@ cb.ax.tick_params(labelsize=12)
 
 # Set x and y ticks
 cb.ax.tick_params(labelsize=12)
+arrow1 = patches.FancyArrowPatch((135, 39), [float(new_df.longitude[new_df.station == "12261"]),float(new_df.latitude[new_df.station == "12261"])], transform=ccrs.PlateCarree(), color='red', arrowstyle='->', mutation_scale=20,zorder = 6)
+arrow2 = patches.FancyArrowPatch((145, 33), [float(new_df.longitude[new_df.station == "19376"]),float(new_df.latitude[new_df.station == "19376"])], transform=ccrs.PlateCarree(), color='green', arrowstyle='->', mutation_scale=20,zorder = 6)
+
+ax1.add_patch(arrow1)
+ax1.add_patch(arrow2)
+
+ax1.scatter(134.5, 38.5,
+            s = 400,
+            c = "r", transform=ccrs.PlateCarree(),
+            marker = ".",zorder = 3)
+ax1.scatter(145, 31.5,
+            s = 300,
+            c = "g", transform=ccrs.PlateCarree(),
+            marker = "*",zorder = 4)
 
 gl = ax1.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
 gl.top_labels = False
@@ -999,19 +1019,33 @@ proj = ccrs.PlateCarree()
 ax1 = fig.add_subplot(1, 1, 1, projection=proj)
 
 # Add map features
-ax1.coastlines()
+ax1.coastlines(zorder = 2)
 ax1.add_feature(cfeature.BORDERS, linestyle=':')
 
 
 sc = ax1.scatter( #plot the negligable at 5% lvl points
     new_df.longitude,
     new_df.latitude,
-    c = new_df.b,
+    c = new_df.b,transform=ccrs.PlateCarree(),
     s = s,
     cmap = 'seismic',
-    norm = norm
+    norm = norm,zorder = 1
 )
 
+arrow1 = patches.FancyArrowPatch((135, 39), [float(new_df.longitude[new_df.station == "12261"]),float(new_df.latitude[new_df.station == "12261"])], transform=ccrs.PlateCarree(), color='red', arrowstyle='->', mutation_scale=20,zorder = 6)
+arrow2 = patches.FancyArrowPatch((145, 33), [float(new_df.longitude[new_df.station == "19376"]),float(new_df.latitude[new_df.station == "19376"])], transform=ccrs.PlateCarree(), color='green', arrowstyle='->', mutation_scale=20,zorder = 6)
+
+ax1.add_patch(arrow1)
+ax1.add_patch(arrow2)
+
+ax1.scatter(134.5, 38.5,
+            s = 400,
+            c = "r", transform=ccrs.PlateCarree(),
+            marker = ".",zorder = 3)
+ax1.scatter(145, 31.5,
+            s = 300,
+            c = "g", transform=ccrs.PlateCarree(),
+            marker = "*",zorder = 4)
 
 
 # Add a colorbar at the bottom
@@ -1028,8 +1062,17 @@ gl.ylabel_style = {'size': fontsize-2}
 plt.title(f'All b', fontsize=16)
 plt.show()
 
-
-
+plt.scatter(new_df.longitude[new_df.station == "12261"],
+            new_df.latitude[new_df.station == "12261"],
+            s = 400,
+            c = "r",
+            marker = ".",zorder = 3)
+plt.scatter(new_df.longitude[new_df.station == "19376"],
+            new_df.latitude[new_df.station == "19376"],
+            s = 300,
+            c = "g",
+            marker = "*",zorder = 4)
+plt.show()
 # fig 6b
 
 fig = plt.figure(figsize=(4, 4))
@@ -1102,9 +1145,16 @@ T = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/T_{station_0}.csv")
 P = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/P_{station_0}.csv")
 eT = np.arange(np.min(T),np.max(T)+4,1)
 
+kde  = gaussian_kde(T) #use kernel density to get probability
+
+
+
+
 T_min = np.min(T)
 T_max = np.max(T)
 Ts = np.arange(T_min - S.temp_delta, T_max + S.temp_delta, S.temp_res_monte_carlo)
+
+
 
 
 g_phat = [new_df[new_df.station == station_0].mu.to_numpy(),new_df[new_df.station == station_0].sigma.to_numpy()]
@@ -1114,6 +1164,10 @@ F_phat = [new_df[new_df.station == station_0].kappa.to_numpy(),
           new_df[new_df.station == station_0]["lambda"].to_numpy(),
           new_df[new_df.station == station_0].a.to_numpy()]
 
+F_phat_0 = [df_parameters_0[df_parameters_0.station == station_0].kappa.to_numpy(),
+          df_parameters_0[df_parameters_0.station == station_0].b.to_numpy(),
+          df_parameters_0[df_parameters_0.station == station_0]["lambda"].to_numpy(),
+          df_parameters_0[df_parameters_0.station == station_0].a.to_numpy()]
 
 thr = new_df[new_df.station == station_0].thr
 n = new_df[new_df.station == station_0].n_events_per_yr
@@ -1124,13 +1178,68 @@ plot_pos = np.arange(1,np.size(AMS)+1)/(1+np.size(AMS))
 
 eRP = 1/(1-plot_pos)
 
+S.return_period = eRP
+
+pdf_values = kde(Ts)
+df = np.vstack([pdf_values, Ts + 2]) # shifted by 2 degrees
+
+T_mc = randdf(S.n_monte_carlo, df, 'pdf').T              
+
+
+wbl_phat_0 = np.column_stack((
+                            F_phat_0[2] * np.exp(F_phat_0[3] * T_mc),
+                            F_phat_0[0] + F_phat_0[1] * T_mc
+                            ))
+
+
+
+vguess = 10 ** np.arange(np.log10(0.05), np.log10(5e2), 0.05)
+RL_2 = SMEV_Mc_inversion(wbl_phat_0, n, S.return_period, vguess, method_root_scalar="brentq")
+
+
+
 RL = RL_df[new_df.station == station_0].return_levels_kernal.to_numpy()[0]
 RL_0 = RL_df[new_df.station == station_0].return_levels_kernal_0.to_numpy()[0]
 RL_exp = RL_df[new_df.station == station_0].return_levels_kernal_exp.to_numpy()[0]
 
-   
-TNX_FIG_magn_model(P,T,F_phat,thr,eT,qs)
-plt.title(f"({station_0}. ")
+fontsize = 15
+
+
+
+fig = plt.figure(figsize = (5,4))
+
+percentile_lines = inverse_magnitude_model(F_phat,eT,qs,b_exp=False)
+plt.scatter(T,P,s=1,color="r",label = 'observations')
+plt.plot(eT,[thr]*np.size(eT),'--',alpha = 0.5,color = 'k',label = 'Left censoring threshold') #plot threshold
+
+#first one outside loop so can be in legend
+n=0
+plt.plot(eT,percentile_lines[n],label = 'Magnitude model W(x,T), b = linear',color = "b")
+plt.text(eT[-1], percentile_lines[n][-1], str(qs[n]*100)+'th', ha='left', va='center')
+n=1
+while n<np.size(qs):
+    plt.plot(eT,percentile_lines[n],color = "b")
+    plt.text(eT[-1], percentile_lines[n][-1], str(qs[n]*100)+'th', ha='left', va='center')
+    n=n+1
+
+percentile_lines = inverse_magnitude_model(F_phat_0,eT,qs,b_exp=False)
+n=0
+plt.plot(eT,percentile_lines[n],"--",label = 'Magnitude model W(x,T), b = 0',color = "g")
+#plt.text(eT[-1], percentile_lines[n][-1], str(qs[n]*100)+'th', ha='left', va='center')
+n=1
+while n<np.size(qs):
+    plt.plot(eT,percentile_lines[n],"--",color = "g")
+    #plt.text(eT[-1], percentile_lines[n][-1], str(qs[n]*100)+'th', ha='left', va='center')
+    n=n+1
+
+plt.yscale('log')
+
+plt.ylabel("Precipitation (mm/hr)",fontsize = fontsize)
+plt.xlabel("T (°C)",fontsize = fontsize)
+plt.xticks(fontsize = fontsize)
+plt.yticks(fontsize = fontsize)
+plt.legend(fontsize = fontsize-3)
+plt.xlim(np.min(eT),np.max(eT))
 plt.show()
 
 fig = plt.figure(figsize = (4,4))
@@ -1144,6 +1253,27 @@ plt.ylim(0,45)
 plt.xscale('log')
 plt.xlabel('return period (years)')
 
+plt.xticks([1,3,10,30])
+ax.xaxis.set_major_formatter(ScalarFormatter())
+
+plt.title("with temperature kernel for temperature model")
+plt.legend()
+plt.show()
+
+
+
+#################################################################
+#with plus 2 deg
+fig = plt.figure(figsize = (4,4))
+ax = fig.add_subplot(1,1,1)
+plt.plot(eRP,AMS,"k+",label = "annual maxima")
+plt.plot(eRP,RL_0,label = f"fitted")
+plt.plot(eRP,RL_2,"--",label = "+ 2 °C")  
+
+plt.ylim(0,45)
+plt.xscale('log')
+plt.xlabel('return period (years)')
+plt.ylabel("Precipitation (mm/hr)")
 plt.xticks([1,3,10,30])
 ax.xaxis.set_major_formatter(ScalarFormatter())
 
@@ -1185,7 +1315,13 @@ plot_pos = np.arange(1,np.size(AMS)+1)/(1+np.size(AMS))
 eRP = 1/(1-plot_pos)
 
 
+fig = plt.figure(figsize = (4,4))
 TNX_FIG_magn_model(P,T,F_phat,thr,eT,qs)
+plt.ylabel("Precipitation (mm/hr)",fontsize = fontsize)
+plt.xlabel("T (°C)",fontsize = fontsize)
+plt.xticks(fontsize = fontsize)
+plt.yticks(fontsize = fontsize)
+plt.legend(fontsize = fontsize)
 plt.title(f"({station_0}. ")
 plt.show()
 
@@ -1209,19 +1345,279 @@ plt.show()
 
 
 
-fontsize = 10
 
-qs = [.85,.95,.99,.999]
 
-fig = plt.figure(figsize = (3,3))
-TNX_FIG_magn_model(P,T,F_phat,thr,eT,qs,xlimits = [eT[0],eT[-1]])
-plt.ylabel("Precipitation (mm/hr)",fontsize = fontsize)
-plt.xlabel("T (°C)",fontsize = fontsize)
-plt.xticks(fontsize = fontsize)
-plt.yticks(fontsize = fontsize)
-plt.legend(fontsize = fontsize)
-plt.title("The magnitude model",fontsize = fontsize)
+
+###############################################################################
+# slide 7: return levels
+RL_future_10_savename = f"{drive}:/outputs/{country_save}\\RL_future_10_kernel.csv"
+RL_future_10_kernel = pd.read_csv(RL_future_10_savename, dtype = {"station" : str})
+
+
+
+RL10_df = pd.DataFrame({
+    "return_levels":np.zeros(len(new_df)),
+    "return_levels_0":np.zeros(len(new_df)),
+    "return_levels_exp":np.zeros(len(new_df)),
+    })
+
+for i in np.arange(0,len(new_df)):
+    plot_pos = np.arange(1,np.size(RL_df.obs_AMS.iloc[i])+1)/(1+np.size(RL_df.obs_AMS.iloc[i]))
+
+    eRP = 1/(1-plot_pos)
+    RL_free = RL_df.return_levels_kernal.iloc[i]
+    RL_0 = RL_df.return_levels_kernal_0.iloc[i]
+    RL_exp = RL_df.return_levels_kernal_exp.iloc[i]
+    
+    if np.size(RL_free) == 1:
+        RL10_df.loc[i, 'return_levels'] = np.nan
+    else:
+        interp_func = interp1d(eRP, RL_free)
+        RL10_df.loc[i, 'return_levels'] = interp_func(10)
+        
+    if np.size(RL_0) == 1:
+        RL10_df.loc[i, 'return_levels_0'] = np.nan
+    else:
+        interp_func = interp1d(eRP, RL_0)
+        RL10_df.loc[i, 'return_levels_0'] = interp_func(10)
+    
+    if np.size(RL_exp) == 1:
+        RL10_df.loc[i, 'return_levels_exp'] = np.nan
+    else:
+        interp_func = interp1d(eRP, RL_exp)
+        RL10_df.loc[i, 'return_levels_exp'] = interp_func(10)
+    
+
+
+
+
+
+# Define the boundaries and number of bins for the discrete colormap
+num_bins = 12
+cmap = plt.cm.rainbow  # You can use 'rainbow' or any other colormap
+norm = mcolors.BoundaryNorm(boundaries=np.linspace(10, 70, num_bins + 1), ncolors=num_bins)
+
+# Create a discrete colormap and add black for values above 70
+colors = cmap(np.linspace(0, 1, num_bins))
+colors = np.vstack([colors, [0, 0, 0, 1]])  # Add black as the last color
+discrete_cmap = mcolors.ListedColormap(colors)
+# Create the figure
+fig = plt.figure(figsize=(10, 10))
+
+proj = ccrs.PlateCarree()
+
+# First subplot
+ax1 = fig.add_subplot(2, 2, 1, projection=proj)
+ax1.coastlines()
+ax1.add_feature(cfeature.BORDERS, linestyle=':')
+sc = ax1.scatter(
+    df_parameters.longitude,
+    df_parameters.latitude,
+    c = RL10_df.return_levels,
+    cmap=discrete_cmap,
+    norm=norm,
+    s=s,
+)
+gl = ax1.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': fontsize-2}
+gl.ylabel_style = {'size': fontsize-2}
+ax1.set_title("free")
+
+# Second subplot
+ax2 = fig.add_subplot(2, 2, 2, projection=proj)
+ax2.coastlines()
+ax2.add_feature(cfeature.BORDERS, linestyle=':')
+sc = ax2.scatter(
+    df_parameters.longitude,
+    df_parameters.latitude,
+    c = RL10_df.return_levels_0,
+    cmap=discrete_cmap,
+    norm=norm,
+    s=s,
+)
+gl = ax2.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': fontsize-2}
+gl.ylabel_style = {'size': fontsize-2}
+ax2.set_title("b = 0")
+
+# Third subplot
+ax3 = fig.add_subplot(2, 2, 3, projection=proj)
+ax3.coastlines()
+ax3.add_feature(cfeature.BORDERS, linestyle=':')
+sc = ax3.scatter(
+    df_parameters.longitude,
+    df_parameters.latitude,
+    c = RL10_df.return_levels_exp,
+    cmap=discrete_cmap,
+    norm = norm,
+    s=s,
+)
+gl = ax3.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': fontsize-2}
+gl.ylabel_style = {'size': fontsize-2}
+ax3.set_title("b exp")
+
+
+norm2 = mcolors.Normalize(vmin=-20, vmax=20)
+# Fourth subplot
+ax4 = fig.add_subplot(2, 2, 4, projection=proj)
+ax4.coastlines()
+ax4.add_feature(cfeature.BORDERS, linestyle=':')
+sc4 = ax4.scatter(
+    df_parameters.longitude,
+    df_parameters.latitude,
+    c=RL10_df.return_levels - RL10_df.return_levels_0,
+    cmap="bwr",  # You can use discrete colormap here if desired
+    s=s,
+    norm = norm2
+)
+gl = ax4.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': fontsize-2}
+gl.ylabel_style = {'size': fontsize-2}
+fig.subplots_adjust(right=0.85)
+
+
+cbar_ax4 = fig.add_axes([0.87, 0.12, 0.03, 0.32])
+cb4 = plt.colorbar(sc4, cax=cbar_ax4,extend = "both")
+cb4.set_label('b = linear - b = 0', fontsize=14)
+cb4.ax.tick_params(labelsize=12)
+
+# Colorbar for the first three subplots
+cbar_ax = fig.add_axes([0.15, 0.02, 0.7, 0.03])  # Position for the colorbar
+#cb = plt.colorbar(sc, cax=cbar_ax, orientation='horizontal')
+#cb = mcolors.colorbarbase(sc,cax=cbar_ax, cmap=discrete_cmap, norm=norm, orientation='horizontal')
+cb = plt.colorbar(
+    plt.cm.ScalarMappable(norm=norm, cmap=discrete_cmap),
+    cax=cbar_ax,
+    orientation='horizontal',
+    extend='max'
+)
+
+cb.set_label('10 year 1 hour return level (mm)', fontsize=14)
+cb.ax.tick_params(labelsize=12)
+
+
+
+fig.suptitle(f'{ERA_country} 10 year return levels. kernel density', fontsize=16)
 plt.show()
+
+
+
+cmap = "YlGnBu"
+norm = mcolors.Normalize(vmin=0, vmax=70)
+
+
+fig = plt.figure(figsize = (8,3))
+ax1 = fig.add_subplot(1, 3, 1, projection=proj)
+ax1.coastlines()
+ax1.add_feature(cfeature.BORDERS, linestyle=':')
+sc = ax1.scatter(
+    df_parameters.longitude,
+    df_parameters.latitude,
+    c = RL10_df.return_levels_0,
+    cmap=cmap,
+    norm=norm,
+    s=s,
+)
+gl = ax1.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': fontsize-2}
+gl.ylabel_style = {'size': fontsize-2}
+gl.ylocator = MultipleLocator(5)
+ax1.set_title("Observations 1976 - 2009")
+
+ax2 = fig.add_subplot(1, 3, 2, projection=proj)
+ax2.coastlines()
+ax2.add_feature(cfeature.BORDERS, linestyle=':')
+sc = ax2.scatter(
+    df_parameters.longitude,
+    df_parameters.latitude,
+    c = RL_future_10_kernel.RL_10,
+    cmap=cmap,
+    norm=norm,
+    s=s,
+)
+gl = ax2.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': fontsize-2}
+gl.ylabel_style = {'size': fontsize-2}
+gl.ylocator = MultipleLocator(5)
+ax2.set_title("+ 2°C")
+
+cmap2 = "Blues"
+norm2 = mcolors.Normalize(vmin=0, vmax=15)
+ax3 = fig.add_subplot(1, 3, 3, projection=proj)
+ax3.coastlines()
+ax3.add_feature(cfeature.BORDERS, linestyle=':')
+sc = ax3.scatter(
+    df_parameters.longitude,
+    df_parameters.latitude,
+    c = RL_future_10_kernel.RL_10 - RL10_df.return_levels_0,
+    cmap=cmap2,
+    norm=norm2,
+    s=s,
+)
+
+gl = ax3.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': fontsize-2}
+gl.ylabel_style = {'size': fontsize-2}
+gl.ylocator = MultipleLocator(5)
+ax3.set_title("Difference")
+
+cbar_ax2 = fig.add_axes([0.735,  0.02, 0.235, 0.05])
+cb2 = plt.colorbar(
+    plt.cm.ScalarMappable(norm=norm2, cmap=cmap2),
+    cax=cbar_ax2,
+    orientation='horizontal',
+    extend='max'
+)
+cb2.set_label('Difference (mm/hr)', fontsize=14)
+cb2.ax.tick_params(labelsize=12)
+#([0.15, 0.02, 0.7, 0.03])
+
+cbar_ax = fig.add_axes([0.08,  0.02, 0.56, 0.05])  # Position for the colorbar
+#cb = plt.colorbar(sc, cax=cbar_ax, orientation='horizontal')
+#cb = mcolors.colorbarbase(sc,cax=cbar_ax, cmap=discrete_cmap, norm=norm, orientation='horizontal')
+cb = plt.colorbar(
+    plt.cm.ScalarMappable(norm=norm, cmap=cmap),
+    cax=cbar_ax,
+    orientation='horizontal',
+    extend='max'
+)
+
+cb.set_label('10 year return level (mm/hr)', fontsize=14)
+cb.ax.tick_params(labelsize=12)
+
+plt.tight_layout()
+plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
