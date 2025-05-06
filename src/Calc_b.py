@@ -80,14 +80,14 @@ remake = 1
 # min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 # censor_thr = 0.9
 
-# country = 'US' 
-# ERA_country = 'US'
-# country_save = 'US_main'
-# code_str = 'US_'
-# minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
-# name_len = 6
-# min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
-# censor_thr = 0.9
+country = 'US' 
+ERA_country = 'US'
+country_save = 'US_main'
+code_str = 'US_'
+minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
+name_len = 6
+min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+censor_thr = 0.9
 
 
 # country = 'Israel'
@@ -170,15 +170,15 @@ remake = 1
 # remake = 0
 
 
-country = 'UK' 
-ERA_country = 'UK'
-country_save = 'UK_b0'
-code_str = 'UK_'
-name_len = 0
-min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
-censor_thr = 0.9
-alpha_set = 1
-remake = 0
+# country = 'UK' 
+# ERA_country = 'UK'
+# country_save = 'UK_b0'
+# code_str = 'UK_'
+# name_len = 0
+# min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+# censor_thr = 0.9
+# alpha_set = 1
+# remake = 0
 
 
 
@@ -243,16 +243,16 @@ saved_output_files = glob.glob(drive + ':/outputs/'+country_save+'/*')
 if df_savename not in saved_output_files: #read in files and create t time series and do TENAX if it hasnt been done already
     print('TENAX not done yet on '+country_save+'. making data.')
     
-    T_files = sorted(glob.glob(drive+':/ERA5_land/'+ERA_country+'*/*')) #make list of era5 files
-    saved_files = glob.glob(drive+':/'+country+'_temp/*') #temp files already saved
+    # T_files = sorted(glob.glob(drive+':/ERA5_land/'+ERA_country+'*/*')) #make list of era5 files
+    # saved_files = glob.glob(drive+':/'+country+'_temp/*') #temp files already saved
     
     g_phats = [0]*len(files_sel)
     F_phats = [0]*len(files_sel)
     thr = [0]*len(files_sel)
     ns = [0]*len(files_sel)
     
-    nans = xr.open_dataarray(T_files[0])[0] 
-    nans = np.invert(np.isnan(nans)).astype(int)
+    # nans = xr.open_dataarray(T_files[0])[0] 
+    # nans = np.invert(np.isnan(nans)).astype(int)
     
     saved_counter = 0
     
@@ -260,92 +260,64 @@ if df_savename not in saved_output_files: #read in files and create t time serie
     
     for i in np.arange(0, len(files_sel)):
         start_time[i] = time.time() 
-        #read in ppt data
-        if 'code_str' in locals():
-            G,data_meta = read_GSDR_file(files_sel[i],name_col)
-        else:
-            G = pd.read_csv(files_sel[i])
-            G['prec_time'] = pd.to_datetime(G['prec_time'])
-            G.set_index('prec_time', inplace=True)
+        # #read in ppt data
+        # if 'code_str' in locals():
+        #     G,data_meta = read_GSDR_file(files_sel[i],name_col)
+        # else:
+        #     G = pd.read_csv(files_sel[i])
+        #     G['prec_time'] = pd.to_datetime(G['prec_time'])
+        #     G.set_index('prec_time', inplace=True)
             
-        print(G[0:3])
-        ######################################################################
-        #read in T data
-        target_lat = val_info.latitude[val_info.index[i]] #define targets
-        target_lon = val_info.longitude[val_info.index[i]]
-        start_date = val_info.startdate[val_info.index[i]]-pd.Timedelta(days=1) #adding an extra day either end to be safe
-        end_date = val_info.enddate[val_info.index[i]]+pd.Timedelta(days=1)
+        # print(G[0:3])
+        # ######################################################################
+        # #read in T data
+        # target_lat = val_info.latitude[val_info.index[i]] #define targets
+        # target_lon = val_info.longitude[val_info.index[i]]
+        # start_date = val_info.startdate[val_info.index[i]]-pd.Timedelta(days=1) #adding an extra day either end to be safe
+        # end_date = val_info.enddate[val_info.index[i]]+pd.Timedelta(days=1)
         
-        if 'code_str' in locals():
-            save_path = drive + ':/'+country+'_temp\\'+code_str + str(val_info.station[val_info.index[i]]) + '.nc'
-        else:
-            save_path = drive + ':/'+country+'_temp\\'+str(val_info.station[val_info.index[i]]) + '.nc'
+        # if 'code_str' in locals():
+        #     save_path = drive + ':/'+country+'_temp\\'+code_str + str(val_info.station[val_info.index[i]]) + '.nc'
+        # else:
+        #     save_path = drive + ':/'+country+'_temp\\'+str(val_info.station[val_info.index[i]]) + '.nc'
         
         
-        # Check if file already exists before saving
+        # # Check if file already exists before saving
         
-        if save_path not in saved_files:
-            print(f'file {save_path} not made yet')
-            T_ERA = make_T_timeseries(target_lat,target_lon,start_date,end_date,T_files,nans)
-            if len(T_ERA) == 0:
-                print('skip')
-            else:
-                T_ERA.to_netcdf(save_path) #save file with same name format as GSDR
-                saved_files.append(save_path)  # Update saved_files to include the newly saved file
-                saved_counter = saved_counter+1
-        else:
-            print(f"File {save_path} already exists. Skipping save.")
-            T_ERA = xr.load_dataarray(save_path)
+        # if save_path not in saved_files:
+        #     print(f'file {save_path} not made yet')
+        #     T_ERA = make_T_timeseries(target_lat,target_lon,start_date,end_date,T_files,nans)
+        #     if len(T_ERA) == 0:
+        #         print('skip')
+        #     else:
+        #         T_ERA.to_netcdf(save_path) #save file with same name format as GSDR
+        #         saved_files.append(save_path)  # Update saved_files to include the newly saved file
+        #         saved_counter = saved_counter+1
+        # else:
+        #     print(f"File {save_path} already exists. Skipping save.")
+        #     T_ERA = xr.load_dataarray(save_path)
             
-            #####################################################################
-        #TENAX 
-        if len(T_ERA) == 0: # dont do tenax if no T data saved
+        #     #####################################################################
+        
+        station = val_info.station.iloc[i]
+        
+        #TENAX
+        oe_save = f"{drive}:/ordinary_events/{country_save}\\T_{station}.csv"
+        if oe_save not in glob.glob(f"{drive}:/ordinary_events/{country_save}/*"):
             print('skip')
             F_phats[i] = np.array([np.nan,np.nan,np.nan,np.nan])
             g_phats[i] = np.array([np.nan,np.nan])
             ns[i] = pd.Series(np.nan)
             thr[i] = np.nan
+    
+        
         else:
-            data = G 
-            data = S.remove_incomplete_years(data, name_col)
-            t_data = (T_ERA.squeeze()-273.15).to_dataframe()
-            if 'data_meta' in locals():
-                print(f'{data_meta.latitude},{data_meta.longitude}')
-            else:
-                print(f'{target_lat},{target_lon}')
-            print(t_data[0:5])
-            df_arr = np.array(data[name_col])
-            df_dates = np.array(data.index)
-            
-            #extract indexes of ordinary events
-            #these are time-wise indexes =>returns list of np arrays with np.timeindex
-            idx_ordinary=S.get_ordinary_events(data=df_arr,dates=df_dates, name_col=name_col,  check_gaps=False)
-                
-            
-            #get ordinary events by removing too short events
-            #returns boolean array, dates of OE in TO, FROM format, and count of OE in each years
-            arr_vals,arr_dates,n_ordinary_per_year=S.remove_short(idx_ordinary)
-            
-            #assign ordinary events values by given durations, values are in depth per duration, NOT in intensity mm/h
-            dict_ordinary, dict_AMS = S.get_ordinary_events_values(data=df_arr,dates=df_dates, arr_dates_oe=arr_dates)
-            
-            
-            
-            df_arr_t_data = np.array(t_data[temp_name_col])
-            df_dates_t_data = np.array(t_data.index)
-            
-            dict_ordinary, _ , n_ordinary_per_year = S.associate_vars(dict_ordinary, df_arr_t_data, df_dates_t_data)
-            
-            
-            
-            # Your data (P, T arrays) and threshold thr=3.8
-            P = dict_ordinary["60"]["ordinary"].to_numpy() 
-            T = dict_ordinary["60"]["T"].to_numpy()  
-            
+            T = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/T_{station}.csv")
+            P = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/P_{station}.csv")
+            times = pd.read_csv(f"{drive}:/ordinary_events/{country_save}/time_{station}.csv",parse_dates = ["oe_time"])
             
             # Number of threshold 
-            thr[i] = dict_ordinary["60"]["ordinary"].quantile(S.left_censoring[1])
-            
+            thr[i] = np.quantile(P,S.left_censoring[1])
             
             #TENAX MODEL HERE
             #magnitude model
@@ -353,18 +325,18 @@ if df_savename not in saved_output_files: #read in files and create t time serie
             #temperature model
             g_phats[i] = S.temperature_model(T)
             # M is mean n of ordinary events
-            ns[i] = n_ordinary_per_year.sum() / len(n_ordinary_per_year)  
+            ns[i] = len(T) / (times.oe_time.dt.year.iloc[-1] - times.oe_time.dt.year[0])  
             
             
-            
-            time_taken = (time.time()-start_time[i-9])/10
-            time_left = (len(files_sel)-i)*time_taken/60
-            print(f"{i}/{len(files_sel)}. Current average time to complete one {time_taken:.0f}s. Approx time left: {time_left:.0f} mins") #this is only correct after 50 loops
+            if i%50 == 0:
+                time_taken = (time.time()-start_time[i-9])/10
+                time_left = (len(files_sel)-i)*time_taken/60
+                print(f"{i}/{len(files_sel)}. Current average time to complete one {time_taken:.0f}s. Approx time left: {time_left:.0f} mins") #this is only correct after 50 loops
         
     
     T_temp = []
     
-    df_parameters = pd.DataFrame({'station':val_info.station,'latitude':val_info.latitude,'longitude':val_info.longitude,'mu':np.array(g_phats)[:,0],'sigma':np.array(g_phats)[:,1],'kappa':np.array(F_phats)[:,0],'b':np.array(F_phats)[:,1],'lambda':np.array(F_phats)[:,2],'a':np.array(F_phats)[:,3],'thr':np.array(thr),'n_events_per_yr':np.array(ns)[:,0]})
+    df_parameters = pd.DataFrame({'station':val_info.station,'latitude':val_info.latitude,'longitude':val_info.longitude,'mu':np.array(g_phats)[:,0],'sigma':np.array(g_phats)[:,1],'kappa':np.array(F_phats)[:,0],'b':np.array(F_phats)[:,1],'lambda':np.array(F_phats)[:,2],'a':np.array(F_phats)[:,3],'thr':np.array(thr),'n_events_per_yr':ns})
     df_parameters.to_csv(df_savename) #save calculated parameters
     
     TENAX_use = pd.DataFrame({'alpha':[S.alpha],'beta':[S.beta],'left_censoring':[S.left_censoring[1]],'event_duration':[60],'n_monte_carlo':[S.n_monte_carlo],'niter_smev':[S.niter_smev],'min_startdate':min_startdate,'min_years':min_yrs})
@@ -403,72 +375,84 @@ if remake == 1:
         print('making the extra bs')
         for i in np.arange(0,length_neg):
             start_time[i] = time.time()
-            if 'code_str' in locals():
-                read_path = drive + ':/'+country+'_temp\\'+code_str + str(df_parameters_neg.station[df_parameters_neg.index[i]]) + '.nc'
-                read_path_ppt = drive + ':/'+country+'\\'+code_str + str(df_parameters_neg.station[df_parameters_neg.index[i]]) + '.txt'
-            else:
-                read_path = drive + ':/'+country+'_temp\\'+ str(df_parameters_neg.station[df_parameters_neg.index[i]]) + '.nc'
-                read_path_ppt = drive + ':/'+country+'\\'+ str(df_parameters_neg.station[df_parameters_neg.index[i]]) + '.csv'
+            oe_save = f"{drive}:/ordinary_events/{country_save}\\T_{station}.csv"
+            
+            T = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/T_{str(df_parameters_neg.station[df_parameters_neg.index[i]])}.csv")
+            P = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/P_{str(df_parameters_neg.station[df_parameters_neg.index[i]])}.csv")
+            times = pd.read_csv(f"{drive}:/ordinary_events/{country_save}/time_{str(df_parameters_neg.station[df_parameters_neg.index[i]])}.csv",parse_dates = ["oe_time"])
+            
+        
+            
+            
+            
+            # if 'code_str' in locals():
+            #     read_path = drive + ':/'+country+'_temp\\'+code_str + str(df_parameters_neg.station[df_parameters_neg.index[i]]) + '.nc'
+            #     read_path_ppt = drive + ':/'+country+'\\'+code_str + str(df_parameters_neg.station[df_parameters_neg.index[i]]) + '.txt'
+            # else:
+            #     read_path = drive + ':/'+country+'_temp\\'+ str(df_parameters_neg.station[df_parameters_neg.index[i]]) + '.nc'
+            #     read_path_ppt = drive + ':/'+country+'\\'+ str(df_parameters_neg.station[df_parameters_neg.index[i]]) + '.csv'
+            
                 
+            # T_ERA = xr.load_dataarray(read_path)
+            # if 'code_str' in locals():
+            #     G,data_meta = read_GSDR_file(read_path_ppt,name_col)
+            # else:
+            #     G = pd.read_csv(read_path_ppt)
+            #     G['prec_time'] = pd.to_datetime(G['prec_time'])
+            #     G.set_index('prec_time', inplace=True)
+            
+            # data = G 
+            # data = S.remove_incomplete_years(data, name_col)
+            # t_data = (T_ERA.squeeze()-273.15).to_dataframe()
+            # #print(f'{data_meta.latitude},{data_meta.longitude}')
+            # print(t_data[0:5])
+            # df_arr = np.array(data[name_col])
+            # df_dates = np.array(data.index)
+            
+            # #extract indexes of ordinary events
+            # #these are time-wise indexes =>returns list of np arrays with np.timeindex
+            # idx_ordinary=S.get_ordinary_events(data=df_arr,dates=df_dates, name_col=name_col,  check_gaps=False)
                 
-            T_ERA = xr.load_dataarray(read_path)
-            if 'code_str' in locals():
-                G,data_meta = read_GSDR_file(read_path_ppt,name_col)
-            else:
-                G = pd.read_csv(read_path_ppt)
-                G['prec_time'] = pd.to_datetime(G['prec_time'])
-                G.set_index('prec_time', inplace=True)
             
-            data = G 
-            data = S.remove_incomplete_years(data, name_col)
-            t_data = (T_ERA.squeeze()-273.15).to_dataframe()
-            #print(f'{data_meta.latitude},{data_meta.longitude}')
-            print(t_data[0:5])
-            df_arr = np.array(data[name_col])
-            df_dates = np.array(data.index)
+            # #get ordinary events by removing too short events
+            # #returns boolean array, dates of OE in TO, FROM format, and count of OE in each years
+            # arr_vals,arr_dates,n_ordinary_per_year=S.remove_short(idx_ordinary)
             
-            #extract indexes of ordinary events
-            #these are time-wise indexes =>returns list of np arrays with np.timeindex
-            idx_ordinary=S.get_ordinary_events(data=df_arr,dates=df_dates, name_col=name_col,  check_gaps=False)
-                
-            
-            #get ordinary events by removing too short events
-            #returns boolean array, dates of OE in TO, FROM format, and count of OE in each years
-            arr_vals,arr_dates,n_ordinary_per_year=S.remove_short(idx_ordinary)
-            
-            #assign ordinary events values by given durations, values are in depth per duration, NOT in intensity mm/h
-            dict_ordinary, dict_AMS = S.get_ordinary_events_values(data=df_arr,dates=df_dates, arr_dates_oe=arr_dates)
+            # #assign ordinary events values by given durations, values are in depth per duration, NOT in intensity mm/h
+            # dict_ordinary, dict_AMS = S.get_ordinary_events_values(data=df_arr,dates=df_dates, arr_dates_oe=arr_dates)
             
             
             
-            df_arr_t_data = np.array(t_data[temp_name_col])
-            df_dates_t_data = np.array(t_data.index)
+            # df_arr_t_data = np.array(t_data[temp_name_col])
+            # df_dates_t_data = np.array(t_data.index)
             
-            dict_ordinary, _ , n_ordinary_per_year = S.associate_vars(dict_ordinary, df_arr_t_data, df_dates_t_data)
-            
-            
-            
-            # Your data (P, T arrays) and threshold thr=3.8
-            P = dict_ordinary["60"]["ordinary"].to_numpy() 
-            T = dict_ordinary["60"]["T"].to_numpy()  
+            # dict_ordinary, _ , n_ordinary_per_year = S.associate_vars(dict_ordinary, df_arr_t_data, df_dates_t_data)
             
             
-            # Number of threshold 
-            thr = dict_ordinary["60"]["ordinary"].quantile(S.left_censoring[1])
+            
+            # # Your data (P, T arrays) and threshold thr=3.8
+            # P = dict_ordinary["60"]["ordinary"].to_numpy() 
+            # T = dict_ordinary["60"]["T"].to_numpy()  
+            
+            
+            # # Number of threshold 
+            # thr = dict_ordinary["60"]["ordinary"].quantile(S.left_censoring[1])
             
             
             #TENAX MODEL HERE
             #magnitude model
+            thr = np.quantile(P,S.left_censoring[1])
             F_phats2[i], loglik, _, _ = S.magnitude_model(P, T, thr)
             #temperature model
               
             
             
             
-            time_taken = (time.time()-start_time[i-9])/10
-            time_left = (length_neg-i)*time_taken/60
-            print(F_phats2[i])
-            print(f"{i}/{length_neg}. Approx time left: {time_left:.0f} mins") #this is only correct after 50 loops
+            if i%50 == 0:
+                time_taken = (time.time()-start_time[i-9])/10
+                time_left = (length_neg-i)*time_taken/60
+                print(F_phats2[i])
+                print(f"{i}/{length_neg}. Approx time left: {time_left:.0f} mins") #this is only correct after 50 loops
         
         
         print('finished making b again')
@@ -658,78 +642,97 @@ if df_savename not in saved_output_files: #read in files and create t time serie
     
     for i in np.arange(0, len(files_sel)):
         start_time[i] = time.time() 
+        station = val_info.station[val_info.index[i]]
         #read in ppt data
-        if 'code_str' in locals():
-            G,data_meta = read_GSDR_file(files_sel[i],name_col)
-        else:
-            G = pd.read_csv(files_sel[i])
-            G['prec_time'] = pd.to_datetime(G['prec_time'])
-            G.set_index('prec_time', inplace=True)
+        # if 'code_str' in locals():
+        #     G,data_meta = read_GSDR_file(files_sel[i],name_col)
+        # else:
+        #     G = pd.read_csv(files_sel[i])
+        #     G['prec_time'] = pd.to_datetime(G['prec_time'])
+        #     G.set_index('prec_time', inplace=True)
             
-        ######################################################################
-        #read in T data
-        if 'code_str' in locals():
-            save_path = drive + ':/'+country+'_temp\\'+code_str + str(val_info.station[val_info.index[i]]) + '.nc'
-        else:
-            save_path = drive + ':/'+country+'_temp\\'+str(val_info.station[val_info.index[i]]) + '.nc'
+        # ######################################################################
+        # #read in T data
+        # if 'code_str' in locals():
+        #     save_path = drive + ':/'+country+'_temp\\'+code_str + str(val_info.station[val_info.index[i]]) + '.nc'
+        # else:
+        #     save_path = drive + ':/'+country+'_temp\\'+str(val_info.station[val_info.index[i]]) + '.nc'
         
         
-        # Check if file already exists before saving
+        # # Check if file already exists before saving
         
-        if save_path not in saved_files:
-            print(f'file {save_path} not there')
-            T_ERA = []
+        # if save_path not in saved_files:
+        #     print(f'file {save_path} not there')
+        #     T_ERA = []
             
-        else:
-            print(f"File {save_path} already exists. Skipping loading.")
-            T_ERA = xr.load_dataarray(save_path)
+        # else:
+        #     print(f"File {save_path} already exists. Skipping loading.")
+        #     T_ERA = xr.load_dataarray(save_path)
             
-            #####################################################################
-        #TENAX 
-        if len(T_ERA) == 0: # dont do tenax if no T data saved
+        #     #####################################################################
+        # #TENAX 
+        # if len(T_ERA) == 0: # dont do tenax if no T data saved
+        #     print('skip')
+        #     F_phats[i] = np.array([np.nan,np.nan,np.nan,np.nan])
+        #     RL[i] = np.nan
+        # else:
+        #     data = G 
+        #     data = S.remove_incomplete_years(data, name_col)
+        #     t_data = (T_ERA.squeeze()-273.15).to_dataframe()
+            
+        #     df_arr = np.array(data[name_col])
+        #     df_dates = np.array(data.index)
+            
+        #     #extract indexes of ordinary events
+        #     #these are time-wise indexes =>returns list of np arrays with np.timeindex
+        #     idx_ordinary=S.get_ordinary_events(data=df_arr,dates=df_dates, name_col=name_col,  check_gaps=False)
+                
+            
+        #     #get ordinary events by removing too short events
+        #     #returns boolean array, dates of OE in TO, FROM format, and count of OE in each years
+        #     arr_vals,arr_dates,n_ordinary_per_year=S.remove_short(idx_ordinary)
+            
+        #     #assign ordinary events values by given durations, values are in depth per duration, NOT in intensity mm/h
+        #     dict_ordinary, dict_AMS = S.get_ordinary_events_values(data=df_arr,dates=df_dates, arr_dates_oe=arr_dates)
+            
+        #     AMS = dict_AMS['60']
+            
+            
+        #     df_arr_t_data = np.array(t_data[temp_name_col])
+        #     df_dates_t_data = np.array(t_data.index)
+            
+        #     dict_ordinary, _ , n_ordinary_per_year = S.associate_vars(dict_ordinary, df_arr_t_data, df_dates_t_data)
+            
+            
+            
+        #     # Your data (P, T arrays) and threshold thr=3.8
+        #     P = dict_ordinary["60"]["ordinary"].to_numpy() 
+        #     T = dict_ordinary["60"]["T"].to_numpy()  
+            
+        oe_save = f"{drive}:/ordinary_events/{country_save}\\T_{station}.csv"
+        if oe_save not in glob.glob(f"{drive}:/ordinary_events/{country_save}/*"):
             print('skip')
             F_phats[i] = np.array([np.nan,np.nan,np.nan,np.nan])
             RL[i] = np.nan
+    
+        
         else:
-            data = G 
-            data = S.remove_incomplete_years(data, name_col)
-            t_data = (T_ERA.squeeze()-273.15).to_dataframe()
-            
-            df_arr = np.array(data[name_col])
-            df_dates = np.array(data.index)
-            
-            #extract indexes of ordinary events
-            #these are time-wise indexes =>returns list of np arrays with np.timeindex
-            idx_ordinary=S.get_ordinary_events(data=df_arr,dates=df_dates, name_col=name_col,  check_gaps=False)
-                
-            
-            #get ordinary events by removing too short events
-            #returns boolean array, dates of OE in TO, FROM format, and count of OE in each years
-            arr_vals,arr_dates,n_ordinary_per_year=S.remove_short(idx_ordinary)
-            
-            #assign ordinary events values by given durations, values are in depth per duration, NOT in intensity mm/h
-            dict_ordinary, dict_AMS = S.get_ordinary_events_values(data=df_arr,dates=df_dates, arr_dates_oe=arr_dates)
-            
-            AMS = dict_AMS['60']
+            T = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/T_{station}.csv")
+            P = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/P_{station}.csv")
+            times = pd.read_csv(f"{drive}:/ordinary_events/{country_save}/time_{station}.csv",parse_dates = ["oe_time"])
             
             
-            df_arr_t_data = np.array(t_data[temp_name_col])
-            df_dates_t_data = np.array(t_data.index)
-            
-            dict_ordinary, _ , n_ordinary_per_year = S.associate_vars(dict_ordinary, df_arr_t_data, df_dates_t_data)
-            
-            
-            
-            # Your data (P, T arrays) and threshold thr=3.8
-            P = dict_ordinary["60"]["ordinary"].to_numpy() 
-            T = dict_ordinary["60"]["T"].to_numpy()  
             
             
             # Number of threshold 
-            thr = dict_ordinary["60"]["ordinary"].quantile(S.left_censoring[1])
+            thr = np.quantile(P,S.left_censoring[1])
             
             
-            n = n_ordinary_per_year.sum() / len(n_ordinary_per_year)  
+            n = len(T) / (times.oe_time.dt.year.iloc[-1] - times.oe_time.dt.year[0])  
+            
+            oe_df = pd.DataFrame({"year":times.oe_time.dt.year, "P": P, "T": T,})
+            AMS = oe_df.groupby(oe_df.year).P.max()
+            AMS = pd.DataFrame(AMS).rename(columns = {"P" : "AMS"})
             
             AMS_sort = AMS.sort_values(by=['AMS'])['AMS']
             plot_pos = np.arange(1,np.size(AMS_sort)+1)/(1+np.size(AMS_sort))
