@@ -36,14 +36,14 @@ drive='D' #name of drive
 alpha_set = 0
 remake = 1
 
-country = 'Germany' 
-ERA_country = 'Germany'
-country_save = 'Germany'
-code_str = 'DE_'
-minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
-name_len = 5
-min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-censor_thr = 0.9
+# country = 'Germany' 
+# ERA_country = 'Germany'
+# country_save = 'Germany'
+# code_str = 'DE_'
+# minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
+# name_len = 5
+# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+# censor_thr = 0.9
 
 
 # country = 'Japan'
@@ -63,14 +63,14 @@ censor_thr = 0.9
 # min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
 
 
-# country = 'US' 
-# ERA_country = 'US'
-# country_save = 'US_main'
-# code_str = 'US_'
-# minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
-# name_len = 6
-# min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
-# censor_thr = 0.9
+country = 'US' 
+ERA_country = 'US'
+country_save = 'US_main'
+code_str = 'US_'
+minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
+name_len = 6
+min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+censor_thr = 0.9
 
 
 # country = 'Belgium'
@@ -235,6 +235,8 @@ if np.size(bins) > 1:
                            xlimits = [-0.08,0.03],
                            ylimits = [0,30], 
                            method = "skewnorm") 
+    plt.xlabel('b',fontsize=14)
+    plt.ylabel('pdf',fontsize=14)
     plt.show()
     
 else:
