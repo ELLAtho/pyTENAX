@@ -18,6 +18,7 @@ sys.path.append(RES_DIR)
 sys.path.append('D:')
 import numpy as np
 import pandas as pd
+from scipy.stats import gaussian_kde
 
 import datetime as dt
 import matplotlib.pyplot as plt
@@ -249,8 +250,40 @@ for i in np.arange(0,n_stations):
     RL0, __, __ = S.model_inversion(F_phat0, g_phats[i], ns[i], Ts)
     S.alpha = 0
     
+    
+    kde  = gaussian_kde(T) #use kernel density to get probability
+    
+    pdf_values = kde(Ts)
+    df = np.vstack([pdf_values, Ts])
+    
+    T_mc = randdf(S.n_monte_carlo, df, 'pdf').T              
+   
+    wbl_phat = np.column_stack((
+                                F_phats[i][2] * np.exp(F_phats[i][3] * T_mc),
+                                F_phats[i][0] + F_phats[i][1] * T_mc
+                                ))
+    wbl_phat_0 = np.column_stack((
+                                F_phat0[2] * np.exp(F_phat0[3] * T_mc),
+                                F_phat0[0] + F_phat0[1] * T_mc
+                                ))
+    
+    wbl_phat_exp = np.column_stack((
+                                F_phat_exp[2] * np.exp(F_phat_exp[3] * T_mc),
+                                F_phat_exp[0] * np.exp(F_phat_exp[1] * T_mc)
+                                ))
+    
+    vguess = 10 ** np.arange(np.log10(0.05), np.log10(5e2), 0.05)
+    RL_kd = SMEV_Mc_inversion(wbl_phat, ns[i], S.return_period, vguess, method_root_scalar="brentq")
+    RL_0_kd = SMEV_Mc_inversion(wbl_phat_0, ns[i], S.return_period, vguess, method_root_scalar="brentq")
+    RL_exp_kd = SMEV_Mc_inversion(wbl_phat_exp, ns[i], S.return_period, vguess, method_root_scalar="brentq")
+    
+    
     S.n_monte_carlo = np.size(P)*S.niter_smev
     _, T_mc, P_mc = S.model_inversion(F_phats[i], g_phats[i], ns[i], Ts,gen_P_mc = True,gen_RL=False) 
+    _, T_mc0, P_mc0 = S.model_inversion(F_phat0, g_phats[i], ns[i], Ts,gen_P_mc = True,gen_RL=False) 
+    _, T_mc_exp, P_mc_exp = S.model_inversion(F_phat_exp, g_phats[i], ns[i], Ts,gen_P_mc = True,gen_RL=False) 
+    
+    
     S.n_monte_carlo = 20000
     
     print(RL[i])
@@ -275,6 +308,8 @@ for i in np.arange(0,n_stations):
     
     #fig 2b
     TNX_FIG_temp_model(T=T, g_phat=g_phats[i],beta=4,eT=eT,xlimits = [eT[0],eT[-1]])
+    plt.plot(Ts,pdf_values, label = "kde")
+    plt.legend()
     plt.title(titles)
     plt.show()
     
@@ -289,12 +324,34 @@ for i in np.arange(0,n_stations):
     plt.title(titles)
     plt.show()
     
+    #fig 4 (without SMEV and uncertainty) 
+    AMS = dict_AMS[i]['60'] # yet the annual maxima
+    TNX_FIG_valid(AMS,S.return_period,RL_kd,ylimits = [0,np.max(AMS.AMS)+3])
+    TNX_FIG_valid(AMS,S.return_period,RL_exp_kd,ylimits = [0,np.max(AMS.AMS)+3],TENAXcol = "g",TENAXlabel="exponential")
+    TNX_FIG_valid(AMS,S.return_period,RL_0_kd,ylimits = [0,np.max(AMS.AMS)+3],TENAXcol = "r",TENAXlabel="b = 0")
+    
+    plt.plot(S.return_period,smev_RL,label = "smev")
+    plt.legend()
+    plt.title(f"{titles} kde temperature")
+    plt.show()
+    
+    
+    
     #fig 5 
     iTs = np.arange(-2.5,37.5,1.5) #idk why we need a different T range here 
     
     scaling_rate_W, scaling_rate_q = TNX_FIG_scaling(P,T,P_mc,T_mc,F_phats[i],S.niter_smev,eT,iTs,xlimits = [eT[0],eT[-1]])
     plt.title(titles)
     plt.show()
+    
+    scaling_rate_W_exp, scaling_rate_q_exp = TNX_FIG_scaling(P,T,P_mc_exp,T_mc_exp,F_phat_exp,S.niter_smev,eT,iTs,xlimits = [eT[0],eT[-1]])
+    plt.title(f"{titles} exponential")
+    plt.show()
+    
+    scaling_rate_W0, scaling_rate_q0 = TNX_FIG_scaling(P,T,P_mc0,T_mc0,F_phat0,S.niter_smev,eT,iTs,xlimits = [eT[0],eT[-1]])
+    plt.title(f"{titles} 0")
+    plt.show()
+    
     
     # #TENAX MODEL VALIDATION
     # yrs = dicts[i]["60"]["oe_time"].dt.year
