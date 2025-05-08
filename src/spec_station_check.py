@@ -33,7 +33,7 @@ import time
 drive = 'D'
 
 
-chosen_station = ['12041'] #[ 0.7        -0.02373429  2.          0.        ]
+chosen_station = ["12441"] #['12041'] #[ 0.7        -0.02373429  2.          0.        ]
 
 country = 'Japan'
 country_save = 'Japan'
@@ -189,7 +189,7 @@ plt.fill_between(eRP,
                  liklihood_df.maxes[RL_df.station == chosen_station[0]].iloc[0],
                  color = "r", alpha = 0.1)
 
-plt.ylim(0,np.max(RL_df.return_levels[RL_df.station == chosen_station[0]].iloc[0])+5)
+plt.ylim(0,50)#np.max(RL_df.return_levels[RL_df.station == chosen_station[0]].iloc[0])+5)
 plt.xlim(1,np.max(eRP)+2)
 
 plt.legend()
