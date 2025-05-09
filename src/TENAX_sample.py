@@ -35,19 +35,20 @@ import time
 drive = 'D'
 
 
-choose = True #for selecting a specific file
+choose = False #for selecting a specific file
 chosen_stations = ['12441']
 
 
 country = 'Japan'
 code_str = 'JP' 
-n_stations = 1 #number of stations to sample
+n_stations = 10 #number of stations to sample
 min_yrs = 15 #atm this probably introduces a bug... need to put in if statement or something
 max_yrs = 1000 #if no max, set to very high
 name_col = 'ppt'
 temp_name_col = "t2m"
 
-
+lats_lim = [43,44]
+lons_lim = [142,143]
 
 #READ IN META INFO FOR COUNTRY
 comb = pd.read_csv('D:/metadata/'+country+'_fulldata.csv', dtype={'station': str})
@@ -59,6 +60,9 @@ comb.enddate = pd.to_datetime(comb.enddate)
 #select stations
 val_comb = comb[comb['cleaned_years']>=min_yrs] #filter out stations that are less than min
 val_comb = val_comb[val_comb['cleaned_years']<=max_yrs] #filter out stations that are more than max 
+
+val_comb = val_comb[(val_comb['latitude']<=lats_lim[1]) & (val_comb['latitude']>=lats_lim[0])] #selected lats
+val_comb = val_comb[(val_comb['longitude']<=lons_lim[1]) & (val_comb['longitude']>=lons_lim[0])] #selected lons
 
 
 comb_sort = val_comb.sort_values(by=['cleaned_years'],ascending=0) #sort by size so can choose top sizes
@@ -78,6 +82,7 @@ else:
 if choose:
     print('selecting specific stations')
     selected = comb[comb.station.isin(chosen_stations)]
+    n_stations = len(chosen_stations)
 else:
     pass
     
@@ -159,7 +164,7 @@ print('time to read era5 '+str(time.time()-start_time))
 S = TENAX(
         return_period = [1.1,1.2,1.5,2,5,10,20,50,100, 200],
         durations = [60, 180, 360, 720, 1440],
-        left_censoring = [0, 0.95],
+        left_censoring = [0, 0.98],
         alpha = 0,
         min_ev_dur = 60,
     )
@@ -189,7 +194,7 @@ eRP = [0]*n_stations
 
 for i in np.arange(0,n_stations):
     data = data_full[i]
-    t_data = (T_ERA[i]-273.15).to_dataframe()
+    t_data = (T_ERA[i].squeeze()-273.15).to_dataframe()
 
     df_arr = np.array(data[name_col])
     df_dates = np.array(data.index)
@@ -301,28 +306,28 @@ for i in np.arange(0,n_stations):
     smev_RL = S_SMEV.smev_return_values(S.return_period, smev_shape, smev_scale, ns[i].item())
     # fig 2a
     qs = [.85,.95,.99,.999]
-    TNX_FIG_magn_model(P,T,F_phats[i],thr[i],eT,qs,xlimits = [eT[0],eT[-1]])
-    TNX_FIG_magn_model(P,T,F_phat_exp,thr[i],eT,qs,xlimits = [eT[0],eT[-1]],valcol='g',b_exp = True)
-    plt.title(titles)
-    plt.show()
+    # TNX_FIG_magn_model(P,T,F_phats[i],thr[i],eT,qs,xlimits = [eT[0],eT[-1]])
+    # TNX_FIG_magn_model(P,T,F_phat_exp,thr[i],eT,qs,xlimits = [eT[0],eT[-1]],valcol='g',b_exp = True)
+    # plt.title(titles)
+    # plt.show()
     
     #fig 2b
-    TNX_FIG_temp_model(T=T, g_phat=g_phats[i],beta=4,eT=eT,xlimits = [eT[0],eT[-1]])
-    plt.plot(Ts,pdf_values, label = "kde")
-    plt.legend()
-    plt.title(titles)
-    plt.show()
+    # TNX_FIG_temp_model(T=T, g_phat=g_phats[i],beta=4,eT=eT,xlimits = [eT[0],eT[-1]])
+    # plt.plot(Ts,pdf_values, label = "kde")
+    # plt.legend()
+    # plt.title(titles)
+    # plt.show()
     
     #fig 4 (without SMEV and uncertainty) 
-    AMS = dict_AMS[i]['60'] # yet the annual maxima
-    TNX_FIG_valid(AMS,S.return_period,RL[i],ylimits = [0,np.max(AMS.AMS)+3])
-    TNX_FIG_valid(AMS,S.return_period,RL_exp,ylimits = [0,np.max(AMS.AMS)+3],TENAXcol = "g",TENAXlabel="exponential")
-    TNX_FIG_valid(AMS,S.return_period,RL0,ylimits = [0,np.max(AMS.AMS)+3],TENAXcol = "r",TENAXlabel="b = 0")
+    # AMS = dict_AMS[i]['60'] # yet the annual maxima
+    # TNX_FIG_valid(AMS,S.return_period,RL[i],ylimits = [0,np.max(AMS.AMS)+3])
+    # TNX_FIG_valid(AMS,S.return_period,RL_exp,ylimits = [0,np.max(AMS.AMS)+3],TENAXcol = "g",TENAXlabel="exponential")
+    # TNX_FIG_valid(AMS,S.return_period,RL0,ylimits = [0,np.max(AMS.AMS)+3],TENAXcol = "r",TENAXlabel="b = 0")
     
-    plt.plot(S.return_period,smev_RL,label = "smev")
-    plt.legend()
-    plt.title(titles)
-    plt.show()
+    # plt.plot(S.return_period,smev_RL,label = "smev")
+    # plt.legend()
+    # plt.title(titles)
+    # plt.show()
     
     #fig 4 (without SMEV and uncertainty) 
     AMS = dict_AMS[i]['60'] # yet the annual maxima
@@ -332,25 +337,25 @@ for i in np.arange(0,n_stations):
     
     plt.plot(S.return_period,smev_RL,label = "smev")
     plt.legend()
-    plt.title(f"{titles} kde temperature")
+    plt.title(f"{titles} kde temperature {S.left_censoring[1]}")
     plt.show()
     
     
     
-    #fig 5 
-    iTs = np.arange(-2.5,37.5,1.5) #idk why we need a different T range here 
+    # #fig 5 
+    # iTs = np.arange(-2.5,37.5,1.5) #idk why we need a different T range here 
     
-    scaling_rate_W, scaling_rate_q = TNX_FIG_scaling(P,T,P_mc,T_mc,F_phats[i],S.niter_smev,eT,iTs,xlimits = [eT[0],eT[-1]])
-    plt.title(titles)
-    plt.show()
+    # scaling_rate_W, scaling_rate_q = TNX_FIG_scaling(P,T,P_mc,T_mc,F_phats[i],S.niter_smev,eT,iTs,xlimits = [eT[0],eT[-1]])
+    # plt.title(titles)
+    # plt.show()
     
-    scaling_rate_W_exp, scaling_rate_q_exp = TNX_FIG_scaling(P,T,P_mc_exp,T_mc_exp,F_phat_exp,S.niter_smev,eT,iTs,xlimits = [eT[0],eT[-1]])
-    plt.title(f"{titles} exponential")
-    plt.show()
+    # scaling_rate_W_exp, scaling_rate_q_exp = TNX_FIG_scaling(P,T,P_mc_exp,T_mc_exp,F_phat_exp,S.niter_smev,eT,iTs,xlimits = [eT[0],eT[-1]])
+    # plt.title(f"{titles} exponential")
+    # plt.show()
     
-    scaling_rate_W0, scaling_rate_q0 = TNX_FIG_scaling(P,T,P_mc0,T_mc0,F_phat0,S.niter_smev,eT,iTs,xlimits = [eT[0],eT[-1]])
-    plt.title(f"{titles} 0")
-    plt.show()
+    # scaling_rate_W0, scaling_rate_q0 = TNX_FIG_scaling(P,T,P_mc0,T_mc0,F_phat0,S.niter_smev,eT,iTs,xlimits = [eT[0],eT[-1]])
+    # plt.title(f"{titles} 0")
+    # plt.show()
     
     
     # #TENAX MODEL VALIDATION
