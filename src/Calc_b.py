@@ -816,22 +816,24 @@ ax1.coastlines()
 ax1.add_feature(cfeature.BORDERS, linestyle=':')
 
 # Choosing cmap
-if df_parameters.b.min() == 0:
-    norm = mcolors.TwoSlopeNorm(vmin=-0.06, vcenter=0, vmax=0.06)
-else:
-    norm = mcolors.TwoSlopeNorm(vmin=df_parameters.b.min(), vcenter=0, vmax=-1*df_parameters.b.min())
+# if df_parameters.b.min() == 0:
+#     norm = mcolors.TwoSlopeNorm(vmin=-0.06, vcenter=0, vmax=0.06)
+# else:
+#     norm = mcolors.TwoSlopeNorm(vmin=df_parameters.b.min(), vcenter=0, vmax=-1*df_parameters.b.min())
 
-for lon, lat in zip(df_parameters.longitude[df_parameters.thr == 0], 
-                    df_parameters.latitude[df_parameters.thr == 0]):
-    square = patches.Rectangle(
-        (lon - 0.5, lat - 0.5),  # Bottom-left corner of the square
-        1,  # Width (1 degree)
-        1,  # Height (1 degree)
-        color='r',
-        alpha = 0.2,
-        label="no ERA data within 1 deg" if 'no ERA data within 1 deg' not in ax1.get_legend_handles_labels()[1] else ""
-    )
-    ax1.add_patch(square)
+
+norm = norm = mcolors.TwoSlopeNorm(vmin=-0.1, vcenter=0, vmax=0.1)
+# for lon, lat in zip(df_parameters.longitude[df_parameters.thr == 0], 
+#                     df_parameters.latitude[df_parameters.thr == 0]):
+#     square = patches.Rectangle(
+#         (lon - 0.5, lat - 0.5),  # Bottom-left corner of the square
+#         1,  # Width (1 degree)
+#         1,  # Height (1 degree)
+#         color='r',
+#         alpha = 0.2,
+#         label="no ERA data within 1 deg" if 'no ERA data within 1 deg' not in ax1.get_legend_handles_labels()[1] else ""
+#     )
+#     ax1.add_patch(square)
 sc = ax1.scatter(
     df_parameters.longitude[df_parameters.b==0],
     df_parameters.latitude[df_parameters.b==0],
@@ -848,18 +850,22 @@ sc = ax1.scatter(
     norm=norm
 )
 
+gl = ax1.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': 12}
+gl.ylabel_style = {'size': 12}
+
+
 # Add a colorbar at the bottom
-cb = plt.colorbar(sc, orientation='horizontal', pad=0.05)
+cb = plt.colorbar(sc, orientation='horizontal', pad=0.05, extend = "both")
 cb.set_label('b', fontsize=14)  
 cb.ax.tick_params(labelsize=12)
 
 # Set x and y ticks
-ax1.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
-ax1.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
-ax1.tick_params(labelsize=12)  
 
-plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
-plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+# plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+# plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
 
 plt.title(f'GSDR: {ERA_country}. b at {TENAX_use.alpha[0]} sig level', fontsize=16)
 plt.legend()
@@ -875,11 +881,11 @@ ax1 = fig.add_subplot(1, 1, 1, projection=proj)
 ax1.coastlines()
 ax1.add_feature(cfeature.BORDERS, linestyle=':')
 
-# Choosing cmap
-if df_parameters.b.min() == 0:
-    norm = mcolors.TwoSlopeNorm(vmin=-0.06, vcenter=0, vmax=0.06)
-else:
-    norm = mcolors.TwoSlopeNorm(vmin=df_parameters.b.min(), vcenter=0, vmax=-1*df_parameters.b.min())
+# # Choosing cmap
+# if df_parameters.b.min() == 0:
+#     norm = mcolors.TwoSlopeNorm(vmin=-0.06, vcenter=0, vmax=0.06)
+# else:
+#     norm = mcolors.TwoSlopeNorm(vmin=df_parameters.b.min(), vcenter=0, vmax=-1*df_parameters.b.min())
 
 sc = ax1.scatter( #plot the negligable at 5% lvl points
     new_df.longitude,
@@ -893,17 +899,20 @@ sc = ax1.scatter( #plot the negligable at 5% lvl points
 
 
 # Add a colorbar at the bottom
-cb = plt.colorbar(sc, orientation='horizontal', pad=0.05)
+cb = plt.colorbar(sc, orientation='horizontal', pad=0.05, extend = "both")
 cb.set_label('b', fontsize=14)  
 cb.ax.tick_params(labelsize=12)
 
 # Set x and y ticks
-ax1.set_xticks(np.arange(lon_lims[0],lon_lims[1]+1,2.5), crs=proj)
-ax1.set_yticks(np.arange(lat_lims[0],lat_lims[1]+1,2.5), crs=proj)
-ax1.tick_params(labelsize=12)  
+gl = ax1.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': 12}
+gl.ylabel_style = {'size': 12}
 
-plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
-plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+
+# plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+# plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
 
 
 plt.title(f'GSDR: {ERA_country}. b at 0 sig level', fontsize=16)
