@@ -319,29 +319,32 @@ if min_thr_savename not in output_files:
         station = val_info.iloc[i].station
         start_time[i] = time.time()
         
-        
-        T = np.genfromtxt(f"D:/ordinary_events/{country}/T_{station}.csv")
-        P = np.genfromtxt(f"D:/ordinary_events/{country}/P_{station}.csv")
-        times = pd.read_csv(f"D:/ordinary_events/{country}/time_{station}.csv",parse_dates = ["oe_time"])
-        
-        oe_df = pd.DataFrame({"year":times.oe_time.dt.year, "P": P, "T": T,})
-        AMS = oe_df.groupby(oe_df.year).P.max()
-        
-        shape,scale = S_SMEV.estimate_smev_parameters(P, S_SMEV.left_censoring)
-
-
-        oe_sort_df = oe_df.sort_values(by="P")
-        oe_sort_df = oe_sort_df.reset_index()
-
-        AMS_indices = oe_sort_df.groupby("year").P.idxmax()
-
-        records_df = create_syntethic_records(seed_random = 0, synthetic_records_amount = 1000, record_size = len(oe_sort_df), shape = shape, scale = scale)
-        
-        p_out_dicts_lst = []
-        for thresh in np.arange(0.8,1,0.01):
-            p_out_dicts_lst = check_confidence_interval(AMS_indices, records_df, 0.1, AMS.to_numpy(), thresh, p_out_dicts_lst)
-
-        optimal_thresholds[i] = find_optimal_threshold(p_out_dicts_lst, 0.1)
+        oe_save = f"D:/ordinary_events/{country_save}\\T_{station}.csv"
+        if oe_save not in glob.glob(f"D:/ordinary_events/{country_save}/*"):
+            optimal_thresholds[i] = 0
+        else:
+            T = np.genfromtxt(f"D:/ordinary_events/{country_save}/T_{station}.csv")
+            P = np.genfromtxt(f"D:/ordinary_events/{country_save}/P_{station}.csv")
+            times = pd.read_csv(f"D:/ordinary_events/{country_save}/time_{station}.csv",parse_dates = ["oe_time"])
+            
+            oe_df = pd.DataFrame({"year":times.oe_time.dt.year, "P": P, "T": T,})
+            AMS = oe_df.groupby(oe_df.year).P.max()
+            
+            shape,scale = S_SMEV.estimate_smev_parameters(P, S_SMEV.left_censoring)
+    
+    
+            oe_sort_df = oe_df.sort_values(by="P")
+            oe_sort_df = oe_sort_df.reset_index()
+    
+            AMS_indices = oe_sort_df.groupby("year").P.idxmax()
+    
+            records_df = create_syntethic_records(seed_random = 0, synthetic_records_amount = 1000, record_size = len(oe_sort_df), shape = shape, scale = scale)
+            
+            p_out_dicts_lst = []
+            for thresh in np.arange(0.8,1,0.01):
+                p_out_dicts_lst = check_confidence_interval(AMS_indices, records_df, 0.1, AMS.to_numpy(), thresh, p_out_dicts_lst)
+    
+            optimal_thresholds[i] = find_optimal_threshold(p_out_dicts_lst, 0.1)
         
         
         if (i+1)%50 == 0:
