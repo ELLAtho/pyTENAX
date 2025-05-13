@@ -41,7 +41,7 @@ chosen_stations = ['12441']
 
 country = 'Japan'
 code_str = 'JP' 
-n_stations = 10 #number of stations to sample
+n_stations = 2 #number of stations to sample
 min_yrs = 15 #atm this probably introduces a bug... need to put in if statement or something
 max_yrs = 1000 #if no max, set to very high
 name_col = 'ppt'

@@ -36,14 +36,14 @@ drive='D' #name of drive
 alpha_set = 0
 remake = 1
 
-# country = 'Germany' 
-# ERA_country = 'Germany'
-# country_save = 'Germany'
-# code_str = 'DE_'
-# minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
-# name_len = 5
-# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-# censor_thr = 0.9
+country = 'Germany' 
+ERA_country = 'Germany'
+country_save = 'Germany'
+code_str = 'DE_'
+minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
+name_len = 5
+min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+censor_thr = 0.9
 
 
 # country = 'Japan'
@@ -82,16 +82,16 @@ remake = 1
 # min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
 # censor_thr = 0.9
 
-country = 'Germany' 
-ERA_country = 'Germany'
-country_save = 'Germany_b0'
-code_str = 'DE_'
-minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
-name_len = 5
-min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-censor_thr = 0.9
-alpha_set = 1
-remake = 0
+# country = 'Germany' 
+# ERA_country = 'Germany'
+# country_save = 'Germany_b0'
+# code_str = 'DE_'
+# minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
+# name_len = 5
+# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+# censor_thr = 0.9
+# alpha_set = 1
+# remake = 0
 
 # country = 'Japan' 
 # ERA_country = 'Japan'
@@ -150,7 +150,7 @@ save_path_neg = drive + ':/outputs/'+country_save+'\\parameters_neg.csv'
 df_savename = drive + ':/outputs/'+country_save+'\\parameters.csv'
 
 
-df_parameters = pd.read_csv(df_savename) 
+df_parameters = pd.read_csv(df_savename, dtype={'station': str}) 
 TENAX_use = pd.read_csv(drive + ':/outputs/'+country_save+'/TENAX_parameters.csv') #save calculated parameters
 
 if np.size(glob.glob(save_path_neg)) != 0:
