@@ -36,14 +36,14 @@ drive='D' #name of drive
 alpha_set = 0
 remake = 1
 
-country = 'Germany' 
-ERA_country = 'Germany'
-country_save = 'Germany'
-code_str = 'DE_'
-minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
-name_len = 5
-min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-censor_thr = 0.9
+# country = 'Germany' 
+# ERA_country = 'Germany'
+# country_save = 'Germany'
+# code_str = 'DE_'
+# minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
+# name_len = 5
+# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+# censor_thr = 0.9
 
 
 # country = 'Japan'
@@ -55,13 +55,22 @@ censor_thr = 0.9
 # min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 # censor_thr = 0.9
 
+country = 'UK' 
+ERA_country = 'UK'
+country_save = 'UK'
+code_str = 'UK_'
+name_len = 0
+min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+
+
 # country = 'UK' 
 # ERA_country = 'UK'
-# country_save = 'UK'
+# country_save = 'UK_b0'
 # code_str = 'UK_'
 # name_len = 0
 # min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
-
+# alpha_set = 1
+# remake = 0
 
 # country = 'US' 
 # ERA_country = 'US'
