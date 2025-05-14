@@ -194,7 +194,7 @@ def find_optimal_threshold(p_out_dicts_lst, p_confidence):
     
     if len(indexes_rejected)>0 : 
         if len(indexes_rejected)==len(thresholds_lst): 
-            optimal_threshold = np.nan 
+            optimal_threshold = 1
             #All thresholds rejected    
         else:
             #some thresholds rejected and some not
@@ -203,7 +203,7 @@ def find_optimal_threshold(p_out_dicts_lst, p_confidence):
             if index_to_use<len(thresholds_lst):
                 optimal_threshold = thresholds_lst[index_to_use]
             else:
-                optimal_threshold = np.nan
+                optimal_threshold = 1
 
     else:
         optimal_threshold = thresholds_lst[0] 
@@ -330,29 +330,30 @@ if min_thr_savename not in output_files:
             oe_df = pd.DataFrame({"year":times.oe_time.dt.year, "P": P, "T": T,})
             AMS = oe_df.groupby(oe_df.year).P.max()
             
-            shape,scale = S_SMEV.estimate_smev_parameters(P, S_SMEV.left_censoring)
-    
+            
     
             oe_sort_df = oe_df.sort_values(by="P")
             oe_sort_df = oe_sort_df.reset_index()
     
             AMS_indices = oe_sort_df.groupby("year").P.idxmax()
     
-            records_df = create_syntethic_records(seed_random = 0, synthetic_records_amount = 1000, record_size = len(oe_sort_df), shape = shape, scale = scale)
             
             p_out_dicts_lst = []
-            for thresh in np.arange(0.8,1,0.01):
+            for thresh in np.concatenate([np.arange(0,0.8,0.1),np.arange(0.8,1,0.01)]):
+                shape,scale = S_SMEV.estimate_smev_parameters(P, [thresh,1])
+        
+                records_df = create_syntethic_records(seed_random = 0, synthetic_records_amount = 1000, record_size = len(oe_sort_df), shape = shape, scale = scale)
+                
                 p_out_dicts_lst = check_confidence_interval(AMS_indices, records_df, 0.1, AMS.to_numpy(), thresh, p_out_dicts_lst)
     
             optimal_thresholds[i] = find_optimal_threshold(p_out_dicts_lst, 0.1)
         
         
-        if (i+1)%50 == 0:
-            time_taken = (time.time()-start_time[i-9])/10
-            time_left = (len(val_info)-i)*time_taken/60
-            print(f"{i}/{len(val_info)}. Current average time to complete one {time_taken:.0f}s. Approx time left: {time_left:.0f} mins") #this is only correct after 50 loops
-        else:
-            pass
+    
+        time_taken = (time.time()-start_time[i-9])/10
+        time_left = (len(val_info)-i)*time_taken/60
+        print(f"{i}/{len(val_info)}. Current average time to complete one {time_taken:.0f}s. Approx time left: {time_left:.0f} mins") #this is only correct after 50 loops
+    
     
     thresh_df = pd.DataFrame({"station":val_info.station,
                               "optimal_threshold":optimal_thresholds
