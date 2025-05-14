@@ -229,7 +229,7 @@ min_yrs = 10
 # n_stations = 10 #number of stations to sample
 # min_yrs = 15 #atm this probably introduces a bug... need to put in if statement or something
 # max_yrs = 1000 #if no max, set to very high
-# chosen_station = "12441"
+chosen_station = "12441"
 
 # country = 'germany'
 # country_save = 'germany'
@@ -314,6 +314,7 @@ if min_thr_savename not in output_files:
     print("test not yet run")
     
     optimal_thresholds = np.zeros(len(val_info))
+    all_P = [0]*len(val_info)
     start_time = [0]*len(val_info)
     for i in range(len(val_info)):
         station = val_info.iloc[i].station
@@ -346,7 +347,8 @@ if min_thr_savename not in output_files:
                 
                 p_out_dicts_lst = check_confidence_interval(AMS_indices, records_df, 0.1, AMS.to_numpy(), thresh, p_out_dicts_lst)
     
-            optimal_thresholds[i] = find_optimal_threshold(p_out_dicts_lst, 0.1)
+        all_P[i] = p_out_dicts_lst
+        optimal_thresholds[i] = find_optimal_threshold(p_out_dicts_lst, 0.1)
         
         
     
