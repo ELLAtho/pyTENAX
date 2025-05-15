@@ -308,7 +308,7 @@ else:
     pass
 
 
-min_thr_savename = f"D://outputs/{country_save}/weibull_threshold.csv"
+min_thr_savename = f"D:/outputs/{country_save}\\weibull_threshold.csv"
 output_files = glob.glob(f"D:/outputs/{country_save}/*")
 threshold_list = np.concatenate([np.arange(0,0.8,0.1),np.arange(0.8,1,0.01)])
 
@@ -387,8 +387,9 @@ if min_thr_savename not in output_files:
     thresh_df1 = pd.DataFrame({"station":val_info.station,
                               "optimal_threshold":optimal_thresholds
         })
-    thresh_df = pd.concat([thresh_df1,p_value_df])
+    thresh_df = pd.concat([thresh_df1.reset_index(),p_value_df],axis = 1)
     thresh_df.to_csv(min_thr_savename,index=False)
-
+else:
+    thresh_df = pd.read_csv(min_thr_savename, dtype={'station': str})
 
 
