@@ -211,17 +211,26 @@ def find_optimal_threshold(p_out_dicts_lst, p_confidence):
         
     return optimal_threshold 
 
-country = 'Japan'
-ERA_country = 'Japan'
-country_save = 'Japan'
-code_str = 'JP'
-minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
-name_len = 5
-min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+# country = 'Japan'
+# ERA_country = 'Japan'
+# country_save = 'Japan'
+# code_str = 'JP'
+# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+# name_len = 5
+# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+
+
+country = 'UK' 
+ERA_country = 'UK'
+country_save = 'UK'
+code_str = 'UK'
+name_len = 0
+min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+
+
 name_col = 'ppt'
 temp_name_col = "t2m"
 min_yrs = 10
-
 
 # country = 'Japan'
 # country_save = 'Japan'
@@ -241,14 +250,14 @@ chosen_station = "11001" #"12441"
 # temp_name_col = "t2m"
 # chosen_station = "00020"
 
-T = np.genfromtxt(f"D:/ordinary_events/{country_save}/T_{chosen_station}.csv")
-P = np.genfromtxt(f"D:/ordinary_events/{country_save}/P_{chosen_station}.csv")
-times = pd.read_csv(f"D:/ordinary_events/{country_save}/time_{chosen_station}.csv",parse_dates = ["oe_time"])
+# T = np.genfromtxt(f"D:/ordinary_events/{country_save}/T_{chosen_station}.csv")
+# P = np.genfromtxt(f"D:/ordinary_events/{country_save}/P_{chosen_station}.csv")
+# times = pd.read_csv(f"D:/ordinary_events/{country_save}/time_{chosen_station}.csv",parse_dates = ["oe_time"])
 
-oe_df = pd.DataFrame({"year":times.oe_time.dt.year, "P": P, "T": T,})
-AMS = oe_df.groupby(oe_df.year).P.max()
+# oe_df = pd.DataFrame({"year":times.oe_time.dt.year, "P": P, "T": T,})
+# AMS = oe_df.groupby(oe_df.year).P.max()
 
-AMS_indices = oe_df.groupby("year").P.idxmax()
+# AMS_indices = oe_df.groupby("year").P.idxmax()
 
 S = TENAX(
         return_period = [2,5,10,20,50,100, 200],  #for some reason it doesnt like calculating RP =<1
@@ -268,20 +277,20 @@ S_SMEV = SMEV(threshold=0.1,
 #estimate shape and  scale parameters of weibull distribution
 
 
-oe_sort_df = oe_df.sort_values(by="P")
-oe_sort_df = oe_sort_df.reset_index()
+# oe_sort_df = oe_df.sort_values(by="P")
+# oe_sort_df = oe_sort_df.reset_index()
 
-AMS_indices = oe_sort_df.groupby("year").P.idxmax()
+# AMS_indices = oe_sort_df.groupby("year").P.idxmax()
 
 
-threshold_list = np.concatenate([np.arange(0,0.8,0.1),np.arange(0.8,0.98,0.01)])
-p_out_dicts_lst = []
-for thresh in threshold_list:
-    shape,scale = S_SMEV.estimate_smev_parameters(P, [thresh,1])
-    records_df = create_syntethic_records(seed_random = 0, synthetic_records_amount = 100, record_size = len(oe_sort_df), shape = shape, scale = scale)
-    p_out_dicts_lst = check_confidence_interval(AMS_indices, records_df, 0.1, AMS.to_numpy(), thresh, p_out_dicts_lst)
+# threshold_list = np.concatenate([np.arange(0,0.8,0.1),np.arange(0.8,0.98,0.01)])
+# p_out_dicts_lst = []
+# for thresh in threshold_list:
+#     shape,scale = S_SMEV.estimate_smev_parameters(P, [thresh,1])
+#     records_df = create_syntethic_records(seed_random = 0, synthetic_records_amount = 100, record_size = len(oe_sort_df), shape = shape, scale = scale)
+#     p_out_dicts_lst = check_confidence_interval(AMS_indices, records_df, 0.1, AMS.to_numpy(), thresh, p_out_dicts_lst)
 
-optimal_threshold = find_optimal_threshold(p_out_dicts_lst, 0.1)
+# optimal_threshold = find_optimal_threshold(p_out_dicts_lst, 0.1)
 
 ## loop to get the optimal threshold for all
 
@@ -326,7 +335,8 @@ if min_thr_savename not in output_files:
         
         oe_save = f"D:/ordinary_events/{country_save}\\T_{station}.csv"
         if oe_save not in glob.glob(f"D:/ordinary_events/{country_save}/*"):
-            optimal_thresholds[i] = 0
+            optimal_thresholds[i] = np.nan
+            all_P[i] = [np.nan]*len(threshold_list)
         else:
             T = np.genfromtxt(f"D:/ordinary_events/{country_save}/T_{station}.csv")
             P = np.genfromtxt(f"D:/ordinary_events/{country_save}/P_{station}.csv")
@@ -351,27 +361,27 @@ if min_thr_savename not in output_files:
                 
                 p_out_dicts_lst = check_confidence_interval(AMS_indices, records_df, 0.1, AMS.to_numpy(), thresh, p_out_dicts_lst)
     
-        all_P[i] = [list(d.values())[0] for d in p_out_dicts_lst]
-        
-        p_out_lst = []
-        thresholds_lst = []
-
-        # Get values from p_out_dicts - thresholds and their corresponding p_out  
-        for dic in p_out_dicts_lst:
-            p_out_lst.append(list(dic.values())[0])
-            thresholds_lst.append(list(dic.keys())[0])
-        
-        pval = 1
-        j=0
-        while pval>0.1:
-            pval = p_out_lst[j]
-            opt_thr = thresholds_lst[j]
-            if j == len(p_out_lst)-1:
-                opt_thr = 1
-                pval = 0
-            j=j+1
-        optimal_thresholds[i] = opt_thr
-        
+            all_P[i] = [list(d.values())[0] for d in p_out_dicts_lst]
+            
+            p_out_lst = []
+            thresholds_lst = []
+    
+            # Get values from p_out_dicts - thresholds and their corresponding p_out  
+            for dic in p_out_dicts_lst:
+                p_out_lst.append(list(dic.values())[0])
+                thresholds_lst.append(list(dic.keys())[0])
+            
+            pval = 1
+            j=0
+            while pval>0.1:
+                pval = p_out_lst[j]
+                opt_thr = thresholds_lst[j]
+                if j == len(p_out_lst)-1:
+                    opt_thr = 1
+                    pval = 0
+                j=j+1
+            optimal_thresholds[i] = opt_thr
+            
         
     
         time_taken = (time.time()-start_time[i-9])/10
