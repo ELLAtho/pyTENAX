@@ -366,7 +366,7 @@ if min_thr_savename not in output_files:
         while pval>0.1:
             pval = p_out_lst[j]
             opt_thr = thresholds_lst[j]
-            if i == len(p_out_lst)-1:
+            if j == len(p_out_lst)-1:
                 opt_thr = 1
                 pval = 0
             j=j+1
