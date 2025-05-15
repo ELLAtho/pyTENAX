@@ -38,6 +38,8 @@ import matplotlib.dates as mdates
 import cartopy.feature as cfeature
 from matplotlib.colors import LinearSegmentedColormap
 import matplotlib.patches as patches
+
+
 from scipy.stats import kendalltau, pearsonr, spearmanr
 from scipy.interpolate import interp1d
 from scipy.spatial import ConvexHull
@@ -179,10 +181,56 @@ plt.show()
 
 
 
+fig = plt.figure(figsize=(12, 10))
+
+(topfig, bottomfig) = fig.subfigures(2, 1)
+
+(topleft, topright) = topfig.subfigures(1, 2, width_ratios=(2,1))
+topleft_axs = topleft.add_subplot(1, 1, 1, projection=proj)
+topright_ax1 = topright.add_subplot(2, 1, 1, projection=proj)
+topright_ax2 = topright.add_subplot(2, 1, 2, projection=proj)
+bottom_axs = bottomfig.add_subplot(1, 1, 1, projection=proj)
+
+
+axes = [topright_ax2,topleft_axs,topright_ax1,bottom_axs]
+
+#loop to go through the countries
+for country_i in range(4): 
+
+    axes[country_i].coastlines()
+    axes[country_i].add_feature(cfeature.BORDERS, linestyle=':')
+    
+    # # Choosing cmap
+    # if df_parameters.b.min() == 0:
+    #     norm = mcolors.TwoSlopeNorm(vmin=-0.06, vcenter=0, vmax=0.06)
+    # else:
+    #     norm = mcolors.TwoSlopeNorm(vmin=df_parameters.b.min(), vcenter=0, vmax=-1*df_parameters.b.min())
+    
+    sc = axes[country_i].scatter( #plot the negligable at 5% lvl points
+        new_df[country_i].longitude,
+        new_df[country_i].latitude,
+        c = new_df[country_i].b,
+        s = s,
+        cmap = 'seismic',
+        norm = norm
+    )
+    
+    
+    # Set x and y ticks
+    gl = axes[country_i].gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+    gl.top_labels = False
+    gl.right_labels = False
+    gl.xlabel_style = {'size': 12}
+    gl.ylabel_style = {'size': 12}
+
+
+cb = plt.colorbar(sc, orientation='horizontal',  extend = "both")
+cb.set_label('b', fontsize=fontsize)  
+cb.ax.tick_params(labelsize=fontsize)
 
 
 
-
+plt.show()
 
 
 
