@@ -229,7 +229,7 @@ min_yrs = 10
 # n_stations = 10 #number of stations to sample
 # min_yrs = 15 #atm this probably introduces a bug... need to put in if statement or something
 # max_yrs = 1000 #if no max, set to very high
-chosen_station = "12441"
+chosen_station = "11001" #"12441"
 
 # country = 'germany'
 # country_save = 'germany'
@@ -266,7 +266,6 @@ S_SMEV = SMEV(threshold=0.1,
               left_censoring = [S.left_censoring[1],1])      
 
 #estimate shape and  scale parameters of weibull distribution
-shape,scale = S_SMEV.estimate_smev_parameters(P, S_SMEV.left_censoring)
 
 
 oe_sort_df = oe_df.sort_values(by="P")
@@ -274,10 +273,12 @@ oe_sort_df = oe_sort_df.reset_index()
 
 AMS_indices = oe_sort_df.groupby("year").P.idxmax()
 
-records_df = create_syntethic_records(seed_random = 0, synthetic_records_amount = 100, record_size = len(oe_sort_df), shape = shape, scale = scale)
 
+threshold_list = np.concatenate([np.arange(0,0.8,0.1),np.arange(0.8,0.98,0.01)])
 p_out_dicts_lst = []
-for thresh in np.arange(0.8,1,0.01):
+for thresh in threshold_list:
+    shape,scale = S_SMEV.estimate_smev_parameters(P, [thresh,1])
+    records_df = create_syntethic_records(seed_random = 0, synthetic_records_amount = 100, record_size = len(oe_sort_df), shape = shape, scale = scale)
     p_out_dicts_lst = check_confidence_interval(AMS_indices, records_df, 0.1, AMS.to_numpy(), thresh, p_out_dicts_lst)
 
 optimal_threshold = find_optimal_threshold(p_out_dicts_lst, 0.1)
@@ -309,6 +310,9 @@ else:
 
 min_thr_savename = f"D://outputs/{country_save}/weibull_threshold.csv"
 output_files = glob.glob(f"D:/outputs/{country_save}/*")
+threshold_list = np.concatenate([np.arange(0,0.8,0.1),np.arange(0.8,1,0.01)])
+
+
 
 if min_thr_savename not in output_files:
     print("test not yet run")
@@ -340,26 +344,50 @@ if min_thr_savename not in output_files:
     
             
             p_out_dicts_lst = []
-            for thresh in np.concatenate([np.arange(0,0.8,0.1),np.arange(0.8,1,0.01)]):
+            for thresh in threshold_list:
                 shape,scale = S_SMEV.estimate_smev_parameters(P, [thresh,1])
         
-                records_df = create_syntethic_records(seed_random = 0, synthetic_records_amount = 1000, record_size = len(oe_sort_df), shape = shape, scale = scale)
+                records_df = create_syntethic_records(seed_random = 0, synthetic_records_amount = 200, record_size = len(oe_sort_df), shape = shape, scale = scale)
                 
                 p_out_dicts_lst = check_confidence_interval(AMS_indices, records_df, 0.1, AMS.to_numpy(), thresh, p_out_dicts_lst)
     
-        all_P[i] = p_out_dicts_lst
-        optimal_thresholds[i] = find_optimal_threshold(p_out_dicts_lst, 0.1)
+        all_P[i] = [list(d.values())[0] for d in p_out_dicts_lst]
+        
+        p_out_lst = []
+        thresholds_lst = []
+
+        # Get values from p_out_dicts - thresholds and their corresponding p_out  
+        for dic in p_out_dicts_lst:
+            p_out_lst.append(list(dic.values())[0])
+            thresholds_lst.append(list(dic.keys())[0])
+        
+        pval = 1
+        j=0
+        while pval>0.1:
+            pval = p_out_lst[j]
+            opt_thr = thresholds_lst[j]
+            if i == len(p_out_lst)-1:
+                opt_thr = 1
+                pval = 0
+            j=j+1
+        optimal_thresholds[i] = opt_thr
         
         
     
         time_taken = (time.time()-start_time[i-9])/10
         time_left = (len(val_info)-i)*time_taken/60
+        print(threshold_list[j-3:j+2])
+        print(all_P[i][j-3:j+2])
+        print(optimal_thresholds[i])
         print(f"{i}/{len(val_info)}. Current average time to complete one {time_taken:.0f}s. Approx time left: {time_left:.0f} mins") #this is only correct after 50 loops
     
     
-    thresh_df = pd.DataFrame({"station":val_info.station,
+    p_value_df = pd.DataFrame(np.array(all_P), columns=threshold_list)
+                               
+    thresh_df1 = pd.DataFrame({"station":val_info.station,
                               "optimal_threshold":optimal_thresholds
         })
+    thresh_df = pd.concat([thresh_df1,p_value_df])
     thresh_df.to_csv(min_thr_savename,index=False)
 
 
