@@ -181,14 +181,16 @@ plt.show()
 
 
 
-fig = plt.figure(figsize=(12, 10))
+fig = plt.figure(figsize=(12, 17))
 
-(topfig, bottomfig) = fig.subfigures(2, 1)
+(topfig, bottomfig) = fig.subfigures(2, 1, height_ratios=(1,1))
 
-(topleft, topright) = topfig.subfigures(1, 2, width_ratios=(2,1))
+(topleft, topright) = topfig.subfigures(1, 2, width_ratios=(2.5,1))
 topleft_axs = topleft.add_subplot(1, 1, 1, projection=proj)
-topright_ax1 = topright.add_subplot(2, 1, 1, projection=proj)
-topright_ax2 = topright.add_subplot(2, 1, 2, projection=proj)
+
+topright_axs = topright.subfigures(2, 1, height_ratios=(1.5,1))
+topright_ax1 = topright_axs[0].add_subplot(1, 1, 1, projection=proj)
+topright_ax2 = topright_axs[1].add_subplot(1, 1, 1, projection=proj)
 bottom_axs = bottomfig.add_subplot(1, 1, 1, projection=proj)
 
 
@@ -224,6 +226,9 @@ for country_i in range(4):
     gl.ylabel_style = {'size': 12}
 
 
+topfig.subplots_adjust(bottom = 0.3,left=.1, right=.9, wspace=0.2, hspace=.4)
+
+
 cb = plt.colorbar(sc, orientation='horizontal',  extend = "both")
 cb.set_label('b', fontsize=fontsize)  
 cb.ax.tick_params(labelsize=fontsize)
@@ -233,6 +238,62 @@ cb.ax.tick_params(labelsize=fontsize)
 plt.show()
 
 
+# exponential b
 
+fig = plt.figure(figsize=(12, 17))
+
+(topfig, bottomfig) = fig.subfigures(2, 1, height_ratios=(1,1))
+
+(topleft, topright) = topfig.subfigures(1, 2, width_ratios=(2.5,1))
+topleft_axs = topleft.add_subplot(1, 1, 1, projection=proj)
+
+topright_axs = topright.subfigures(2, 1, height_ratios=(1.5,1))
+topright_ax1 = topright_axs[0].add_subplot(1, 1, 1, projection=proj)
+topright_ax2 = topright_axs[1].add_subplot(1, 1, 1, projection=proj)
+bottom_axs = bottomfig.add_subplot(1, 1, 1, projection=proj)
+
+
+axes = [topright_ax2,topleft_axs,topright_ax1,bottom_axs]
+
+#loop to go through the countries
+for country_i in range(4): 
+
+    axes[country_i].coastlines()
+    axes[country_i].add_feature(cfeature.BORDERS, linestyle=':')
+    
+    # # Choosing cmap
+    # if df_parameters.b.min() == 0:
+    #     norm = mcolors.TwoSlopeNorm(vmin=-0.06, vcenter=0, vmax=0.06)
+    # else:
+    #     norm = mcolors.TwoSlopeNorm(vmin=df_parameters.b.min(), vcenter=0, vmax=-1*df_parameters.b.min())
+    
+    sc = axes[country_i].scatter( #plot the negligable at 5% lvl points
+        df_parameters_exp[country_i].longitude,
+        df_parameters_exp[country_i].latitude,
+        c = df_parameters_exp[country_i].b,
+        s = s,
+        cmap = 'seismic',
+        norm = norm
+    )
+    
+    
+    # Set x and y ticks
+    gl = axes[country_i].gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+    gl.top_labels = False
+    gl.right_labels = False
+    gl.xlabel_style = {'size': 12}
+    gl.ylabel_style = {'size': 12}
+
+
+topfig.subplots_adjust(bottom = 0.3,left=.1, right=.9, wspace=0.2, hspace=.4)
+
+
+cb = plt.colorbar(sc, orientation='horizontal',  extend = "both")
+cb.set_label('b (exp)', fontsize=fontsize)  
+cb.ax.tick_params(labelsize=fontsize)
+
+
+
+plt.show()
 
 
