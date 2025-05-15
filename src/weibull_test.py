@@ -393,3 +393,47 @@ else:
     thresh_df = pd.read_csv(min_thr_savename, dtype={'station': str})
 
 
+fig = plt.figure(figsize=(10, 10))
+proj = ccrs.PlateCarree()
+ax1 = fig.add_subplot(1, 1, 1, projection=proj)
+
+# Add map features
+ax1.coastlines()
+ax1.add_feature(cfeature.BORDERS, linestyle=':')
+
+# # Choosing cmap
+# if df_parameters.b.min() == 0:
+#     norm = mcolors.TwoSlopeNorm(vmin=-0.06, vcenter=0, vmax=0.06)
+# else:
+#     norm = mcolors.TwoSlopeNorm(vmin=df_parameters.b.min(), vcenter=0, vmax=-1*df_parameters.b.min())
+
+sc = ax1.scatter( #plot the negligable at 5% lvl points
+    val_info.longitude,
+    val_info.latitude,
+    c = thresh_df.optimal_threshold,
+    s = 3,
+    cmap = 'viridis',
+    #norm = norm
+)
+
+
+
+# Add a colorbar at the bottom
+cb = plt.colorbar(sc, orientation='horizontal', pad=0.05, extend = "both")
+cb.set_label('threshold', fontsize=14)  
+cb.ax.tick_params(labelsize=12)
+
+# Set x and y ticks
+gl = ax1.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': 12}
+gl.ylabel_style = {'size': 12}
+
+
+# plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
+# plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+
+
+plt.title(f'GSDR: {ERA_country}. Weibull optimum threshold at 0.1', fontsize=16)
+plt.show()
