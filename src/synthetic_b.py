@@ -36,24 +36,24 @@ drive='D' #name of drive
 alpha_set = 0
 remake = 1
 
-country = 'Germany' 
-ERA_country = 'Germany'
-country_save = 'Germany'
-code_str = 'DE_'
-minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
-name_len = 5
-min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-censor_thr = 0.9
-
-
-# country = 'Japan'
-# ERA_country = 'Japan'
-# country_save = 'Japan'
-# code_str = 'JP_'
-# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+# country = 'Germany' 
+# ERA_country = 'Germany'
+# country_save = 'Germany'
+# code_str = 'DE_'
+# minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
 # name_len = 5
 # min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 # censor_thr = 0.9
+
+
+country = 'Japan'
+ERA_country = 'Japan'
+country_save = 'Japan'
+code_str = 'JP_'
+minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+name_len = 5
+min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+censor_thr = 0.9
 
 # country = 'UK' 
 # ERA_country = 'UK'
@@ -534,7 +534,7 @@ if df_gen_savename_exp not in saved_output_files:
         else:
             pass
     df_generated_parameters_exp = pd.DataFrame({'mu':np.array(g_phat_gen)[:,0],'sigma':np.array(g_phat_gen)[:,1],'kappa':np.array(F_phat_exp_gen)[:,0],'b':np.array(F_phat_exp_gen)[:,1],'lambda':np.array(F_phat_exp_gen)[:,2],'a':np.array(F_phat_exp_gen)[:,3],'thr':np.array(thr_gen)})
-    df_generated_parameters_exp.to_csv(df_gen_savename_exp) #save calculated parameters
+    df_generated_parameters_exp.to_csv(df_gen_savename_exp, index = False) #save calculated parameters
 
 else:
     print('file made already')
