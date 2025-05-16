@@ -36,14 +36,14 @@ drive='D' #name of drive
 alpha_set = 0
 remake = 1
 
-# country = 'Germany' 
-# ERA_country = 'Germany'
-# country_save = 'Germany'
-# code_str = 'DE_'
-# minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
-# name_len = 5
-# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-# censor_thr = 0.9
+country = 'Germany' 
+ERA_country = 'Germany'
+country_save = 'Germany'
+code_str = 'DE_'
+minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
+name_len = 5
+min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+censor_thr = 0.9
 
 
 # country = 'Japan'
@@ -55,12 +55,12 @@ remake = 1
 # min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 # censor_thr = 0.9
 
-country = 'UK' 
-ERA_country = 'UK'
-country_save = 'UK'
-code_str = 'UK_'
-name_len = 0
-min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+# country = 'UK' 
+# ERA_country = 'UK'
+# country_save = 'UK'
+# code_str = 'UK_'
+# name_len = 0
+# min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
 
 
 # country = 'UK' 
@@ -176,6 +176,34 @@ if np.size(glob.glob(save_path_neg)) != 0:
 
 else:
     new_df = df_parameters.copy()
+
+
+
+if np.size(glob.glob(save_path_neg)) != 0:
+    df_parameters_neg = pd.read_csv(save_path_neg, dtype={'station': str})
+
+    #dataframe with all values
+    new_df = df_parameters[['station','latitude','longitude','b','kappa','lambda','a','thr','mu','sigma','n_events_per_yr']].copy()
+    
+    mask = new_df['b'] == 0
+    
+    new_df.loc[mask, 'b'] = df_parameters_neg['b2'].to_numpy()
+    new_df.loc[mask, 'kappa'] = df_parameters_neg['kappa2'].to_numpy()
+    new_df.loc[mask, 'lambda'] = df_parameters_neg['lambda2'].to_numpy()
+    new_df.loc[mask, 'a'] = df_parameters_neg['a2'].to_numpy()
+    
+
+else:
+    new_df = df_parameters.copy()
+
+#merging the dataframes to ensure station consistency
+missing_rows = pd.merge(df_parameters.station, val_info.station, how='left', indicator=True).query('_merge == "left_only"').drop('_merge', axis=1)
+if len(missing_rows) != 0:
+    print("miss-match, dropping")
+    df_parameters = df_parameters.drop(missing_rows.index)
+    new_df = new_df.drop(missing_rows.index)
+else:
+    pass
 
 
 # LOOKING AT DISTRIBUTION OF b
@@ -441,3 +469,106 @@ else:
     plt.yticks([1,2],['lambda observed',f'Monte Carlo generated samples. \n sd ratio = {ratio_lambda:.2f}%'])
     plt.title(f'{ERA_country} lambda_0')
     plt.show()
+    
+
+# exponential stuff
+
+df_savename_exp = drive + ':/outputs/'+country_save+'\\parameters_exp.csv'
+df_parameters_exp = pd.read_csv(df_savename_exp, dtype={'station': str}) 
+
+
+F_phat_exp = [np.mean(df_parameters_exp.kappa),np.mean(df_parameters_exp.b),np.mean(df_parameters_exp[["lambda"]]),np.mean(df_parameters_exp.a)]
+
+
+
+
+df_gen_savename_exp = drive + ':/outputs/'+country_save+'\\synth_generated_parameters_exp.csv'
+
+
+if df_gen_savename_exp not in saved_output_files:
+    print("calculating synthetic samples with exponential b dep")
+    # number of stations and average number events
+    
+    S = TENAX(
+            return_period = [2,5,10,20,50,100, 200],  #for some reason it doesnt like calculating RP =<1
+            durations = [60, 180],
+            left_censoring = [0, 0.90],
+            alpha = alpha_set,
+            n_monte_carlo = round(total_events_mean),
+            
+        )
+    
+    
+    n = np.mean(df_parameters.n_events_per_yr) #average events per year
+    Ts = np.arange(mu_mu_sigma[0]-2*sigma_mu_sigma[0] - S.temp_delta, mu_mu_sigma[0]+2*sigma_mu_sigma[0] + S.temp_delta, S.temp_res_monte_carlo)
+
+    
+    
+    # define empty arrays
+    thr_gen = np.zeros(n_stations)
+    F_phat_exp_gen = [0]*n_stations
+    g_phat_gen = [0]*n_stations
+    start_time = [0]*n_stations
+    
+    
+    # model inversion loop
+   
+    for i in np.arange(0,n_stations):
+        start_time[i] = time.time()
+        #generate T and P
+        _, T_mc, P_mc = S.model_inversion(F_phat_exp, g_phat, n, Ts, gen_P_mc = True,gen_RL=False,b_exp = True) 
+        T_mc = T_mc.reshape(-1)
+        
+        #recalculate g_phat and F_phat_exp
+        thr_gen[i] = np.nanquantile(P_mc,S.left_censoring[1])
+        
+        #magnitude model
+        F_phat_exp_gen[i], loglik, _, _ = S.magnitude_model(P_mc, T_mc, thr_gen[i], b_exp = True)
+        #temperature model
+        g_phat_gen[i] = S.temperature_model(T_mc)
+        
+        if (i+1)%50 == 0:
+            time_taken = (time.time()-start_time[i-9])/10
+            time_left = (n_stations-i)*time_taken/60
+            print(f"{i}/{n_stations}. Current average time to complete one {time_taken:.0f}s. Approx time left: {time_left:.0f} mins") #this is only correct after 50 loops
+        else:
+            pass
+    df_generated_parameters_exp = pd.DataFrame({'mu':np.array(g_phat_gen)[:,0],'sigma':np.array(g_phat_gen)[:,1],'kappa':np.array(F_phat_exp_gen)[:,0],'b':np.array(F_phat_exp_gen)[:,1],'lambda':np.array(F_phat_exp_gen)[:,2],'a':np.array(F_phat_exp_gen)[:,3],'thr':np.array(thr_gen)})
+    df_generated_parameters_exp.to_csv(df_gen_savename_exp) #save calculated parameters
+
+else:
+    print('file made already')
+    df_generated_parameters_exp = pd.read_csv(df_gen_savename_exp) #save calculated parameters
+
+
+
+
+
+plt.violinplot([df_parameters_exp.b.copy().dropna(),df_generated_parameters_exp.b],vert=False)
+plt.xlabel('b')
+plt.yticks([1,2],['b exp observed',f'Monte Carlo generated samples.'])
+plt.title(f'{ERA_country} b')
+plt.show()
+
+
+plt.violinplot([df_parameters_exp.a.copy().dropna(),df_generated_parameters_exp.a],vert=False)
+plt.xlabel('b')
+plt.yticks([1,2],['a exp observed',f'Monte Carlo generated samples.'])
+plt.title(f'{ERA_country} a')
+plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
