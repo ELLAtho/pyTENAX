@@ -38,6 +38,8 @@ import matplotlib.dates as mdates
 import cartopy.feature as cfeature
 from matplotlib.colors import LinearSegmentedColormap
 import matplotlib.patches as patches
+import matplotlib.colors as mcolors
+import matplotlib.patches as mpatches
 
 
 from scipy.stats import kendalltau, pearsonr, spearmanr
@@ -71,12 +73,16 @@ lons_lats = [[47, 3, 55, 15],[24, 122.9, 45.6, 145.8],[49, -9.0, 62, 3] ,[24, -1
 # censor_thr = 0.9
 
 
+
 df_parameters = [0]*4
 TENAX_use = [0]*4
 df_parameters_0 = [0]*4
 df_parameters_exp = [0]*4
 df_parameters_neg = [0]*4
 new_df = [0]*4
+df_generated_parameters = [0]*4
+df_generated_parameters_0 = [0]*4
+df_generated_parameters_exp = [0]*4
 
 for country_i in range(4):
     country_save = country_saves[country_i]
@@ -86,15 +92,19 @@ for country_i in range(4):
     
     save_path_neg = drive + ':/outputs/'+country_save+'\\parameters_neg.csv'
     df_savename = drive + ':/outputs/'+country_save+'\\parameters.csv'
-    
+    df_gen_savename = drive + ':/outputs/'+country_save+'\\synth_generated_parameters.csv'
     
     df_parameters[country_i] = pd.read_csv(df_savename, dtype={'station': str}) 
     TENAX_use[country_i] = pd.read_csv(drive + ':/outputs/'+country_save+'/TENAX_parameters.csv') #save calculated parameters
     
     df_parameters_0[country_i] = pd.read_csv(f"{drive}:/outputs/{country_save}_b0/parameters.csv", dtype={'station': str})
     df_parameters_exp[country_i] = pd.read_csv(f"{drive}:/outputs/{country_save}/parameters_exp.csv", dtype={'station': str})
+    df_generated_parameters[country_i] = pd.read_csv(df_gen_savename)
+    df_generated_parameters_0[country_i] = pd.read_csv(f"{drive}:/outputs/{country_save}_b0/synth_generated_parameters.csv")
+    df_generated_parameters_exp[country_i] = pd.read_csv(f"{drive}:/outputs/{country_save}/synth_generated_parameters_exp.csv")
     
-    # for some reason in germany there is one less row...
+    
+    
     
     
     if np.size(glob.glob(save_path_neg)) != 0:
@@ -124,6 +134,7 @@ for country_i in range(4):
         pass
 
 # FIG 1
+
 
 # FIG 2
 # maps of spatial distributions
@@ -297,3 +308,90 @@ cb.ax.tick_params(labelsize=fontsize)
 plt.show()
 
 
+
+# FIG 3
+# Synthetic spreads
+
+# linear b
+params = ["lambda","a","kappa","b"]
+params_titles =  [r"$\lambda_0$",r"$a$",r"$\kappa_0$",r"$b$"]
+xticks_list = [np.arange(0,15,3),np.arange(-0.1,0.2,0.06),np.arange(0,5),np.arange(-0.18,0.1,0.06)]
+letter = ["(a)","(b)","(c)","(d)"]
+
+fig = plt.figure(figsize=[12,12])
+for param_num in range(4):
+    ax = fig.add_subplot(1,4,param_num+1)
+    
+    vln_list = [item 
+            for country_num in range(4) 
+            for item in [new_df[country_num][params[param_num]].copy().dropna(), 
+                         df_generated_parameters[country_num][params[param_num]],
+                         df_parameters_0[country_num][params[param_num]].copy().dropna(),
+                         df_generated_parameters_0[country_num][params[param_num]]]]
+    
+    violin = plt.violinplot(vln_list,vert=False,showmeans = True)
+    
+    if param_num == 0:
+        plt.yticks(list(np.arange(1,17)),
+                   
+                    ['Free b',
+                    'MC gen',
+                    'b=0',
+                    'MC gen, b=0']*4,
+                    
+                   rotation = 50,
+                   size = fontsize
+                   )
+    elif param_num == 3:
+        plt.yticks(list(np.arange(1,17)),
+                   
+                    ['Free b',
+                    'MC gen',
+                    'b=0',
+                    'MC gen, b=0']*4,
+                    
+                   rotation = -50,
+                   size = fontsize,
+                   )
+        ax.yaxis.set_ticks_position("right")
+        ax.yaxis.set_label_position("right")
+    else:
+        ax.get_yaxis().set_visible(False)
+    plt.xticks(size = fontsize)
+    
+    
+    for n in np.arange(0,4):
+        violin['bodies'][n].set_facecolor('y')
+    for n in np.arange(4,8):
+        violin['bodies'][n].set_facecolor('r')   
+    for n in np.arange(8,12):
+        violin['bodies'][n].set_facecolor('g')   
+    for n in np.arange(12,16):
+        violin['bodies'][n].set_facecolor('b')   
+
+
+        
+    for partname in ('cbars', 'cmeans', 'cmins', 'cmaxes'):
+        violin[partname].set_color('k')
+     
+    plt.grid(axis = 'x')
+    
+    ax.text(0.12, 1.03, letter[param_num], transform=ax.transAxes,
+      fontsize=fontsize, va='top', ha='right')
+    
+    
+    
+    plt.xticks(xticks_list[param_num])
+    plt.title(params_titles[param_num])
+
+
+yellow_patch = mpatches.Patch(color='y', label='Germany')
+red_patch = mpatches.Patch(color='r', label='Japan')
+green_patch = mpatches.Patch(color='g', label='UK')
+blue_patch = mpatches.Patch(color='b', label='USA')
+
+plt.legend(handles=[blue_patch, green_patch, red_patch, yellow_patch], loc='upper right', fontsize=fontsize)
+
+plt.subplots_adjust(wspace=0, hspace=0)
+
+plt.show()
