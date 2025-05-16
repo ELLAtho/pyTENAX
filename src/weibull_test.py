@@ -22,6 +22,9 @@ import datetime as dt
 import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
+import matplotlib.colors as mcolors
+
+
 import glob
 
 from pyTENAX.intense import *
@@ -211,21 +214,41 @@ def find_optimal_threshold(p_out_dicts_lst, p_confidence):
         
     return optimal_threshold 
 
-# country = 'Japan'
-# ERA_country = 'Japan'
-# country_save = 'Japan'
-# code_str = 'JP'
-# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+country = 'Japan'
+ERA_country = 'Japan'
+country_save = 'Japan'
+code_str = 'JP'
+minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+name_len = 5
+min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+
+
+# country = 'UK' 
+# ERA_country = 'UK'
+# country_save = 'UK'
+# code_str = 'UK'
+# name_len = 0
+# min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+
+
+# country = 'US' 
+# ERA_country = 'US'
+# country_save = 'US_main'
+# country_oe_save = 'US_main'
+# code_str = 'US'
+# minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
+# name_len = 6
+# min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+
+
+# country = 'Germany' 
+# ERA_country = 'Germany'
+# country_save = 'Germany'
+# code_str = 'DE'
+# minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
 # name_len = 5
 # min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-
-
-country = 'UK' 
-ERA_country = 'UK'
-country_save = 'UK'
-code_str = 'UK'
-name_len = 0
-min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+# censor_thr = 0.9
 
 
 name_col = 'ppt'
@@ -258,6 +281,12 @@ chosen_station = "11001" #"12441"
 # AMS = oe_df.groupby(oe_df.year).P.max()
 
 # AMS_indices = oe_df.groupby("year").P.idxmax()
+
+
+
+df_parameters_bexp = pd.read_csv(f"D:/outputs/{country_save}/parameters_exp.csv",dtype={'station': str}) 
+
+FRMSE_df = pd.read_csv(f"D:/outputs/{country_save}/FRMSE.csv", dtype={'station': str})
 
 S = TENAX(
         return_period = [2,5,10,20,50,100, 200],  #for some reason it doesnt like calculating RP =<1
@@ -403,9 +432,9 @@ else:
     thresh_df = pd.read_csv(min_thr_savename, dtype={'station': str})
 
 
-fig = plt.figure(figsize=(10, 10))
+fig = plt.figure(figsize=(10, 5))
 proj = ccrs.PlateCarree()
-ax1 = fig.add_subplot(1, 1, 1, projection=proj)
+ax1 = fig.add_subplot(1, 2, 1, projection=proj)
 
 # Add map features
 ax1.coastlines()
@@ -429,7 +458,7 @@ sc = ax1.scatter( #plot the negligable at 5% lvl points
 
 
 # Add a colorbar at the bottom
-cb = plt.colorbar(sc, orientation='horizontal', pad=0.05, extend = "both")
+cb = plt.colorbar(sc, orientation='horizontal', pad=0.05)
 cb.set_label('threshold', fontsize=14)  
 cb.ax.tick_params(labelsize=12)
 
@@ -441,9 +470,87 @@ gl.xlabel_style = {'size': 12}
 gl.ylabel_style = {'size': 12}
 
 
-# plt.xlim(lon_lims[0]-1,lon_lims[1]+1)
-# plt.ylim(lat_lims[0]-1,lat_lims[1]+1)
+plt.title(f'GSDR: {ERA_country}. Weibull threshold at 0.1', fontsize=16)
 
 
-plt.title(f'GSDR: {ERA_country}. Weibull optimum threshold at 0.1', fontsize=16)
+
+norm = mcolors.TwoSlopeNorm(vmin=-0.1, vcenter=0, vmax=0.1)
+ax2 = fig.add_subplot(1, 2, 2, projection=proj)
+# Add map features
+ax2.coastlines()
+ax2.add_feature(cfeature.BORDERS, linestyle=':')
+
+# # Choosing cmap
+# if df_parameters.b.min() == 0:
+#     norm = mcolors.TwoSlopeNorm(vmin=-0.06, vcenter=0, vmax=0.06)
+# else:
+#     norm = mcolors.TwoSlopeNorm(vmin=df_parameters.b.min(), vcenter=0, vmax=-1*df_parameters.b.min())
+
+sc = ax2.scatter( #plot the negligable at 5% lvl points
+    val_info.longitude,
+    val_info.latitude,
+    c = df_parameters_bexp.b,
+    s = 3,
+    cmap = 'seismic',
+    norm = norm
+)
+
+
+
+# Add a colorbar at the bottom
+cb = plt.colorbar(sc, orientation='horizontal', pad=0.05, extend = "both")
+cb.set_label('b', fontsize=14)  
+cb.ax.tick_params(labelsize=12)
+
+# Set x and y ticks
+gl = ax2.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': 12}
+gl.ylabel_style = {'size': 12}
+
+
+
+plt.title(f'GSDR: {ERA_country}. b exponential', fontsize=16)
 plt.show()
+
+
+
+
+
+
+plt.scatter(np.abs(df_parameters_bexp.b),thresh_df.optimal_threshold)
+plt.ylim(0.8,1)
+plt.xlabel("b exp")
+plt.ylabel("optimal threshold")
+plt.show()
+
+
+plt.scatter(np.abs(FRMSE_df.FRMSE_bexp),thresh_df.optimal_threshold)
+plt.xlabel("FRMSE b exp")
+plt.ylabel("optimal threshold")
+plt.show()
+
+
+
+plt.scatter(np.abs(FRMSE_df.FRMSE),thresh_df.optimal_threshold)
+plt.xlabel("FRMSE b linear")
+plt.ylabel("optimal threshold")
+plt.show()
+
+
+plt.violinplot(thresh_df.optimal_threshold)
+plt.ylabel("optimal threshold")
+plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
