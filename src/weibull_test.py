@@ -214,13 +214,13 @@ def find_optimal_threshold(p_out_dicts_lst, p_confidence):
         
     return optimal_threshold 
 
-# country = 'Japan'
-# ERA_country = 'Japan'
-# country_save = 'Japan'
-# code_str = 'JP'
-# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
-# name_len = 5
-# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+country = 'Japan'
+ERA_country = 'Japan'
+country_save = 'Japan'
+code_str = 'JP'
+minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+name_len = 5
+min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 
 
 # country = 'UK' 
@@ -241,13 +241,13 @@ def find_optimal_threshold(p_out_dicts_lst, p_confidence):
 # min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
 
 
-country = 'Germany' 
-ERA_country = 'Germany'
-country_save = 'Germany'
-code_str = 'DE'
-minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
-name_len = 5
-min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+# country = 'Germany' 
+# ERA_country = 'Germany'
+# country_save = 'Germany'
+# code_str = 'DE'
+# minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
+# name_len = 5
+# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 
 
 name_col = 'ppt'
@@ -526,8 +526,8 @@ plt.title(f"{country_save}")
 plt.show()
 
 
-plt.violinplot(thresh_df.optimal_threshold.dropna())
-plt.ylabel("optimal threshold")
+plt.violinplot(thresh_df.optimal_threshold.dropna(),vert = False)
+plt.xlabel("optimal threshold")
 plt.title(f"{country_save}")
 plt.show()
 
