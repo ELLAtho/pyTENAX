@@ -150,15 +150,15 @@ if save_name not in glob.glob("D:/outputs/synthetic/*"):
     RL_set_df.to_csv(f"D:/outputs/synthetic/RL_set{attempt}.csv", index = False)
     
     use_df = pd.DataFrame({
-        "mu": g_phat_typical[0],
-        "sigma": g_phat_typical[1],
-        'kappa':F_phat_typical[0],
-        'b':F_phat_typical[1],
-        'lambda':F_phat_typical[2],
-        'a':F_phat_typical[3],
-        'n_years':n_years,
-        'n':n
-        })
+        "mu": [g_phat_typical[0]],
+        "sigma": [g_phat_typical[1]],
+        'kappa': [F_phat_typical[0]],
+        'b': [F_phat_typical[1]],
+        'lambda': [F_phat_typical[2]],
+        'a': [F_phat_typical[3]],
+        'n_years': [n_years],
+        'n': [n]
+    })
     use_df.to_csv(f"D:/outputs/synthetic/parameters_set{attempt}.csv", index = False)
 else:
     gen_F_phat_df = pd.read_csv(f"D:/outputs/synthetic/gen_F_phat{attempt}.csv")
@@ -278,15 +278,15 @@ if save_name_exp not in glob.glob("D:/outputs/synthetic/*"):
     RL_set_df_exp.to_csv(f"D:/outputs/synthetic/RL_set_exp{attempt}.csv", index = False)
     
     use_df_exp = pd.DataFrame({
-        "mu": g_phat_typical[0],
-        "sigma": g_phat_typical[1],
-        'kappa':F_phat_typical[0],
-        'b':F_phat_typical[1],
-        'lambda':F_phat_typical[2],
-        'a':F_phat_typical[3],
-        'n_years':n_years,
-        'n':n
-        })
+        "mu": [g_phat_typical[0]],
+        "sigma": [g_phat_typical[1]],
+        'kappa': [F_phat_typical[0]],
+        'b': [F_phat_typical[1]],
+        'lambda': [F_phat_typical[2]],
+        'a': [F_phat_typical[3]],
+        'n_years': [n_years],
+        'n': [n]
+    })
     use_df_exp.to_csv(f"D:/outputs/synthetic/parameters_set_exp{attempt}.csv", index = False)
 else:    
     gen_F_phat_df_exp = pd.read_csv(f"D:/outputs/synthetic/gen_F_phat_exp{attempt}.csv")
@@ -302,12 +302,127 @@ else:
     use_df_exp = pd.read_csv(f"D:/outputs/synthetic/parameters_set_exp{attempt}.csv")
     
     
+#FRMSE
+
+#linear
+diffs = RL_free_df - AMS_df
+diffs_0 = RL_0_df - AMS_df  
+diffs_set = RL_set_df - AMS_df
+
+
+gen_FRMSE_df = pd.DataFrame({
+    "free": np.sqrt(np.sum(diffs**2,axis = 1)/n_years)/(np.sum(AMS_df,axis = 1)/n_years),
+    "b0": np.sqrt(np.sum(diffs_0**2,axis = 1)/n_years)/(np.sum(AMS_df,axis = 1)/n_years),
+    "set": np.sqrt(np.sum(diffs_set**2,axis = 1)/n_years)/(np.sum(AMS_df,axis = 1)/n_years)
+    })
+
+
+gen_MAE_df = pd.DataFrame({
+    "free": np.sum(diffs,axis = 1)/n_years,
+    "b0": np.sum(diffs_0,axis = 1)/n_years,
+    "set": np.sum(diffs_set,axis = 1)/n_years
+    })
+
+plt.violinplot([gen_FRMSE_df.free,gen_FRMSE_df.b0,gen_FRMSE_df.set],vert = False)
+plt.yticks(np.arange(1,4),["free","b = 0","set"])
+plt.title("FRMSE between simulated annual maxima and calculated return levels. linear")
+plt.show()
+
+plt.violinplot([gen_MAE_df.free,gen_MAE_df.b0,gen_MAE_df.set],vert = False)
+plt.yticks(np.arange(1,4),["free","b = 0","set"])
+plt.title("Mean absolute error between simulated annual maxima and calculated return levels. linear")
+plt.show()
+
+#exp
+diffs_exp = RL_free_df_exp - AMS_df_exp
+diffs_0_exp = RL_0_df_exp - AMS_df_exp  
+diffs_set_exp = RL_set_df_exp - AMS_df_exp
+
+
+gen_FRMSE_df_exp = pd.DataFrame({
+    "free": np.sqrt(np.sum(diffs_exp**2,axis = 1)/n_years)/(np.sum(AMS_df_exp,axis = 1)/n_years),
+    "b0": np.sqrt(np.sum(diffs_0_exp**2,axis = 1)/n_years)/(np.sum(AMS_df_exp,axis = 1)/n_years),
+    "set": np.sqrt(np.sum(diffs_set_exp**2,axis = 1)/n_years)/(np.sum(AMS_df_exp,axis = 1)/n_years)
+    })
+
+
+gen_MAE_df_exp = pd.DataFrame({
+    "free": np.sum(diffs_exp,axis = 1)/n_years,
+    "b0": np.sum(diffs_0_exp,axis = 1)/n_years,
+    "set": np.sum(diffs_set_exp,axis = 1)/n_years
+    })
+
+
+plt.violinplot([gen_FRMSE_df_exp.free,gen_FRMSE_df_exp.b0,gen_FRMSE_df_exp.set],vert = False)
+plt.yticks(np.arange(1,4),["free","b = 0","set"])
+plt.title("FRMSE between simulated annual maxima and calculated return levels. exponential")
+plt.show()
+
+plt.violinplot([gen_MAE_df_exp.free,gen_MAE_df_exp.b0,gen_MAE_df_exp.set],vert = False)
+plt.yticks(np.arange(1,4),["free","b = 0","set"])
+plt.title("Mean absolute error between simulated annual maxima and calculated return levels. exponential")
+plt.show()
+
+
+
+# load non-sythnetic to compare
+
+country_save = "germany"
+
+FRMSE_df = pd.read_csv(f"D:/outputs/{country_save}/FRMSE.csv", dtype={'station': str})
+
+RL_df = pd.read_csv(f"D:/outputs/{country_save}\\return_levels.csv", dtype={'station': str})
+nan_locs = RL_df.return_levels[RL_df.return_levels.isna()].index
+replace_range = np.arange(0,len(RL_df))
+
+RL_column_names = [col for col in RL_df.columns if "return_levels" in col]
+
+
+for col in RL_column_names:
+    nan_locs = RL_df[col][RL_df[col].isna()].index
+    replace_range = np.arange(0,len(RL_df))
+    for k in range(len(nan_locs)):
+        replace_range = np.delete(replace_range, np.where(replace_range == nan_locs[k]))
+    for j in replace_range:
     
-    
-    
-    
-    
-    
-    
-    
-    
+        RL_df.loc[j, col] = np.fromstring(RL_df[col].iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'), sep=' ')
+        
+nan_locs = RL_df.obs_AMS[RL_df.obs_AMS.isna()].index
+replace_range = np.arange(0,len(RL_df))
+for k in range(len(nan_locs)):
+    replace_range = np.delete(replace_range, np.where(replace_range == nan_locs[k]))
+for j in replace_range:
+    RL_df.loc[j, "obs_AMS"] = np.fromstring(RL_df.obs_AMS.iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'), sep=' ')
+
+
+
+lens = [len(RL_df.obs_AMS.iloc[j]) for j in range(len(RL_df))]
+diffs = RL_df.return_levels - RL_df.obs_AMS
+diffs_0 = RL_df.return_levels_b0 - RL_df.obs_AMS
+diffs_exp = RL_df.return_levels_bexp - RL_df.obs_AMS
+
+
+
+
+MAE_df = pd.DataFrame({
+    "free": [np.sum(diffs.iloc[j])/lens[j] for j in range(len(RL_df))],
+    "b0": [np.sum(diffs_0.iloc[j])/lens[j] for j in range(len(RL_df))],
+    "exp": [np.sum(diffs_exp.iloc[j])/lens[j] for j in range(len(RL_df))]
+    })
+
+plt.violinplot([MAE_df.free,MAE_df.b0,MAE_df.exp],vert = False)
+plt.yticks(np.arange(1,4),["free","b = 0","exp"])
+plt.title(f"MAE {country_save}")
+plt.show()
+
+
+plt.violinplot([FRMSE_df.FRMSE,FRMSE_df.FRMSE_0,FRMSE_df.FRMSE_bexp],vert = False)
+plt.yticks(np.arange(1,4),["free","b = 0","exp"])
+plt.title(f"FRMSE {country_save}")
+plt.show()
+
+
+
+
+
+
