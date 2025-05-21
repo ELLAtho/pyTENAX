@@ -323,13 +323,15 @@ gen_MAE_df = pd.DataFrame({
     "set": np.sum(diffs_set,axis = 1)/n_years
     })
 
-plt.violinplot([gen_FRMSE_df.free,gen_FRMSE_df.b0,gen_FRMSE_df.set],vert = False)
+plt.violinplot([gen_FRMSE_df.free,gen_FRMSE_df.b0,gen_FRMSE_df.set],vert = False,showmeans=True)
 plt.yticks(np.arange(1,4),["free","b = 0","set"])
+plt.xlim(0,1)
 plt.title("FRMSE between simulated annual maxima and calculated return levels. linear")
 plt.show()
 
-plt.violinplot([gen_MAE_df.free,gen_MAE_df.b0,gen_MAE_df.set],vert = False)
+plt.violinplot([gen_MAE_df.free,gen_MAE_df.b0,gen_MAE_df.set],vert = False,showmeans=True)
 plt.yticks(np.arange(1,4),["free","b = 0","set"])
+plt.xlim(-7.5,7)
 plt.title("Mean absolute error between simulated annual maxima and calculated return levels. linear")
 plt.show()
 
@@ -353,14 +355,16 @@ gen_MAE_df_exp = pd.DataFrame({
     })
 
 
-plt.violinplot([gen_FRMSE_df_exp.free,gen_FRMSE_df_exp.b0,gen_FRMSE_df_exp.set],vert = False)
+plt.violinplot([gen_FRMSE_df_exp.free,gen_FRMSE_df_exp.b0,gen_FRMSE_df_exp.set],vert = False,showmeans=True)
 plt.yticks(np.arange(1,4),["free","b = 0","set"])
 plt.title("FRMSE between simulated annual maxima and calculated return levels. exponential")
+plt.xlim(0,1)
 plt.show()
 
-plt.violinplot([gen_MAE_df_exp.free,gen_MAE_df_exp.b0,gen_MAE_df_exp.set],vert = False)
+plt.violinplot([gen_MAE_df_exp.free,gen_MAE_df_exp.b0,gen_MAE_df_exp.set],vert = False,showmeans=True)
 plt.yticks(np.arange(1,4),["free","b = 0","set"])
 plt.title("Mean absolute error between simulated annual maxima and calculated return levels. exponential")
+plt.xlim(-7.5,7)
 plt.show()
 
 
@@ -397,6 +401,14 @@ for j in replace_range:
 
 
 lens = [len(RL_df.obs_AMS.iloc[j]) for j in range(len(RL_df))]
+
+
+
+
+
+RL_df.drop(464,inplace = True)
+
+
 diffs = RL_df.return_levels - RL_df.obs_AMS
 diffs_0 = RL_df.return_levels_b0 - RL_df.obs_AMS
 diffs_exp = RL_df.return_levels_bexp - RL_df.obs_AMS
@@ -410,14 +422,16 @@ MAE_df = pd.DataFrame({
     "exp": [np.sum(diffs_exp.iloc[j])/lens[j] for j in range(len(RL_df))]
     })
 
-plt.violinplot([MAE_df.free,MAE_df.b0,MAE_df.exp],vert = False)
+plt.violinplot([MAE_df.free,MAE_df.b0,MAE_df.exp],vert = False,showmeans=True)
 plt.yticks(np.arange(1,4),["free","b = 0","exp"])
 plt.title(f"MAE {country_save}")
+plt.xlim(-7.5,7)
 plt.show()
 
 
-plt.violinplot([FRMSE_df.FRMSE,FRMSE_df.FRMSE_0,FRMSE_df.FRMSE_bexp],vert = False)
+plt.violinplot([FRMSE_df.FRMSE,FRMSE_df.FRMSE_0,FRMSE_df.FRMSE_bexp],vert = False,showmeans=True)
 plt.yticks(np.arange(1,4),["free","b = 0","exp"])
+plt.xlim(0,1)
 plt.title(f"FRMSE {country_save}")
 plt.show()
 
