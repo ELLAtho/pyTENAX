@@ -331,7 +331,7 @@ plt.show()
 
 plt.violinplot([gen_MAE_df.free,gen_MAE_df.b0,gen_MAE_df.set],vert = False,showmeans=True)
 plt.yticks(np.arange(1,4),["free","b = 0","set"])
-plt.xlim(-7.5,7)
+plt.xlim(-9,7)
 plt.title("Mean absolute error between simulated annual maxima and calculated return levels. linear")
 plt.show()
 
@@ -364,18 +364,20 @@ plt.show()
 plt.violinplot([gen_MAE_df_exp.free,gen_MAE_df_exp.b0,gen_MAE_df_exp.set],vert = False,showmeans=True)
 plt.yticks(np.arange(1,4),["free","b = 0","set"])
 plt.title("Mean absolute error between simulated annual maxima and calculated return levels. exponential")
-plt.xlim(-7.5,7)
+plt.xlim(-9,7)
 plt.show()
 
 
 
 # load non-sythnetic to compare
 
-country_save = "germany"
+country_save = "Japan"
 
 FRMSE_df = pd.read_csv(f"D:/outputs/{country_save}/FRMSE.csv", dtype={'station': str})
 
 RL_df = pd.read_csv(f"D:/outputs/{country_save}\\return_levels.csv", dtype={'station': str})
+
+
 nan_locs = RL_df.return_levels[RL_df.return_levels.isna()].index
 replace_range = np.arange(0,len(RL_df))
 
@@ -399,6 +401,10 @@ for j in replace_range:
     RL_df.loc[j, "obs_AMS"] = np.fromstring(RL_df.obs_AMS.iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'), sep=' ')
 
 
+RL_df.dropna(axis = 0,inplace = True)
+FRMSE_df.dropna(axis = 0,inplace = True)
+
+
 
 lens = [len(RL_df.obs_AMS.iloc[j]) for j in range(len(RL_df))]
 
@@ -406,12 +412,12 @@ lens = [len(RL_df.obs_AMS.iloc[j]) for j in range(len(RL_df))]
 
 
 
-RL_df.drop(464,inplace = True)
+#RL_df.drop(464,inplace = True)
 
 
-diffs = RL_df.return_levels - RL_df.obs_AMS
-diffs_0 = RL_df.return_levels_b0 - RL_df.obs_AMS
-diffs_exp = RL_df.return_levels_bexp - RL_df.obs_AMS
+diffs = RL_df.return_levels_kernal - RL_df.obs_AMS
+diffs_0 = RL_df.return_levels_kernal_0 - RL_df.obs_AMS
+diffs_exp = RL_df.return_levels_kernal_exp - RL_df.obs_AMS
 
 
 
@@ -422,10 +428,10 @@ MAE_df = pd.DataFrame({
     "exp": [np.sum(diffs_exp.iloc[j])/lens[j] for j in range(len(RL_df))]
     })
 
-plt.violinplot([MAE_df.free,MAE_df.b0,MAE_df.exp],vert = False,showmeans=True)
+plt.violinplot([MAE_df.free.dropna(),MAE_df.b0,MAE_df.exp],vert = False,showmeans=True)
 plt.yticks(np.arange(1,4),["free","b = 0","exp"])
 plt.title(f"MAE {country_save}")
-plt.xlim(-7.5,7)
+plt.xlim(-9,7)
 plt.show()
 
 
@@ -438,5 +444,26 @@ plt.show()
 
 
 
+
+print("SIMULATED")
+print("free linear")
+print(f"mean FRMSE: {np.mean(gen_FRMSE_df.free):.3f}. Standard deviation FRMSE: {np.std(gen_FRMSE_df.free):.3f}")
+print(f"mean MAE: {np.mean(gen_MAE_df.free):.3f}. Standard deviation MAE: {np.std(gen_MAE_df.free):.3f}")
+print("set linear")
+print(f"mean FRMSE: {np.mean(gen_FRMSE_df.set):.3f}. Standard deviation FRMSE: {np.std(gen_FRMSE_df.set):.3f}")
+print(f"mean MAE: {np.mean(gen_MAE_df.set):.3f}. Standard deviation MAE: {np.std(gen_MAE_df.set):.3f}")
+print("0")
+print(f"mean FRMSE: {np.mean(gen_FRMSE_df.b0):.3f}. Standard deviation FRMSE: {np.std(gen_FRMSE_df.b0):.3f}")
+print(f"mean MAE: {np.mean(gen_MAE_df.b0):.3f}. Standard deviation MAE: {np.std(gen_MAE_df.b0):.3f}")
+
+
+print(f"OBSERVED {country_save}")
+print("free linear")
+print(f"mean FRMSE: {np.mean(FRMSE_df.FRMSE):.3f}. Standard deviation FRMSE: {np.std(FRMSE_df.FRMSE):.3f}")
+print(f"mean MAE: {np.mean(MAE_df.free):.3f}. Standard deviation MAE: {np.std(MAE_df.free):.3f}")
+
+print("0")
+print(f"mean FRMSE: {np.mean(FRMSE_df.FRMSE_0):.3f}. Standard deviation FRMSE: {np.std(FRMSE_df.FRMSE_0):.3f}")
+print(f"mean MAE: {np.mean(MAE_df.b0):.3f}. Standard deviation MAE: {np.std(MAE_df.b0):.3f}")
 
 
