@@ -24,6 +24,7 @@ import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import matplotlib.colors as mcolors
+import seaborn
 
 from scipy.stats import norm
 
@@ -443,6 +444,12 @@ plt.show()
 
 
 
+
+seaborn.stripplot([0,gen_FRMSE_df_exp.free,gen_FRMSE_df_exp.b0,gen_FRMSE_df_exp.set],alpha = 0.2,s = 2, color = "r")
+plt.violinplot([gen_FRMSE_df_exp.free,gen_FRMSE_df_exp.b0,gen_FRMSE_df_exp.set],showmeans=True)
+plt.xticks(np.arange(1,4),["free","b = 0","set"])
+plt.title("FRMSE between simulated annual maxima and calculated return levels. exponential")
+plt.show()
 
 
 print("SIMULATED")
