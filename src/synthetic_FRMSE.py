@@ -180,12 +180,6 @@ else:
 # exponential b
 
 
-
-F_phat_typical = [ 1.1, -0.015, 1, 0.07] # basically Germany
-g_phat_typical = [10, 13] # also basically Germany
-attempt = 1 # IF YOU REPEAT WITH DIFFERENT PARAMETERS CHANGE THIS NUMBER
-
-
 save_name_exp = f"D:/outputs/synthetic\\gen_F_phat_exp{attempt}.csv"
 
 if save_name_exp not in glob.glob("D:/outputs/synthetic/*"):
@@ -302,7 +296,130 @@ else:
     
     use_df_exp = pd.read_csv(f"D:/outputs/synthetic/parameters_set_exp{attempt}.csv")
     
+#calculate specific RLs and compare to expected from given F_phat etc.
+  
+S.return_period = [10,20,50,100]
+S.n_monte_carlo = 20000
+#calculate expected from input data
+
+RL_typical, _, _ = S.model_inversion(F_phat_typical, g_phat_typical, n, Ts)
+
+save_name_RL = f"D:/outputs/synthetic\\RL_specific{attempt}.csv"
+
+if save_name_RL not in glob.glob("D:/outputs/synthetic/*"):
+    print("calculating specific RLs")
     
+    
+    RL_10 = [0]*n_its
+    RL_20 = [0]*n_its
+    RL_50 = [0]*n_its
+    RL_100 = [0]*n_its
+    
+    RL_10_exp = [0]*n_its
+    RL_20_exp = [0]*n_its
+    RL_50_exp = [0]*n_its
+    RL_100_exp = [0]*n_its
+    
+    start_time = [0]*n_its
+    
+    for i in range(n_its):
+        start_time[i] = time.time()
+        
+        RL_10_now = []
+        RL_20_now = []
+        RL_50_now = []
+        RL_100_now = []
+        for b_type in ["free","0","set"]:
+            F_phat_now = [gen_F_phat_df[f"kappa_{b_type}"].iloc[i],
+                          gen_F_phat_df[f"b_{b_type}"].iloc[i],
+                          gen_F_phat_df[f"lambda_{b_type}"].iloc[i],
+                          gen_F_phat_df[f"a_{b_type}"].iloc[i]]
+            RL_full,_,_ = S.model_inversion(F_phat_now, g_phat_typical, n, Ts)
+            
+            RL_10_now.append(RL_full[0])
+            RL_20_now.append(RL_full[1])
+            RL_50_now.append(RL_full[2])
+            RL_100_now.append(RL_full[3])
+        
+        
+        RL_10[i] = RL_10_now
+        RL_20[i] = RL_20_now
+        RL_50[i] = RL_50_now
+        RL_100[i] = RL_100_now
+        
+        #exp
+        RL_10_now_exp = []
+        RL_20_now_exp = []
+        RL_50_now_exp = []
+        RL_100_now_exp = []
+        for b_type in ["free","0","set"]:
+            F_phat_now = [gen_F_phat_df_exp[f"kappa_{b_type}"].iloc[i],
+                          gen_F_phat_df_exp[f"b_{b_type}"].iloc[i],
+                          gen_F_phat_df_exp[f"lambda_{b_type}"].iloc[i],
+                          gen_F_phat_df_exp[f"a_{b_type}"].iloc[i]]
+            RL_full_exp,_,_ = S.model_inversion(F_phat_now, g_phat_typical, n, Ts,b_exp=True)
+            
+            RL_10_now_exp.append(RL_full_exp[0])
+            RL_20_now_exp.append(RL_full_exp[1])
+            RL_50_now_exp.append(RL_full_exp[2])
+            RL_100_now_exp.append(RL_full_exp[3])
+        
+        
+        RL_10_exp[i] = RL_10_now_exp
+        RL_20_exp[i] = RL_20_now_exp
+        RL_50_exp[i] = RL_50_now_exp
+        RL_100_exp[i] = RL_100_now_exp
+        
+        if i%50 == 0:
+            print(f"RL_10  {RL_10[i]}")
+            print(f"RL_10 exp {RL_10_exp[i]}")
+            time_taken = (time.time()-start_time[i-9])/10
+            time_left = (n_its-i)*time_taken/60
+            print(f"{i}/{n_its}. Approx time left: {time_left:.0f} mins")
+        
+        
+    RL_spec = pd.DataFrame({
+        "free_10": np.array(RL_10)[:,0],
+        "b0_10": np.array(RL_10)[:,1],
+        "set_10": np.array(RL_10)[:,2],
+        
+        "free_20": np.array(RL_20)[:,0],
+        "b0_20": np.array(RL_20)[:,1],
+        "set_20": np.array(RL_20)[:,2],
+        
+        "free_50": np.array(RL_50)[:,0],
+        "b0_50": np.array(RL_50)[:,1],
+        "set_50": np.array(RL_50)[:,2],
+        
+        "free_100": np.array(RL_100)[:,0],
+        "b0_100": np.array(RL_100)[:,1],
+        "set_100": np.array(RL_100)[:,2],
+        
+        
+        "free_10_exp": np.array(RL_10_exp)[:,0],
+        "b0_10_exp": np.array(RL_10_exp)[:,1],
+        "set_10_exp": np.array(RL_10_exp)[:,2],
+        
+        "free_20_exp": np.array(RL_20_exp)[:,0],
+        "b0_20_exp": np.array(RL_20_exp)[:,1],
+        "set_20_exp": np.array(RL_20_exp)[:,2],
+        
+        "free_50_exp": np.array(RL_50_exp)[:,0],
+        "b0_50_exp": np.array(RL_50_exp)[:,1],
+        "set_50_exp": np.array(RL_50_exp)[:,2],
+        
+        "free_100_exp": np.array(RL_100_exp)[:,0],
+        "b0_100_exp": np.array(RL_100_exp)[:,1],
+        "set_100_exp": np.array(RL_100_exp)[:,2],
+        
+        })
+    RL_spec.to_csv(save_name_RL,index = False)
+        
+            
+
+
+
+
 #FRMSE
 
 #linear
