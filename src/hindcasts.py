@@ -522,6 +522,38 @@ plt.title("b=0")
 plt.show()
 
 
+# cutting out shorter years
+val_info.index = range(len(val_info))
+
+
+fig = plt.figure(figsize = (12,7))
+ax1 = fig.add_subplot(1,2,1)
+plt.hist(hindcast_Fphat[val_info.cleaned_years>=30].pvals.dropna(),density = True,bins = 20)
+plt.ylim(0,12)
+plt.xlabel("p value")
+plt.title("b=free 30 yrs plus")
+
+
+ax2 = fig.add_subplot(1,2,2)
+plt.hist(hindcast_Fphat[val_info.cleaned_years>=30].pvals_0.dropna(),density = True,bins = 20)
+plt.ylim(0,12)
+plt.xlabel("p value")
+plt.title("b=0 30 yrs plus")
+plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 perc_different5_0 = len(hindcast_Fphat[hindcast_Fphat.pvals_0<0.05])/len(hindcast_Fphat)
 perc_different10_0 = len(hindcast_Fphat[hindcast_Fphat.pvals_0<0.1])/len(hindcast_Fphat)
 
