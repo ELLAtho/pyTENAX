@@ -36,9 +36,9 @@ import glob
 
 F_phat_typical = [ 1.1, -0.015, 1, 0.07] # basically Germany
 g_phat_typical = [10, 13] # also basically Germany
-attempt = 1 # IF YOU REPEAT WITH DIFFERENT PARAMETERS CHANGE THIS NUMBER
+attempt = 2 # IF YOU REPEAT WITH DIFFERENT PARAMETERS CHANGE THIS NUMBER
 
-n_years = 30
+n_years = 10
 n = 80. # typical number of events per year
 
 n_its = 1000
