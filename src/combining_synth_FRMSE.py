@@ -25,6 +25,7 @@ import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import matplotlib.colors as mcolors
 import seaborn
+from matplotlib.patches import Patch
 
 from scipy.stats import norm
 
@@ -86,12 +87,21 @@ plt.violinplot([synth_RL[0].b0_10,synth_RL[0].b0_20,synth_RL[0].b0_50,synth_RL[0
 plt.plot([10*0.8,10,10/0.8],[RL_true[0][0]]*3,color = "r")
 plt.plot([20*0.8,20,20/0.8],[RL_true[0][1]]*3,color = "r")
 plt.plot([50*0.8,50,50/0.8],[RL_true[0][2]]*3,color = "r")
-plt.plot([100*0.8,100,100/0.8],[RL_true[0][3]]*3,color = "r")
+plt.plot([100*0.8,100,100/0.8],[RL_true[0][3]]*3,color = "r",label = "actual return levels")
 
+legend_elements = [
+    Patch(facecolor='C0', edgecolor='black', label='Free'),  # default matplotlib colors
+    Patch(facecolor='C1', edgecolor='black', label='Set'),
+    Patch(facecolor='C2', edgecolor='black', label='b = 0'),
+    plt.Line2D([0], [0], color='r', label='actual return levels')
+]
 
+plt.legend(handles=legend_elements)
 
+plt.xlabel("Return period (yr)")
+plt.ylabel("precipitation (mm/hr)")
 plt.xscale("log")
-plt.title("linear b")
+plt.title("linear b. 30 years")
 plt.ylim(20,120)
 plt.show()
 
@@ -107,12 +117,91 @@ plt.violinplot([synth_RL[0].b0_10_exp,synth_RL[0].b0_20_exp,synth_RL[0].b0_50_ex
 plt.plot([10*0.8,10,10/0.8],[RL_true[1][0]]*3,color = "r")
 plt.plot([20*0.8,20,20/0.8],[RL_true[1][1]]*3,color = "r")
 plt.plot([50*0.8,50,50/0.8],[RL_true[1][2]]*3,color = "r")
-plt.plot([100*0.8,100,100/0.8],[RL_true[1][3]]*3,color = "r")
+plt.plot([100*0.8,100,100/0.8],[RL_true[1][3]]*3,color = "r",label = "actual return levels")
 
+legend_elements = [
+    Patch(facecolor='C0', edgecolor='black', label='Free'),  # default matplotlib colors
+    Patch(facecolor='C1', edgecolor='black', label='Set'),
+    Patch(facecolor='C2', edgecolor='black', label='b = 0'),
+    plt.Line2D([0], [0], color='r', label='actual return levels')
+]
+
+plt.legend(handles=legend_elements)
+
+
+plt.xlabel("Return period (yr)")
+plt.ylabel("precipitation (mm/hr)")
 plt.xscale("log")
-plt.title("exponential b")
+plt.title("exponential b. 30 years")
 plt.ylim(20,120)
 plt.show()
+
+
+
+
+
+
+#the next one now
+#violins of free
+plt.violinplot([synth_RL[1].free_10,synth_RL[1].free_20,synth_RL[1].free_50,synth_RL[1].free_100],widths = [10*0.08,20*0.1,50*0.08,100*0.08], positions = [10*0.8,20*0.8,50*0.8,100*0.8],showmeans = True)
+#violins of set
+plt.violinplot([synth_RL[1].set_10,synth_RL[1].set_20,synth_RL[1].set_50,synth_RL[1].set_100],widths = [10*0.1,20*0.1,50*0.1,100*0.1],positions = [10,20,50,100],showmeans = True)
+#violins of 0
+plt.violinplot([synth_RL[1].b0_10,synth_RL[1].b0_20,synth_RL[1].b0_50,synth_RL[1].b0_100],widths = [10*0.1/0.8,20/0.8*0.1,50/0.8*0.1,100/0.8*0.1],positions = [10/0.8,20/0.8,50/0.8,100/0.8],showmeans = True)
+
+plt.plot([10*0.8,10,10/0.8],[RL_true[0][0]]*3,color = "r")
+plt.plot([20*0.8,20,20/0.8],[RL_true[0][1]]*3,color = "r")
+plt.plot([50*0.8,50,50/0.8],[RL_true[0][2]]*3,color = "r")
+plt.plot([100*0.8,100,100/0.8],[RL_true[0][3]]*3,color = "r",label = "actual return levels")
+
+legend_elements = [
+    Patch(facecolor='C0', edgecolor='black', label='Free'),  # default matplotlib colors
+    Patch(facecolor='C1', edgecolor='black', label='Set'),
+    Patch(facecolor='C2', edgecolor='black', label='b = 0'),
+    plt.Line2D([0], [0], color='r', label='actual return levels')
+]
+
+plt.legend(handles=legend_elements)
+
+plt.xlabel("Return period (yr)")
+plt.ylabel("precipitation (mm/hr)")
+plt.xscale("log")
+plt.title("linear b. 10 years")
+plt.ylim(20,120)
+plt.show()
+
+
+
+
+#violins of free
+plt.violinplot([synth_RL[1].free_10_exp,synth_RL[1].free_20_exp,synth_RL[1].free_50_exp,synth_RL[1].free_100_exp],widths = [10*0.08,20*0.1,50*0.08,100*0.08], positions = [10*0.8,20*0.8,50*0.8,100*0.8],showmeans = True)
+#violins of set
+plt.violinplot([synth_RL[1].set_10_exp,synth_RL[1].set_20_exp,synth_RL[1].set_50_exp,synth_RL[1].set_100_exp],widths = [10*0.1,20*0.1,50*0.1,100*0.1],positions = [10,20,50,100],showmeans = True)
+#violins of 0
+plt.violinplot([synth_RL[1].b0_10_exp,synth_RL[1].b0_20_exp,synth_RL[1].b0_50_exp,synth_RL[1].b0_100_exp],widths = [10*0.1/0.8,20/0.8*0.1,50/0.8*0.1,100/0.8*0.1],positions = [10/0.8,20/0.8,50/0.8,100/0.8],showmeans = True)
+plt.plot([10*0.8,10,10/0.8],[RL_true[1][0]]*3,color = "r")
+plt.plot([20*0.8,20,20/0.8],[RL_true[1][1]]*3,color = "r")
+plt.plot([50*0.8,50,50/0.8],[RL_true[1][2]]*3,color = "r")
+plt.plot([100*0.8,100,100/0.8],[RL_true[1][3]]*3,color = "r",label = "actual return levels")
+
+legend_elements = [
+    Patch(facecolor='C0', edgecolor='black', label='Free'),  # default matplotlib colors
+    Patch(facecolor='C1', edgecolor='black', label='Set'),
+    Patch(facecolor='C2', edgecolor='black', label='b = 0'),
+    plt.Line2D([0], [0], color='r', label='actual return levels')
+]
+
+plt.legend(handles=legend_elements)
+
+
+plt.xlabel("Return period (yr)")
+plt.ylabel("precipitation (mm/hr)")
+plt.xscale("log")
+plt.title("exponential b. 10 years")
+plt.ylim(20,120)
+plt.show()
+
+
 
 
 
