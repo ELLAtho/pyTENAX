@@ -414,8 +414,10 @@ if save_name_RL not in glob.glob("D:/outputs/synthetic/*"):
         
         })
     RL_spec.to_csv(save_name_RL,index = False)
+else:
+    RL_spec = pd.read_csv(save_name_RL)
         
-            
+           
 
 
 

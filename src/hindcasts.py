@@ -466,33 +466,50 @@ if hindcast_savename not in hindcast_files:
         })
     hindcast_Fphat.to_csv(hindcast_savename, index = False)
 else:
-    print(f"Fphats already saved, loading")
+    print("Fphats already saved, loading")
     hindcast_Fphat = pd.read_csv(hindcast_savename, dtype = {"station" : str})
 
 
+val_info.index = range(len(val_info))
 
 norm = mcolors.Normalize(vmin=0, vmax=1)
 cmap = 'Blues'
 # plot comparisons of the two period F_phat values
 variables = ["kappa","b","lambda","a"]
-for vari in variables:    
+for vari in variables:  
+    [slope,intc] = np.polyfit(hindcast_Fphat[f"{vari}1"],hindcast_Fphat[f"{vari}2"],1)
+    if vari != "b":    
+        [slope_0,intc_0] = np.polyfit(hindcast_Fphat[f"{vari}1_0"],hindcast_Fphat[f"{vari}2_0"],1)
+    
+    x = np.arange(np.min(hindcast_Fphat[f"{vari}1"]),np.max(hindcast_Fphat[f"{vari}1"])*1.1,(np.max(hindcast_Fphat[f"{vari}1"])*1.1 - np.min(hindcast_Fphat[f"{vari}1"]))/10)
+    y = intc + slope * x
+    
+    if vari != "b":    
+        y_0 = intc_0 + slope_0 * x
+    
+    
+    
     fig = plt.figure(figsize = (10,5))
     ax1 = fig.add_subplot(1,2,1)
     sc = ax1.scatter(hindcast_Fphat[f"{vari}1"],hindcast_Fphat[f"{vari}2"],
                 s=3,c = hindcast_Fphat.pvals,
-                norm = norm, cmap = cmap)
+                norm = norm, cmap = cmap, marker = "*" if val_info.cleaned_years>=30 else ".")
     
-    ax1.plot([np.min(hindcast_Fphat[f"{vari}1"]),np.max(hindcast_Fphat[f"{vari}1"])*1.1],[np.min(hindcast_Fphat[f"{vari}1"]),np.max(hindcast_Fphat[f"{vari}1"])*1.1])
+    ax1.plot([np.min(hindcast_Fphat[f"{vari}1"]),np.max(hindcast_Fphat[f"{vari}1"])*1.1],[np.min(hindcast_Fphat[f"{vari}1"]),np.max(hindcast_Fphat[f"{vari}1"])*1.1],label = "line of equality")
+    ax1.plot(x,y,label = "best fit")
     ax1.set_xlabel(f"{vari}1")
     ax1.set_ylabel(f"{vari}2")
     ax1.set_title("free b")
+    plt.legend()
     
     ax2 = fig.add_subplot(1,2,2)
     sc = ax2.scatter(hindcast_Fphat[f"{vari}1_0"],hindcast_Fphat[f"{vari}2_0"],
                 s=3,c = hindcast_Fphat.pvals,
                 norm = norm, cmap = cmap)
-    ax2.plot([np.min(hindcast_Fphat[f"{vari}1"]),np.max(hindcast_Fphat[f"{vari}1"])*1.1],[np.min(hindcast_Fphat[f"{vari}1"]),np.max(hindcast_Fphat[f"{vari}1"])*1.1])
+    ax2.plot([np.min(hindcast_Fphat[f"{vari}1"]),np.max(hindcast_Fphat[f"{vari}1"])*1.1],[np.min(hindcast_Fphat[f"{vari}1"]),np.max(hindcast_Fphat[f"{vari}1"])*1.1],label = "line of equality")
     
+    if vari != "b":    
+        ax2.plot(x,y_0,label = "best fit")
     ax2.set_xlabel(f"{vari}1_0")
     ax2.set_ylabel(f"{vari}2_0")
     ax2.set_title("b = 0")
@@ -523,19 +540,71 @@ plt.show()
 
 
 # cutting out shorter years
-val_info.index = range(len(val_info))
+
+hindcast_Fphat_short = hindcast_Fphat[val_info.cleaned_years>=30]
+
+norm = mcolors.Normalize(vmin=0, vmax=1)
+cmap = 'Blues'
+# plot comparisons of the two period F_phat values
+variables = ["kappa","b","lambda","a"]
+for vari in variables:  
+    [slope,intc] = np.polyfit(hindcast_Fphat_short[f"{vari}1"],hindcast_Fphat_short[f"{vari}2"],1)
+    if vari != "b":    
+        [slope_0,intc_0] = np.polyfit(hindcast_Fphat_short[f"{vari}1_0"],hindcast_Fphat_short[f"{vari}2_0"],1)
+    
+    x = np.arange(np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1,(np.max(hindcast_Fphat_short[f"{vari}1"])*1.1 - np.min(hindcast_Fphat_short[f"{vari}1"]))/10)
+    y = intc + slope * x
+    
+    if vari != "b":    
+        y_0 = intc_0 + slope_0 * x
+    
+    
+    
+    fig = plt.figure(figsize = (10,5))
+    ax1 = fig.add_subplot(1,2,1)
+    sc = ax1.scatter(hindcast_Fphat_short[f"{vari}1"],hindcast_Fphat_short[f"{vari}2"],
+                s=3,c = hindcast_Fphat_short.pvals,
+                norm = norm, cmap = cmap)
+    
+    ax1.plot([np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],[np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],label = "line of equality")
+    ax1.plot(x,y,label = "best fit")
+    ax1.set_xlabel(f"{vari}1")
+    ax1.set_ylabel(f"{vari}2")
+    ax1.set_title("free b")
+    plt.legend()
+    
+    ax2 = fig.add_subplot(1,2,2)
+    sc = ax2.scatter(hindcast_Fphat_short[f"{vari}1_0"],hindcast_Fphat_short[f"{vari}2_0"],
+                s=3,c = hindcast_Fphat_short.pvals,
+                norm = norm, cmap = cmap)
+    ax2.plot([np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],[np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],label = "line of equality")
+    
+    if vari != "b":    
+        ax2.plot(x,y_0,label = "best fit")
+    ax2.set_xlabel(f"{vari}1_0")
+    ax2.set_ylabel(f"{vari}2_0")
+    ax2.set_title("b = 0")
+    
+    
+    cbar_ax = fig.add_subplot([0.15, -0.02, 0.7, 0.03])  # Position for the colorbar
+    cb = plt.colorbar(sc, cax=cbar_ax, orientation='horizontal')
+    cb.set_label('p-value', fontsize=14)
+    cb.ax.tick_params(labelsize=12)
+    plt.tight_layout()
+    plt.show()
+
 
 
 fig = plt.figure(figsize = (12,7))
 ax1 = fig.add_subplot(1,2,1)
-plt.hist(hindcast_Fphat[val_info.cleaned_years>=30].pvals.dropna(),density = True,bins = 20)
+plt.hist(hindcast_Fphat_short.pvals.dropna(),density = True,bins = 20)
 plt.ylim(0,12)
 plt.xlabel("p value")
 plt.title("b=free 30 yrs plus")
 
 
 ax2 = fig.add_subplot(1,2,2)
-plt.hist(hindcast_Fphat[val_info.cleaned_years>=30].pvals_0.dropna(),density = True,bins = 20)
+plt.hist(hindcast_Fphat_short.pvals_0.dropna(),density = True,bins = 20)
 plt.ylim(0,12)
 plt.xlabel("p value")
 plt.title("b=0 30 yrs plus")
