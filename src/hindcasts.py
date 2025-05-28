@@ -405,7 +405,6 @@ if hindcast_savename not in hindcast_files:
             T1 = T[times.oe_time.dt.year <= midyear]
             P1 = P[times.oe_time.dt.year <= midyear]
             times1 = times[times.oe_time.dt.year <= midyear]
-            thr1 = np.quantile(P1,S.left_censoring[1])
             n1 = len(T1)/(midyear - start_time.dt.year + 1)
             AMS1 = pd.DataFrame(AMS[AMS.index <= midyear]).rename(columns = {"P" : "AMS"})
             
@@ -413,7 +412,6 @@ if hindcast_savename not in hindcast_files:
             T2 = T[times.oe_time.dt.year > midyear]
             P2 = P[times.oe_time.dt.year > midyear]
             times2 = times[times.oe_time.dt.year > midyear]
-            thr2 = np.quantile(P2,S.left_censoring[1])
             n2 = len(T2)/(end_time.dt.year - midyear)
             AMS2 = pd.DataFrame(AMS[AMS.index > midyear]).rename(columns = {"P" : "AMS"})
             
@@ -421,15 +419,15 @@ if hindcast_savename not in hindcast_files:
             F_phat, loglik, _, _ = S.magnitude_model(P, T, thr)
             
             
-            F_phats1[i],loglik1,_,_ = S.magnitude_model(P1, T1, thr1)
-            F_phats2[i],loglik2,_,_ = S.magnitude_model(P2, T2, thr2)
+            F_phats1[i],loglik1,_,_ = S.magnitude_model(P1, T1, thr)
+            F_phats2[i],loglik2,_,_ = S.magnitude_model(P2, T2, thr)
             
             
             S.alpha = 1
             F_phat_b0, loglik_b0, _, _ = S.magnitude_model(P, T, thr)
 
-            F_phats1_0[i],loglik1_b0,_,_ = S.magnitude_model(P1, T1, thr1)
-            F_phats2_0[i],loglik2_b0,_,_ = S.magnitude_model(P2, T2, thr2)
+            F_phats1_0[i],loglik1_b0,_,_ = S.magnitude_model(P1, T1, thr)
+            F_phats2_0[i],loglik2_b0,_,_ = S.magnitude_model(P2, T2, thr)
             
             lambda_LR = -2*( loglik - (loglik1+loglik2) )
             pvals[i] = chi2.sf(lambda_LR, 4)
