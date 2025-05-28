@@ -51,26 +51,26 @@ drive = "D"
 # censor_thr = 0.9
 
 
-# country = 'Japan'
-# ERA_country = 'Japan'
-# country_save = 'Japan'
-# code_str = 'JP_'
-# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
-# name_len = 5
-# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-# censor_thr = 0.9
-# station_chose = "18256"
-# station_chose = "12261"
+country = 'Japan'
+ERA_country = 'Japan'
+country_save = 'Japan'
+code_str = 'JP_'
+minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+name_len = 5
+min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+censor_thr = 0.9
+station_chose = "18256"
+station_chose = "12261"
 station_chose = "19376"
 
-country = 'US' 
-ERA_country = 'US'
-country_save = 'US_main'
-code_str = 'US_'
-minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
-name_len = 6
-min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
-censor_thr = 0.9
+# country = 'US' 
+# ERA_country = 'US'
+# country_save = 'US_main'
+# code_str = 'US_'
+# minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
+# name_len = 6
+# min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+# censor_thr = 0.9
 
 
 
@@ -475,9 +475,9 @@ cmap = 'Blues'
 # plot comparisons of the two period F_phat values
 variables = ["kappa","b","lambda","a"]
 for vari in variables:  
-    [slope,intc] = np.polyfit(hindcast_Fphat[f"{vari}1"],hindcast_Fphat[f"{vari}2"],1)
+    [slope,intc] = np.polyfit(hindcast_Fphat[f"{vari}1"].dropna(),hindcast_Fphat[f"{vari}2"].dropna(),1)
     if vari != "b":    
-        [slope_0,intc_0] = np.polyfit(hindcast_Fphat[f"{vari}1_0"],hindcast_Fphat[f"{vari}2_0"],1)
+        [slope_0,intc_0] = np.polyfit(hindcast_Fphat[f"{vari}1_0"].dropna(),hindcast_Fphat[f"{vari}2_0"].dropna(),1)
     
     x = np.arange(np.min(hindcast_Fphat[f"{vari}1"]),np.max(hindcast_Fphat[f"{vari}1"])*1.1,(np.max(hindcast_Fphat[f"{vari}1"])*1.1 - np.min(hindcast_Fphat[f"{vari}1"]))/10)
     y = intc + slope * x
@@ -491,7 +491,7 @@ for vari in variables:
     ax1 = fig.add_subplot(1,2,1)
     sc = ax1.scatter(hindcast_Fphat[f"{vari}1"],hindcast_Fphat[f"{vari}2"],
                 s=3,c = hindcast_Fphat.pvals,
-                norm = norm, cmap = cmap, marker = "*" if val_info.cleaned_years>=30 else ".")
+                norm = norm, cmap = cmap)#, marker = "*" if val_info.cleaned_years>=30 else ".")
     
     ax1.plot([np.min(hindcast_Fphat[f"{vari}1"]),np.max(hindcast_Fphat[f"{vari}1"])*1.1],[np.min(hindcast_Fphat[f"{vari}1"]),np.max(hindcast_Fphat[f"{vari}1"])*1.1],label = "line of equality")
     ax1.plot(x,y,label = "best fit")
