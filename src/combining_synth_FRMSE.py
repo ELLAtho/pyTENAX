@@ -87,8 +87,8 @@ for i in range(len(synth_RL)):
         diff_0 = synth_RL[i][synth_RL[0].columns[1+3*j]] - RL_true[i][j]
         diff_set = synth_RL[i][synth_RL[0].columns[2+3*j]] - RL_true[i][j]
         
-        temp_free[j] = np.sqrt(np.sum(diff_free**2))/RL_true[i][j],
-        temp_0[j] = np.sqrt(np.sum(diff_0**2))/RL_true[i][j],
+        temp_free[j] = np.sqrt(np.sum(diff_free**2))/RL_true[i][j]
+        temp_0[j] = np.sqrt(np.sum(diff_0**2))/RL_true[i][j]
         temp_set[j] = np.sqrt(np.sum(diff_set**2))/RL_true[i][j]
     
     FRMSE_free[i] = temp_free
@@ -103,8 +103,8 @@ for i in range(len(synth_RL)):
         diff_0 = synth_RL[i][synth_RL[0].columns[13+3*j]] - RL_true_exp[i][j] #shifted to the exponential ones
         diff_set = synth_RL[i][synth_RL[0].columns[14+3*j]] - RL_true_exp[i][j]
         
-        temp_free[j] = np.sqrt(np.sum(diff_free**2))/RL_true_exp[i][j],
-        temp_0[j] = np.sqrt(np.sum(diff_0**2))/RL_true_exp[i][j],
+        temp_free[j] = np.sqrt(np.sum(diff_free**2))/RL_true_exp[i][j]
+        temp_0[j] = np.sqrt(np.sum(diff_0**2))/RL_true_exp[i][j]
         temp_set[j] = np.sqrt(np.sum(diff_set**2))/RL_true_exp[i][j]
     
     FRMSE_free_exp[i] = temp_free
@@ -140,6 +140,14 @@ for i in range(len(synth_RL)):
     
     #FRMSE
     
+    x_mult = [0.75,0.93,1.15]
+    FRMSEs = [FRMSE_free,FRMSE_set,FRMSE_0]
+    
+    for k in range(3):
+        plt.text(10*x_mult[k], np.min(synth_RL[i].free_10)-5, f"{FRMSEs[k][i][0]:.2}") #last 0 in string is to get float from array
+        plt.text(20*x_mult[k], np.min(synth_RL[i].free_20)-5, f"{FRMSEs[k][i][1]:.2}") 
+        plt.text(50*x_mult[k], np.min(synth_RL[i].free_50)-5, f"{FRMSEs[k][i][2]:.2}") 
+        plt.text(100*x_mult[k], np.min(synth_RL[i].free_100)-5, f"{FRMSEs[k][i][3]:.2}") 
     
     
     #violins of free
@@ -178,7 +186,7 @@ for i in range(len(synth_RL)):
     plt.title(f"linear b. {uses[i].n_years[0]} years \
               \n g_phat = [{uses[i].mu[0]},{uses[i].sigma[0]}] \
               \n F_phat = [{uses[i].kappa[0]},{uses[i].b[0]},{uses[i]["lambda"][0]},{uses[i].a[0]}]")
-    plt.ylim(20,120)
+    plt.ylim(17,120)
     plt.show()
     
 
@@ -189,6 +197,16 @@ for i in range(len(synth_RL)):
     plt.plot([20*0.75,20,20/0.75],[RL_true_exp[i][1]]*3,color = "r")
     plt.plot([50*0.75,50,50/0.75],[RL_true_exp[i][2]]*3,color = "r")
     plt.plot([100*0.75,100,100/0.75],[RL_true_exp[i][3]]*3,color = "r",label = "actual return levels")
+    
+    
+    #FRMSE
+    FRMSEs = [FRMSE_free_exp,FRMSE_set_exp,FRMSE_0_exp]
+    
+    for k in range(3):
+        plt.text(10*x_mult[k], np.min(synth_RL[i].free_10)-5, f"{FRMSEs[k][i][0]:.2}") #last 0 in string is to get float from array
+        plt.text(20*x_mult[k], np.min(synth_RL[i].free_20)-5, f"{FRMSEs[k][i][1]:.2}") 
+        plt.text(50*x_mult[k], np.min(synth_RL[i].free_50)-5, f"{FRMSEs[k][i][2]:.2}") 
+        plt.text(100*x_mult[k], np.min(synth_RL[i].free_100)-5, f"{FRMSEs[k][i][3]:.2}") 
     
     
     #violins of free
@@ -225,7 +243,7 @@ for i in range(len(synth_RL)):
     plt.title(f"exponential b. {uses[i].n_years[0]} years \
               \n g_phat = [{uses[i].mu[0]},{uses[i].sigma[0]}] \
               \n F_phat = [{uses[i].kappa[0]},{uses[i].b[0]},{uses[i]["lambda"][0]},{uses[i].a[0]}]")
-    plt.ylim(20,120)
+    plt.ylim(17,120)
     plt.show()
 
 
