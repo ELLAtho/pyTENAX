@@ -34,6 +34,7 @@ import matplotlib.colors as mcolors
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 from matplotlib.colors import LinearSegmentedColormap
+from matplotlib.colors import ListedColormap
 import matplotlib.patches as patches
 from scipy.stats import kendalltau, pearsonr, spearmanr
 from scipy.interpolate import interp1d
@@ -63,23 +64,23 @@ drive = "D"
 # station_chose = "12261"
 station_chose = "19376"
 
-country = 'US' 
-ERA_country = 'US'
-country_save = 'US_main'
-code_str = 'US_'
-minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
-name_len = 6
-min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
-censor_thr = 0.9
-
-# country = 'UK' 
-# ERA_country = 'UK'
-# country_save = 'UK'
-# code_str = 'UK_'
-# minlat,minlon,maxlat,maxlon = 49, -9.0, 62, 3
+# country = 'US' 
+# ERA_country = 'US'
+# country_save = 'US_main'
+# code_str = 'US_'
+# minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
 # name_len = 6
 # min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
 # censor_thr = 0.9
+
+country = 'UK' 
+ERA_country = 'UK'
+country_save = 'UK'
+code_str = 'UK_'
+minlat,minlon,maxlat,maxlon = 49, -9.0, 62, 3
+name_len = 6
+min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+censor_thr = 0.9
 
 name_col = 'ppt' 
 temp_name_col = "t2m"
@@ -482,6 +483,9 @@ cmap = 'Blues'
 # plot comparisons of the two period F_phat values
 variables = ["kappa","b","lambda","a"]
 for vari in variables:  
+    df_small = hindcast_Fphat[[f"{vari}1",f"{vari}2",f"{vari}1_0",f"{vari}2_0"]]
+    corr_table = df_small.corr()
+    
     [slope,intc] = np.polyfit(hindcast_Fphat[f"{vari}1"].dropna(),hindcast_Fphat[f"{vari}2"].dropna(),1)
     if vari != "b":    
         [slope_0,intc_0] = np.polyfit(hindcast_Fphat[f"{vari}1_0"].dropna(),hindcast_Fphat[f"{vari}2_0"].dropna(),1)
@@ -504,7 +508,7 @@ for vari in variables:
     ax1.plot(x,y,label = "best fit")
     ax1.set_xlabel(f"{vari}1")
     ax1.set_ylabel(f"{vari}2")
-    ax1.set_title("free b")
+    ax1.set_title(f"free b. corr = {corr_table[f"{vari}1"][f"{vari}2"]:.2f}")
     plt.legend()
     
     ax2 = fig.add_subplot(1,2,2)
@@ -517,7 +521,7 @@ for vari in variables:
         ax2.plot(x,y_0,label = "best fit")
     ax2.set_xlabel(f"{vari}1_0")
     ax2.set_ylabel(f"{vari}2_0")
-    ax2.set_title("b = 0")
+    ax2.set_title(f"b = 0. corr = {corr_table[f"{vari}1_0"][f"{vari}2_0"]:.2f}")
     
     
     cbar_ax = fig.add_subplot([0.15, -0.02, 0.7, 0.03])  # Position for the colorbar
@@ -548,6 +552,12 @@ plt.show()
 
 
 #plot maps
+
+base_cmap = plt.cm.get_cmap("viridis")
+color_list = base_cmap(np.linspace(0,1,10))
+
+discrete_viridis = ListedColormap(color_list, name = "viridis")
+
 s = 3
 fontsize = 12
 
@@ -565,9 +575,14 @@ sc = ax1.scatter( #plot the negligable at 5% lvl points
     new_df.latitude,
     c = hindcast_Fphat.pvals,
     s = s,
-    cmap = 'viridis',
+    cmap = discrete_viridis,
     norm = norm,zorder = 1
 )
+
+# Add a colorbar at the bottom
+cb = plt.colorbar(sc, orientation='horizontal', pad=0.15)
+cb.set_label('p value', fontsize=14)  
+cb.ax.tick_params(labelsize=12)
 
 
 gl = ax1.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
@@ -588,7 +603,7 @@ sc = ax2.scatter( #plot the negligable at 5% lvl points
     new_df.latitude,
     c = hindcast_Fphat.pvals_0,
     s = s,
-    cmap = 'viridis',
+    cmap = discrete_viridis,
     norm = norm,zorder = 1
 )
 
