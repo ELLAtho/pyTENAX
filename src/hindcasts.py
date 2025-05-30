@@ -51,28 +51,35 @@ drive = "D"
 # censor_thr = 0.9
 
 
-country = 'Japan'
-ERA_country = 'Japan'
-country_save = 'Japan'
-code_str = 'JP_'
-minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
-name_len = 5
-min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-censor_thr = 0.9
-station_chose = "18256"
-station_chose = "12261"
+# country = 'Japan'
+# ERA_country = 'Japan'
+# country_save = 'Japan'
+# code_str = 'JP_'
+# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+# name_len = 5
+# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+# censor_thr = 0.9
+# station_chose = "18256"
+# station_chose = "12261"
 station_chose = "19376"
 
-# country = 'US' 
-# ERA_country = 'US'
-# country_save = 'US_main'
-# code_str = 'US_'
-# minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
+country = 'US' 
+ERA_country = 'US'
+country_save = 'US_main'
+code_str = 'US_'
+minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
+name_len = 6
+min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+censor_thr = 0.9
+
+# country = 'UK' 
+# ERA_country = 'UK'
+# country_save = 'UK'
+# code_str = 'UK_'
+# minlat,minlon,maxlat,maxlon = 49, -9.0, 62, 3
 # name_len = 6
 # min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
 # censor_thr = 0.9
-
-
 
 name_col = 'ppt' 
 temp_name_col = "t2m"
@@ -161,30 +168,30 @@ else:
 
 
 
-save_name = f"{drive}:/outputs/{country_save}\\return_levels.csv"
+# save_name = f"{drive}:/outputs/{country_save}\\return_levels.csv"
 
-RL_df = pd.read_csv(save_name, dtype={'station': str})
-nan_locs = RL_df.return_levels[RL_df.return_levels.isna()].index
-replace_range = np.arange(0,len(RL_df))
+# RL_df = pd.read_csv(save_name, dtype={'station': str})
+# nan_locs = RL_df.return_levels[RL_df.return_levels.isna()].index
+# replace_range = np.arange(0,len(RL_df))
 
-RL_column_names = [col for col in RL_df.columns if "return_levels" in col]
+# RL_column_names = [col for col in RL_df.columns if "return_levels" in col]
 
 
-for col in RL_column_names:
-    nan_locs = RL_df[col][RL_df[col].isna()].index
-    replace_range = np.arange(0,len(RL_df))
-    for k in range(len(nan_locs)):
-        replace_range = np.delete(replace_range, np.where(replace_range == nan_locs[k]))
-    for j in replace_range:
+# for col in RL_column_names:
+#     nan_locs = RL_df[col][RL_df[col].isna()].index
+#     replace_range = np.arange(0,len(RL_df))
+#     for k in range(len(nan_locs)):
+#         replace_range = np.delete(replace_range, np.where(replace_range == nan_locs[k]))
+#     for j in replace_range:
     
-        RL_df.loc[j, col] = np.fromstring(RL_df[col].iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'), sep=' ')
+#         RL_df.loc[j, col] = np.fromstring(RL_df[col].iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'), sep=' ')
         
-nan_locs = RL_df.obs_AMS[RL_df.obs_AMS.isna()].index
-replace_range = np.arange(0,len(RL_df))
-for k in range(len(nan_locs)):
-    replace_range = np.delete(replace_range, np.where(replace_range == nan_locs[k]))
-for j in replace_range:
-    RL_df.loc[j, "obs_AMS"] = np.fromstring(RL_df.obs_AMS.iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'), sep=' ')
+# nan_locs = RL_df.obs_AMS[RL_df.obs_AMS.isna()].index
+# replace_range = np.arange(0,len(RL_df))
+# for k in range(len(nan_locs)):
+#     replace_range = np.delete(replace_range, np.where(replace_range == nan_locs[k]))
+# for j in replace_range:
+#     RL_df.loc[j, "obs_AMS"] = np.fromstring(RL_df.obs_AMS.iloc[j].replace('\n', ' ').strip().replace('  ', ' ').strip().strip('[]'), sep=' ')
 
 
 
@@ -518,128 +525,230 @@ for vari in variables:
     cb.set_label('p-value', fontsize=14)
     cb.ax.tick_params(labelsize=12)
     plt.tight_layout()
+    plt.suptitle(f"{country_save}")
     plt.show()
 
 
 fig = plt.figure(figsize = (12,7))
 ax1 = fig.add_subplot(1,2,1)
-plt.hist(hindcast_Fphat.pvals.dropna(),density = True)
-plt.ylim(0,6)
+plt.hist(hindcast_Fphat.pvals.dropna(),density = True,bins = 20)
+plt.ylim(0,7)
 plt.xlabel("p value")
 plt.title("b=free")
 
 
 ax2 = fig.add_subplot(1,2,2)
-plt.hist(hindcast_Fphat.pvals_0.dropna(),density = True)
-plt.ylim(0,6)
+plt.hist(hindcast_Fphat.pvals_0.dropna(),density = True,bins = 20)
+plt.ylim(0,7)
 plt.xlabel("p value")
 plt.title("b=0")
+plt.suptitle(f"{country_save}")
 plt.show()
+
+
+
+#plot maps
+s = 3
+fontsize = 12
+
+fig = plt.figure(figsize=(8, 18))
+proj = ccrs.PlateCarree()
+ax1 = fig.add_subplot(3, 1, 1, projection=proj)
+
+# Add map features
+ax1.coastlines(zorder = 2)
+ax1.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc = ax1.scatter( #plot the negligable at 5% lvl points
+    new_df.longitude,
+    new_df.latitude,
+    c = hindcast_Fphat.pvals,
+    s = s,
+    cmap = 'viridis',
+    norm = norm,zorder = 1
+)
+
+
+gl = ax1.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': fontsize-2}
+gl.ylabel_style = {'size': fontsize-2}
+plt.title(f'{country_save} p value, b = free', fontsize=16)
+
+
+ax2 = fig.add_subplot(3, 1, 2, projection=proj)
+ax2.coastlines(zorder = 2)
+ax2.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc = ax2.scatter( #plot the negligable at 5% lvl points
+    new_df.longitude,
+    new_df.latitude,
+    c = hindcast_Fphat.pvals_0,
+    s = s,
+    cmap = 'viridis',
+    norm = norm,zorder = 1
+)
+
+
+gl = ax2.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': fontsize-2}
+gl.ylabel_style = {'size': fontsize-2}
+
+
+# Add a colorbar at the bottom
+cb = plt.colorbar(sc, orientation='horizontal', pad=0.15)
+cb.set_label('p value', fontsize=14)  
+cb.ax.tick_params(labelsize=12)
+
+plt.title(f'{country_save} p value, b = 0', fontsize=16)
+
+ax3 = fig.add_subplot(3, 1, 3, projection=proj)
+ax3.coastlines(zorder = 2)
+ax3.add_feature(cfeature.BORDERS, linestyle=':')
+
+norm = mcolors.Normalize(vmin=-1, vmax=1)
+sc = ax3.scatter( #plot the negligable at 5% lvl points
+    new_df.longitude,
+    new_df.latitude,
+    c = hindcast_Fphat.pvals_0 - hindcast_Fphat.pvals,
+    s = s,
+    cmap = 'seismic',
+    norm = norm,zorder = 1
+)
+
+
+gl = ax3.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': fontsize-2}
+gl.ylabel_style = {'size': fontsize-2}
+
+# Add a colorbar at the bottom
+cb = plt.colorbar(sc, orientation='horizontal', pad=0.15)
+cb.set_label('delta p value', fontsize=14)  
+cb.ax.tick_params(labelsize=12)
+
+plt.title('p_0 - p_free', fontsize=16)
+
+plt.show()
+
+
 
 
 # cutting out shorter years
+min_years_strong = 30
 
-hindcast_Fphat_short = hindcast_Fphat[val_info.cleaned_years>=30]
-
-norm = mcolors.Normalize(vmin=0, vmax=1)
-cmap = 'Blues'
-# plot comparisons of the two period F_phat values
-variables = ["kappa","b","lambda","a"]
-for vari in variables:  
-    [slope,intc] = np.polyfit(hindcast_Fphat_short[f"{vari}1"],hindcast_Fphat_short[f"{vari}2"],1)
-    if vari != "b":    
-        [slope_0,intc_0] = np.polyfit(hindcast_Fphat_short[f"{vari}1_0"],hindcast_Fphat_short[f"{vari}2_0"],1)
-    
-    x = np.arange(np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1,(np.max(hindcast_Fphat_short[f"{vari}1"])*1.1 - np.min(hindcast_Fphat_short[f"{vari}1"]))/10)
-    y = intc + slope * x
-    
-    if vari != "b":    
-        y_0 = intc_0 + slope_0 * x
+if min_years_strong < np.max(val_info.cleaned_years):
+    hindcast_Fphat_short = hindcast_Fphat[val_info.cleaned_years>=min_years_strong]
     
     
+    norm = mcolors.Normalize(vmin=0, vmax=1)
+    cmap = 'Blues'
+    # plot comparisons of the two period F_phat values
+    variables = ["kappa","b","lambda","a"]
+    for vari in variables:  
+        [slope,intc] = np.polyfit(hindcast_Fphat_short[f"{vari}1"].dropna(),hindcast_Fphat_short[f"{vari}2"].dropna(),1)
+        if vari != "b":    
+            [slope_0,intc_0] = np.polyfit(hindcast_Fphat_short[f"{vari}1_0"].dropna(),hindcast_Fphat_short[f"{vari}2_0"].dropna(),1)
+        
+        x = np.arange(np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1,(np.max(hindcast_Fphat_short[f"{vari}1"])*1.1 - np.min(hindcast_Fphat_short[f"{vari}1"]))/10)
+        y = intc + slope * x
+        
+        if vari != "b":    
+            y_0 = intc_0 + slope_0 * x
+        
+        
+        
+        fig = plt.figure(figsize = (10,5))
+        ax1 = fig.add_subplot(1,2,1)
+        sc = ax1.scatter(hindcast_Fphat_short[f"{vari}1"],hindcast_Fphat_short[f"{vari}2"],
+                    s=3,c = hindcast_Fphat_short.pvals,
+                    norm = norm, cmap = cmap)
+        
+        ax1.plot([np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],[np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],label = "line of equality")
+        ax1.plot(x,y,label = "best fit")
+        ax1.set_xlabel(f"{vari}1")
+        ax1.set_ylabel(f"{vari}2")
+        ax1.set_title("free b")
+        plt.legend()
+        
+        ax2 = fig.add_subplot(1,2,2)
+        sc = ax2.scatter(hindcast_Fphat_short[f"{vari}1_0"],hindcast_Fphat_short[f"{vari}2_0"],
+                    s=3,c = hindcast_Fphat_short.pvals,
+                    norm = norm, cmap = cmap)
+        ax2.plot([np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],[np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],label = "line of equality")
+        
+        if vari != "b":    
+            ax2.plot(x,y_0,label = "best fit")
+        ax2.set_xlabel(f"{vari}1_0")
+        ax2.set_ylabel(f"{vari}2_0")
+        ax2.set_title("b = 0")
+        
+        
+        cbar_ax = fig.add_subplot([0.15, -0.02, 0.7, 0.03])  # Position for the colorbar
+        cb = plt.colorbar(sc, cax=cbar_ax, orientation='horizontal')
+        cb.set_label('p-value', fontsize=14)
+        cb.ax.tick_params(labelsize=12)
+        plt.tight_layout()
+        plt.suptitle(f"{country_save}")
+        plt.show()
     
-    fig = plt.figure(figsize = (10,5))
+    
+    
+    fig = plt.figure(figsize = (12,7))
     ax1 = fig.add_subplot(1,2,1)
-    sc = ax1.scatter(hindcast_Fphat_short[f"{vari}1"],hindcast_Fphat_short[f"{vari}2"],
-                s=3,c = hindcast_Fphat_short.pvals,
-                norm = norm, cmap = cmap)
+    plt.hist(hindcast_Fphat_short.pvals.dropna(),density = True,bins = 20)
+    plt.ylim(0,7)
+    plt.xlabel("p value")
+    plt.title("b=free 30 yrs plus")
     
-    ax1.plot([np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],[np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],label = "line of equality")
-    ax1.plot(x,y,label = "best fit")
-    ax1.set_xlabel(f"{vari}1")
-    ax1.set_ylabel(f"{vari}2")
-    ax1.set_title("free b")
-    plt.legend()
     
     ax2 = fig.add_subplot(1,2,2)
-    sc = ax2.scatter(hindcast_Fphat_short[f"{vari}1_0"],hindcast_Fphat_short[f"{vari}2_0"],
-                s=3,c = hindcast_Fphat_short.pvals,
-                norm = norm, cmap = cmap)
-    ax2.plot([np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],[np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],label = "line of equality")
-    
-    if vari != "b":    
-        ax2.plot(x,y_0,label = "best fit")
-    ax2.set_xlabel(f"{vari}1_0")
-    ax2.set_ylabel(f"{vari}2_0")
-    ax2.set_title("b = 0")
-    
-    
-    cbar_ax = fig.add_subplot([0.15, -0.02, 0.7, 0.03])  # Position for the colorbar
-    cb = plt.colorbar(sc, cax=cbar_ax, orientation='horizontal')
-    cb.set_label('p-value', fontsize=14)
-    cb.ax.tick_params(labelsize=12)
-    plt.tight_layout()
+    plt.hist(hindcast_Fphat_short.pvals_0.dropna(),density = True,bins = 20)
+    plt.ylim(0,7)
+    plt.xlabel("p value")
+    plt.title("b=0 30 yrs plus")
+    plt.suptitle(f"{country_save}")
     plt.show()
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    perc_different5_0 = len(hindcast_Fphat[hindcast_Fphat.pvals_0<0.05])/len(hindcast_Fphat)
+    perc_different10_0 = len(hindcast_Fphat[hindcast_Fphat.pvals_0<0.1])/len(hindcast_Fphat)
+    
+    
+    perc_different5 = len(hindcast_Fphat[hindcast_Fphat.pvals<0.05])/len(hindcast_Fphat)
+    perc_different10 = len(hindcast_Fphat[hindcast_Fphat.pvals<0.1])/len(hindcast_Fphat)
+    
+    print(f"b = 0: percentage of stations where F_phat different in {country} at 5% level: {perc_different5_0 *100:.1f}%")
+    print(f"b = free: percentage of stations where F_phat different in {country} at 5% level: {perc_different5 *100:.1f}%")
+    
+    
+    print(f"b = 0: percentage of stations where F_phat different in {country} at 10% level: {perc_different10_0 *100:.1f}%")
+    print(f"b = free: percentage of stations where F_phat different in {country} at 10% level: {perc_different10 *100:.1f}%")
+    
+    
+    
+    delta_mu = hindcast_gphat.mu2 - hindcast_gphat.mu1
 
-
-
-fig = plt.figure(figsize = (12,7))
-ax1 = fig.add_subplot(1,2,1)
-plt.hist(hindcast_Fphat_short.pvals.dropna(),density = True,bins = 20)
-plt.ylim(0,12)
-plt.xlabel("p value")
-plt.title("b=free 30 yrs plus")
-
-
-ax2 = fig.add_subplot(1,2,2)
-plt.hist(hindcast_Fphat_short.pvals_0.dropna(),density = True,bins = 20)
-plt.ylim(0,12)
-plt.xlabel("p value")
-plt.title("b=0 30 yrs plus")
-plt.show()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-perc_different5_0 = len(hindcast_Fphat[hindcast_Fphat.pvals_0<0.05])/len(hindcast_Fphat)
-perc_different10_0 = len(hindcast_Fphat[hindcast_Fphat.pvals_0<0.1])/len(hindcast_Fphat)
-
-
-perc_different5 = len(hindcast_Fphat[hindcast_Fphat.pvals<0.05])/len(hindcast_Fphat)
-perc_different10 = len(hindcast_Fphat[hindcast_Fphat.pvals<0.1])/len(hindcast_Fphat)
-
-print(f"b = 0: percentage of stations where F_phat different in {country} at 5% level: {perc_different5_0 *100:.1f}%")
-print(f"b = free: percentage of stations where F_phat different in {country} at 5% level: {perc_different5 *100:.1f}%")
-
-
-print(f"b = 0: percentage of stations where F_phat different in {country} at 10% level: {perc_different10_0 *100:.1f}%")
-print(f"b = free: percentage of stations where F_phat different in {country} at 10% level: {perc_different10 *100:.1f}%")
-
-
-
-delta_mu = hindcast_gphat.mu2 - hindcast_gphat.mu1
-
-
+else:
+    print("there isn't any data that long")
 
 
 
