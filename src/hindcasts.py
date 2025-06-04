@@ -19,6 +19,7 @@ import numpy as np
 import pandas as pd
 from scipy.stats import gaussian_kde
 from scipy.stats import chi2
+from scipy import odr
 
 import datetime as dt
 import glob
@@ -43,24 +44,24 @@ from matplotlib.patches import Patch
 
 drive = "D"
 
-# country = 'Germany' 
-# ERA_country = 'Germany'
-# country_save = 'Germany'
-# code_str = 'DE_'
-# minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
-# name_len = 5
-# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-# censor_thr = 0.9
-
-
-country = 'Japan'
-ERA_country = 'Japan'
-country_save = 'Japan'
-code_str = 'JP_'
-minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+country = 'Germany' 
+ERA_country = 'Germany'
+country_save = 'Germany'
+code_str = 'DE_'
+minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
 name_len = 5
 min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 censor_thr = 0.9
+
+
+# country = 'Japan'
+# ERA_country = 'Japan'
+# country_save = 'Japan'
+# code_str = 'JP_'
+# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+# name_len = 5
+# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+# censor_thr = 0.9
 # station_chose = "18256"
 # station_chose = "12261"
 station_chose = "19376"
@@ -487,15 +488,21 @@ for vari in variables:
     df_small = hindcast_Fphat[[f"{vari}1",f"{vari}2",f"{vari}1_0",f"{vari}2_0"]]
     corr_table = df_small.corr()
     
-    [slope,intc] = np.polyfit(hindcast_Fphat[f"{vari}1"].dropna(),hindcast_Fphat[f"{vari}2"].dropna(),1)
-    if vari != "b":    
-        [slope_0,intc_0] = np.polyfit(hindcast_Fphat[f"{vari}1_0"].dropna(),hindcast_Fphat[f"{vari}2_0"].dropna(),1)
     
-    x = np.arange(np.min(hindcast_Fphat[f"{vari}1"]),np.max(hindcast_Fphat[f"{vari}1"])*1.1,(np.max(hindcast_Fphat[f"{vari}1"])*1.1 - np.min(hindcast_Fphat[f"{vari}1"]))/10)
-    y = intc + slope * x
+    poly_model = odr.polynomial(1)  # using first order polynomial model
+    data = odr.Data(hindcast_Fphat[f"{vari}1"].dropna(),hindcast_Fphat[f"{vari}2"].dropna())
+    odr_obj = odr.ODR(data, poly_model)
+    output = odr_obj.run()  # running ODR fitting
+    poly = np.poly1d(output.beta[::-1])
+    poly_y = poly(hindcast_Fphat[f"{vari}1"].dropna())
+    
     
     if vari != "b":    
-        y_0 = intc_0 + slope_0 * x
+        data = odr.Data(hindcast_Fphat[f"{vari}1_0"].dropna(),hindcast_Fphat[f"{vari}2_0"].dropna())
+        odr_obj = odr.ODR(data, poly_model)
+        output = odr_obj.run()  # running ODR fitting
+        poly = np.poly1d(output.beta[::-1])
+        poly_y_0 = poly(hindcast_Fphat[f"{vari}1_0"].dropna())
     
     
     
@@ -505,8 +512,8 @@ for vari in variables:
                 s=3,c = hindcast_Fphat.pvals,
                 norm = norm, cmap = cmap)#, marker = "*" if val_info.cleaned_years>=30 else ".")
     
-    ax1.plot([np.min(hindcast_Fphat[f"{vari}1"]),np.max(hindcast_Fphat[f"{vari}1"])*1.1],[np.min(hindcast_Fphat[f"{vari}1"]),np.max(hindcast_Fphat[f"{vari}1"])*1.1],label = "line of equality")
-    ax1.plot(x,y,label = "best fit")
+    ax1.plot([np.min(hindcast_Fphat[f"{vari}1"]),np.max(hindcast_Fphat[f"{vari}1"])*1.1],[np.min(hindcast_Fphat[f"{vari}1"]),np.max(hindcast_Fphat[f"{vari}1"])*1.1],label = "line of equality",linestyle = "--")
+    ax1.plot(hindcast_Fphat[f"{vari}1"].dropna(),poly_y,label = "best fit",color = "r")
     ax1.set_xlabel(f"{vari}1")
     ax1.set_ylabel(f"{vari}2")
     ax1.set_title(f"free b. corr = {corr_table[f"{vari}1"][f"{vari}2"]:.2f}")
@@ -516,10 +523,10 @@ for vari in variables:
     sc = ax2.scatter(hindcast_Fphat[f"{vari}1_0"],hindcast_Fphat[f"{vari}2_0"],
                 s=3,c = hindcast_Fphat.pvals,
                 norm = norm, cmap = cmap)
-    ax2.plot([np.min(hindcast_Fphat[f"{vari}1"]),np.max(hindcast_Fphat[f"{vari}1"])*1.1],[np.min(hindcast_Fphat[f"{vari}1"]),np.max(hindcast_Fphat[f"{vari}1"])*1.1],label = "line of equality")
+    ax2.plot([np.min(hindcast_Fphat[f"{vari}1"]),np.max(hindcast_Fphat[f"{vari}1"])*1.1],[np.min(hindcast_Fphat[f"{vari}1"]),np.max(hindcast_Fphat[f"{vari}1"])*1.1],label = "line of equality",linestyle = "--")
     
     if vari != "b":    
-        ax2.plot(x,y_0,label = "best fit")
+        ax2.plot(hindcast_Fphat[f"{vari}1_0"].dropna(),poly_y_0,label = "best fit",color = "r")
     ax2.set_xlabel(f"{vari}1_0")
     ax2.set_ylabel(f"{vari}2_0")
     ax2.set_title(f"b = 0. corr = {corr_table[f"{vari}1_0"][f"{vari}2_0"]:.2f}")
@@ -790,17 +797,20 @@ if min_years_strong < np.max(val_info.cleaned_years):
         df_small = hindcast_Fphat_short[[f"{vari}1",f"{vari}2",f"{vari}1_0",f"{vari}2_0"]]
         corr_table = df_small.corr()
         
+        poly_model = odr.polynomial(1)  # using first order polynomial model
+        data = odr.Data(hindcast_Fphat_short[f"{vari}1"].dropna(),hindcast_Fphat_short[f"{vari}2"].dropna())
+        odr_obj = odr.ODR(data, poly_model)
+        output = odr_obj.run()  # running ODR fitting
+        poly = np.poly1d(output.beta[::-1])
+        poly_y = poly(hindcast_Fphat_short[f"{vari}1"].dropna())
         
         
-        [slope,intc] = np.polyfit(hindcast_Fphat_short[f"{vari}1"].dropna(),hindcast_Fphat_short[f"{vari}2"].dropna(),1)
         if vari != "b":    
-            [slope_0,intc_0] = np.polyfit(hindcast_Fphat_short[f"{vari}1_0"].dropna(),hindcast_Fphat_short[f"{vari}2_0"].dropna(),1)
-        
-        x = np.arange(np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1,(np.max(hindcast_Fphat_short[f"{vari}1"])*1.1 - np.min(hindcast_Fphat_short[f"{vari}1"]))/10)
-        y = intc + slope * x
-        
-        if vari != "b":    
-            y_0 = intc_0 + slope_0 * x
+            data = odr.Data(hindcast_Fphat_short[f"{vari}1_0"].dropna(),hindcast_Fphat_short[f"{vari}2_0"].dropna())
+            odr_obj = odr.ODR(data, poly_model)
+            output = odr_obj.run()  # running ODR fitting
+            poly = np.poly1d(output.beta[::-1])
+            poly_y_0 = poly(hindcast_Fphat_short[f"{vari}1_0"].dropna())
         
         
         
@@ -810,8 +820,8 @@ if min_years_strong < np.max(val_info.cleaned_years):
                     s=3,c = hindcast_Fphat_short.pvals,
                     norm = norm, cmap = cmap)
         
-        ax1.plot([np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],[np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],label = "line of equality")
-        ax1.plot(x,y,label = "best fit")
+        ax1.plot([np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],[np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],label = "line of equality",linestyle = "--")
+        ax1.plot(hindcast_Fphat_short[f"{vari}1"].dropna(),poly_y,label = "best fit",color = "r")
         ax1.set_xlabel(f"{vari}1")
         ax1.set_ylabel(f"{vari}2")
         ax1.set_title(f"free b. corr = {corr_table[f"{vari}1"][f"{vari}2"]:.2f}")
@@ -821,10 +831,11 @@ if min_years_strong < np.max(val_info.cleaned_years):
         sc = ax2.scatter(hindcast_Fphat_short[f"{vari}1_0"],hindcast_Fphat_short[f"{vari}2_0"],
                     s=3,c = hindcast_Fphat_short.pvals,
                     norm = norm, cmap = cmap)
-        ax2.plot([np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],[np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],label = "line of equality")
+        ax2.plot([np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],[np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],label = "line of equality",linestyle = "--")
         
         if vari != "b":    
-            ax2.plot(x,y_0,label = "best fit")
+            ax2.plot(hindcast_Fphat_short[f"{vari}1_0"].dropna(),poly_y_0,label = "best fit",color = "r")
+            
         ax2.set_xlabel(f"{vari}1_0")
         ax2.set_ylabel(f"{vari}2_0")
         ax2.set_title(f"b = 0. corr = {corr_table[f"{vari}1_0"][f"{vari}2_0"]:.2f}")
