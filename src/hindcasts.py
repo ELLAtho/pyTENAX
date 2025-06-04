@@ -39,6 +39,7 @@ import matplotlib.patches as patches
 from scipy.stats import kendalltau, pearsonr, spearmanr
 from scipy.interpolate import interp1d
 from matplotlib import cm
+from matplotlib.patches import Patch
 
 drive = "D"
 
@@ -52,14 +53,14 @@ drive = "D"
 # censor_thr = 0.9
 
 
-# country = 'Japan'
-# ERA_country = 'Japan'
-# country_save = 'Japan'
-# code_str = 'JP_'
-# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
-# name_len = 5
-# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-# censor_thr = 0.9
+country = 'Japan'
+ERA_country = 'Japan'
+country_save = 'Japan'
+code_str = 'JP_'
+minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+name_len = 5
+min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+censor_thr = 0.9
 # station_chose = "18256"
 # station_chose = "12261"
 station_chose = "19376"
@@ -72,15 +73,15 @@ station_chose = "19376"
 # name_len = 6
 # min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
 # censor_thr = 0.9
-
-country = 'UK' 
-ERA_country = 'UK'
-country_save = 'UK'
-code_str = 'UK_'
-minlat,minlon,maxlat,maxlon = 49, -9.0, 62, 3
-name_len = 6
-min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
-censor_thr = 0.9
+# 
+# country = 'UK' 
+# ERA_country = 'UK'
+# country_save = 'UK'
+# code_str = 'UK_'
+# minlat,minlon,maxlat,maxlon = 49, -9.0, 62, 3
+# name_len = 6
+# min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+# censor_thr = 0.9
 
 name_col = 'ppt' 
 temp_name_col = "t2m"
@@ -479,7 +480,7 @@ else:
 val_info.index = range(len(val_info))
 
 norm = mcolors.Normalize(vmin=0, vmax=1)
-cmap = 'Blues'
+cmap = 'plasma'
 # plot comparisons of the two period F_phat values
 variables = ["kappa","b","lambda","a"]
 for vari in variables:  
@@ -561,7 +562,7 @@ discrete_viridis = ListedColormap(color_list, name = "viridis")
 s = 3
 fontsize = 12
 
-fig = plt.figure(figsize=(8, 18))
+fig = plt.figure(figsize=(8, 22))
 proj = ccrs.PlateCarree()
 ax1 = fig.add_subplot(3, 1, 1, projection=proj)
 
@@ -652,21 +653,145 @@ plt.title('p_0 - p_free', fontsize=16)
 
 plt.show()
 
+# make list of significance
+significance = 0.05
+sig_list = hindcast_Fphat.pvals > significance #True/1 = insignificant
+sig_list_0 = hindcast_Fphat.pvals_0 > significance
+
+hindcast_Fphat["sig"] = sig_list.replace({True: 1, False: 0})
+hindcast_Fphat["sig_0"] = sig_list_0.replace({True: 1, False: 0})
+
+changes_pvals = hindcast_Fphat.sig + hindcast_Fphat.sig_0*2 # 0 means both sig, 1 means free insig but 0 sig, 2 means free sig then 0 insig, 3 means both insig
+
+
+# plot map showing sig vs not sig
+
+norm = mcolors.Normalize(vmin=0, vmax=1)
+s = 3
+fontsize = 12
+
+fig = plt.figure(figsize=(10, 18))
+proj = ccrs.PlateCarree()
+ax1 = fig.add_subplot(3, 1, 1, projection=proj)
+
+# Add map features
+ax1.coastlines(zorder = 2)
+ax1.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc = ax1.scatter( #plot the negligable at 5% lvl points
+    new_df.longitude,
+    new_df.latitude,
+    c = sig_list,
+    s = s,
+    cmap = discrete_viridis,
+    norm = norm,zorder = 1
+)
+
+
+gl = ax1.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': fontsize-2}
+gl.ylabel_style = {'size': fontsize-2}
+
+
+legend_elements = [
+    Patch(facecolor=base_cmap(1.0), label=f'insignificant at {significance*100}%'),  # default matplotlib colors
+    Patch(facecolor=base_cmap(0), label=f'significant at {significance*100}%'),
+]
+
+plt.legend(handles=legend_elements)
+
+
+
+plt.title(f'{country_save} p value, b = free', fontsize=16)
+
+
+ax2 = fig.add_subplot(3, 1, 2, projection=proj)
+ax2.coastlines(zorder = 2)
+ax2.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc = ax2.scatter( #plot the negligable at 5% lvl points
+    new_df.longitude,
+    new_df.latitude,
+    c = sig_list_0,
+    s = s,
+    cmap = discrete_viridis,
+    norm = norm,zorder = 1
+)
+
+
+gl = ax2.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': fontsize-2}
+gl.ylabel_style = {'size': fontsize-2}
+
+
+plt.legend(handles=legend_elements)
+
+plt.title(f'{country_save} p value, b = 0', fontsize=16)
+
+
+
+base_cmap = plt.cm.get_cmap("rainbow") #new cmap for ax3
+
+ax3 = fig.add_subplot(3, 1, 3, projection=proj)
+ax3.coastlines(zorder = 2)
+ax3.add_feature(cfeature.BORDERS, linestyle=':')
+
+norm = mcolors.Normalize(vmin=0, vmax=3)
+sc = ax3.scatter( #plot the negligable at 5% lvl points
+    new_df.longitude,
+    new_df.latitude,
+    c = changes_pvals,
+    s = s,
+    cmap = 'rainbow',
+    norm = norm,zorder = 1
+)
+
+
+gl = ax3.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': fontsize-2}
+gl.ylabel_style = {'size': fontsize-2}
+
+
+legend_elements = [
+    Patch(facecolor=base_cmap(0), label=f'both significant at {significance*100}% ({np.sum(changes_pvals==0)*100/len(changes_pvals):.0f}% stations)'),  # default matplotlib colors
+    Patch(facecolor=base_cmap(1/3), label=f'free insignificant, 0 significant ({np.sum(changes_pvals==1)*100/len(changes_pvals):.0f}% stations)'),
+    Patch(facecolor=base_cmap(2/3), label=f'free significant, 0 insignificant ({np.sum(changes_pvals==2)*100/len(changes_pvals):.0f}% stations)'),
+    Patch(facecolor=base_cmap(1.0), label=f'both insignificant ({np.sum(changes_pvals==3)*100/len(changes_pvals):.0f}% stations)'),
+]
+
+plt.legend(handles=legend_elements)
+
+plt.title('changes in significance', fontsize=16)
+
+plt.show()
 
 
 
 # cutting out shorter years
-min_years_strong = 30
+min_years_strong = 20
 
 if min_years_strong < np.max(val_info.cleaned_years):
     hindcast_Fphat_short = hindcast_Fphat[val_info.cleaned_years>=min_years_strong]
-    
+    new_df_short = new_df[val_info.cleaned_years>=min_years_strong]
     
     norm = mcolors.Normalize(vmin=0, vmax=1)
-    cmap = 'Blues'
+    cmap = 'plasma'
     # plot comparisons of the two period F_phat values
     variables = ["kappa","b","lambda","a"]
-    for vari in variables:  
+    for vari in variables: 
+        df_small = hindcast_Fphat_short[[f"{vari}1",f"{vari}2",f"{vari}1_0",f"{vari}2_0"]]
+        corr_table = df_small.corr()
+        
+        
+        
         [slope,intc] = np.polyfit(hindcast_Fphat_short[f"{vari}1"].dropna(),hindcast_Fphat_short[f"{vari}2"].dropna(),1)
         if vari != "b":    
             [slope_0,intc_0] = np.polyfit(hindcast_Fphat_short[f"{vari}1_0"].dropna(),hindcast_Fphat_short[f"{vari}2_0"].dropna(),1)
@@ -689,7 +814,7 @@ if min_years_strong < np.max(val_info.cleaned_years):
         ax1.plot(x,y,label = "best fit")
         ax1.set_xlabel(f"{vari}1")
         ax1.set_ylabel(f"{vari}2")
-        ax1.set_title("free b")
+        ax1.set_title(f"free b. corr = {corr_table[f"{vari}1"][f"{vari}2"]:.2f}")
         plt.legend()
         
         ax2 = fig.add_subplot(1,2,2)
@@ -702,7 +827,7 @@ if min_years_strong < np.max(val_info.cleaned_years):
             ax2.plot(x,y_0,label = "best fit")
         ax2.set_xlabel(f"{vari}1_0")
         ax2.set_ylabel(f"{vari}2_0")
-        ax2.set_title("b = 0")
+        ax2.set_title(f"b = 0. corr = {corr_table[f"{vari}1_0"][f"{vari}2_0"]:.2f}")
         
         
         cbar_ax = fig.add_subplot([0.15, -0.02, 0.7, 0.03])  # Position for the colorbar
@@ -710,7 +835,7 @@ if min_years_strong < np.max(val_info.cleaned_years):
         cb.set_label('p-value', fontsize=14)
         cb.ax.tick_params(labelsize=12)
         plt.tight_layout()
-        plt.suptitle(f"{country_save}")
+        plt.suptitle(f"{country_save}. longer than {min_years_strong} years")
         plt.show()
     
     
@@ -720,24 +845,241 @@ if min_years_strong < np.max(val_info.cleaned_years):
     plt.hist(hindcast_Fphat_short.pvals.dropna(),density = True,bins = 20)
     plt.ylim(0,7)
     plt.xlabel("p value")
-    plt.title("b=free 30 yrs plus")
+    plt.title(f"b=free {min_years_strong} yrs plus")
     
     
     ax2 = fig.add_subplot(1,2,2)
     plt.hist(hindcast_Fphat_short.pvals_0.dropna(),density = True,bins = 20)
     plt.ylim(0,7)
     plt.xlabel("p value")
-    plt.title("b=0 30 yrs plus")
+    plt.title(f"b=0 {min_years_strong} yrs plus")
     plt.suptitle(f"{country_save}")
     plt.show()
     
     
     
     
+    #plot maps
+    
+    base_cmap = plt.cm.get_cmap("viridis")
+    color_list = base_cmap(np.linspace(0,1,10))
+    
+    discrete_viridis = ListedColormap(color_list, name = "viridis")
+    
+    s = 3
+    fontsize = 12
+    
+    fig = plt.figure(figsize=(8, 22))
+    proj = ccrs.PlateCarree()
+    ax1 = fig.add_subplot(3, 1, 1, projection=proj)
+    
+    # Add map features
+    ax1.coastlines(zorder = 2)
+    ax1.add_feature(cfeature.BORDERS, linestyle=':')
+    
+    
+    sc = ax1.scatter( #plot the negligable at 5% lvl points
+        new_df_short.longitude,
+        new_df_short.latitude,
+        c = hindcast_Fphat_short.pvals,
+        s = s,
+        cmap = discrete_viridis,
+        norm = norm,zorder = 1
+    )
+    
+    # Add a colorbar at the bottom
+    cb = plt.colorbar(sc, orientation='horizontal', pad=0.15)
+    cb.set_label('p value', fontsize=14)  
+    cb.ax.tick_params(labelsize=12)
+    
+    
+    gl = ax1.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+    gl.top_labels = False
+    gl.right_labels = False
+    gl.xlabel_style = {'size': fontsize-2}
+    gl.ylabel_style = {'size': fontsize-2}
+    plt.title(f'{country_save} p value, b = free. more than {min_years_strong} years', fontsize=16)
+    
+    
+    ax2 = fig.add_subplot(3, 1, 2, projection=proj)
+    ax2.coastlines(zorder = 2)
+    ax2.add_feature(cfeature.BORDERS, linestyle=':')
+    
+    
+    sc = ax2.scatter( #plot the negligable at 5% lvl points
+        new_df_short.longitude,
+        new_df_short.latitude,
+        c = hindcast_Fphat_short.pvals_0,
+        s = s,
+        cmap = discrete_viridis,
+        norm = norm,zorder = 1
+    )
+    
+    
+    gl = ax2.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+    gl.top_labels = False
+    gl.right_labels = False
+    gl.xlabel_style = {'size': fontsize-2}
+    gl.ylabel_style = {'size': fontsize-2}
+    
+    
+    # Add a colorbar at the bottom
+    cb = plt.colorbar(sc, orientation='horizontal', pad=0.15)
+    cb.set_label('p value', fontsize=14)  
+    cb.ax.tick_params(labelsize=12)
+    
+    plt.title(f'{country_save} p value, b = 0', fontsize=16)
+    
+    ax3 = fig.add_subplot(3, 1, 3, projection=proj)
+    ax3.coastlines(zorder = 2)
+    ax3.add_feature(cfeature.BORDERS, linestyle=':')
+    
+    norm = mcolors.Normalize(vmin=-1, vmax=1)
+    sc = ax3.scatter( #plot the negligable at 5% lvl points
+        new_df_short.longitude,
+        new_df_short.latitude,
+        c = hindcast_Fphat_short.pvals_0 - hindcast_Fphat_short.pvals,
+        s = s,
+        cmap = 'seismic',
+        norm = norm,zorder = 1
+    )
+    
+    
+    gl = ax3.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+    gl.top_labels = False
+    gl.right_labels = False
+    gl.xlabel_style = {'size': fontsize-2}
+    gl.ylabel_style = {'size': fontsize-2}
+    
+    # Add a colorbar at the bottom
+    cb = plt.colorbar(sc, orientation='horizontal', pad=0.15)
+    cb.set_label('delta p value', fontsize=14)  
+    cb.ax.tick_params(labelsize=12)
+    
+    plt.title('p_0 - p_free', fontsize=16)
+    
+    plt.show()
+    
+    # make list of significance
+    significance = 0.05
+    sig_list = hindcast_Fphat_short.pvals > significance #True/1 = insignificant
+    sig_list_0 = hindcast_Fphat_short.pvals_0 > significance
+    
+    hindcast_Fphat_short["sig"] = sig_list.replace({True: 1, False: 0})
+    hindcast_Fphat_short["sig_0"] = sig_list_0.replace({True: 1, False: 0})
+    
+    changes_pvals = hindcast_Fphat_short.sig + hindcast_Fphat_short.sig_0*2 # 0 means both sig, 1 means free insig but 0 sig, 2 means free sig then 0 insig, 3 means both insig
+    
+    
+    # plot map showing sig vs not sig
+    
+    norm = mcolors.Normalize(vmin=0, vmax=1)
+    s = 3
+    fontsize = 12
+    
+    fig = plt.figure(figsize=(10, 18))
+    proj = ccrs.PlateCarree()
+    ax1 = fig.add_subplot(3, 1, 1, projection=proj)
+    
+    # Add map features
+    ax1.coastlines(zorder = 2)
+    ax1.add_feature(cfeature.BORDERS, linestyle=':')
+    
+    
+    sc = ax1.scatter( #plot the negligable at 5% lvl points
+        new_df_short.longitude,
+        new_df_short.latitude,
+        c = sig_list,
+        s = s,
+        cmap = discrete_viridis,
+        norm = norm,zorder = 1
+    )
+    
+    
+    gl = ax1.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+    gl.top_labels = False
+    gl.right_labels = False
+    gl.xlabel_style = {'size': fontsize-2}
+    gl.ylabel_style = {'size': fontsize-2}
+    
+    
+    legend_elements = [
+        Patch(facecolor=base_cmap(1.0), label=f'insignificant at {significance*100}%'),  # default matplotlib colors
+        Patch(facecolor=base_cmap(0), label=f'significant at {significance*100}%'),
+    ]
+    
+    plt.legend(handles=legend_elements)
     
     
     
+    plt.title(f'{country_save} p value, b = free. more than {min_years_strong} years', fontsize=16)
     
+    
+    ax2 = fig.add_subplot(3, 1, 2, projection=proj)
+    ax2.coastlines(zorder = 2)
+    ax2.add_feature(cfeature.BORDERS, linestyle=':')
+    
+    
+    sc = ax2.scatter( #plot the negligable at 5% lvl points
+        new_df_short.longitude,
+        new_df_short.latitude,
+        c = sig_list_0,
+        s = s,
+        cmap = discrete_viridis,
+        norm = norm,zorder = 1
+    )
+    
+    
+    gl = ax2.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+    gl.top_labels = False
+    gl.right_labels = False
+    gl.xlabel_style = {'size': fontsize-2}
+    gl.ylabel_style = {'size': fontsize-2}
+    
+    
+    plt.legend(handles=legend_elements)
+    
+    plt.title(f'{country_save} p value, b = 0', fontsize=16)
+    
+    
+    
+    base_cmap = plt.cm.get_cmap("rainbow") #new cmap for ax3
+    
+    ax3 = fig.add_subplot(3, 1, 3, projection=proj)
+    ax3.coastlines(zorder = 2)
+    ax3.add_feature(cfeature.BORDERS, linestyle=':')
+    
+    norm = mcolors.Normalize(vmin=0, vmax=3)
+    sc = ax3.scatter( #plot the negligable at 5% lvl points
+        new_df_short.longitude,
+        new_df_short.latitude,
+        c = changes_pvals,
+        s = s,
+        cmap = 'rainbow',
+        norm = norm,zorder = 1
+    )
+    
+    
+    gl = ax3.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+    gl.top_labels = False
+    gl.right_labels = False
+    gl.xlabel_style = {'size': fontsize-2}
+    gl.ylabel_style = {'size': fontsize-2}
+    
+    
+    legend_elements = [
+        Patch(facecolor=base_cmap(0), label=f'both significant at {significance*100}% ({np.sum(changes_pvals==0)*100/len(changes_pvals):.0f}% stations)'),  # default matplotlib colors
+        Patch(facecolor=base_cmap(1/3), label=f'free insignificant, 0 significant ({np.sum(changes_pvals==1)*100/len(changes_pvals):.0f}% stations)'),
+        Patch(facecolor=base_cmap(2/3), label=f'free significant, 0 insignificant ({np.sum(changes_pvals==2)*100/len(changes_pvals):.0f}% stations)'),
+        Patch(facecolor=base_cmap(1.0), label=f'both insignificant ({np.sum(changes_pvals==3)*100/len(changes_pvals):.0f}% stations)'),
+    ]
+    
+    plt.legend(handles=legend_elements)
+    
+    plt.title('changes in significance', fontsize=16)
+    
+    plt.show()
+
     
     
     
@@ -764,7 +1106,20 @@ if min_years_strong < np.max(val_info.cleaned_years):
 
 else:
     print("there isn't any data that long")
-
+    perc_different5_0 = len(hindcast_Fphat[hindcast_Fphat.pvals_0<0.05])/len(hindcast_Fphat)
+    perc_different10_0 = len(hindcast_Fphat[hindcast_Fphat.pvals_0<0.1])/len(hindcast_Fphat)
+    
+    
+    perc_different5 = len(hindcast_Fphat[hindcast_Fphat.pvals<0.05])/len(hindcast_Fphat)
+    perc_different10 = len(hindcast_Fphat[hindcast_Fphat.pvals<0.1])/len(hindcast_Fphat)
+    
+    print(f"b = 0: percentage of stations where F_phat different in {country} at 5% level: {perc_different5_0 *100:.1f}%")
+    print(f"b = free: percentage of stations where F_phat different in {country} at 5% level: {perc_different5 *100:.1f}%")
+    
+    
+    print(f"b = 0: percentage of stations where F_phat different in {country} at 10% level: {perc_different10_0 *100:.1f}%")
+    print(f"b = free: percentage of stations where F_phat different in {country} at 10% level: {perc_different10 *100:.1f}%")
+    
 
 
 
