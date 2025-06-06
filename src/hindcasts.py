@@ -44,14 +44,14 @@ from matplotlib.patches import Patch
 
 drive = "D"
 
-country = 'Germany' 
-ERA_country = 'Germany'
-country_save = 'Germany'
-code_str = 'DE_'
-minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
-name_len = 5
-min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-censor_thr = 0.9
+# country = 'Germany' 
+# ERA_country = 'Germany'
+# country_save = 'Germany'
+# code_str = 'DE_'
+# minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
+# name_len = 5
+# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+# censor_thr = 0.9
 
 
 # country = 'Japan'
@@ -74,15 +74,16 @@ station_chose = "19376"
 # name_len = 6
 # min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
 # censor_thr = 0.9
-# 
-# country = 'UK' 
-# ERA_country = 'UK'
-# country_save = 'UK'
-# code_str = 'UK_'
-# minlat,minlon,maxlat,maxlon = 49, -9.0, 62, 3
-# name_len = 6
-# min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
-# censor_thr = 0.9
+
+
+country = 'UK' 
+ERA_country = 'UK'
+country_save = 'UK'
+code_str = 'UK_'
+minlat,minlon,maxlat,maxlon = 49, -9.0, 62, 3
+name_len = 6
+min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+censor_thr = 0.9
 
 name_col = 'ppt' 
 temp_name_col = "t2m"
@@ -477,6 +478,104 @@ else:
     print("Fphats already saved, loading")
     hindcast_Fphat = pd.read_csv(hindcast_savename, dtype = {"station" : str})
 
+##############################################################################
+
+#F_phat hindcast loop
+hindcast_savename_exp = f"{drive}:/outputs/{country_save}/hindcasts\\F_phat_exp.csv"
+
+hindcast_files = glob.glob(f"{drive}:/outputs/{country_save}/hindcasts\\*.csv")
+if hindcast_savename_exp not in hindcast_files:
+    
+    print(f"F_phat not calculated for two periods exponential")
+    
+    F_phats1 = [0]*len(val_info)
+    F_phats2 = [0]*len(val_info)
+    
+    
+    pvals = [0]*len(val_info)
+    
+    
+    starttime = [0]*len(val_info)
+    
+    for i in range(len(val_info)):
+        
+        starttime[i] = time.time()
+        
+        
+        station = val_info.station.iloc[i]
+        
+        oe_save = f"{drive}:/ordinary_events/{country_save}\\T_{station}.csv"
+        if oe_save not in glob.glob(f"{drive}:/ordinary_events/{country_save}/*"):
+            
+            F_phats1[i] = [np.nan,np.nan,np.nan,np.nan]
+            F_phats2[i] = [np.nan,np.nan,np.nan,np.nan]
+            
+            pvals[i] = np.nan
+    
+        else:
+            T = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/T_{station}.csv")
+            P = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/P_{station}.csv")
+            times = pd.read_csv(f"{drive}:/ordinary_events/{country_save}/time_{station}.csv",parse_dates = ["oe_time"])
+            oe_df = pd.DataFrame({"year":times.oe_time.dt.year, "P": P, "T": T,})
+            AMS = oe_df.groupby(oe_df.year).P.max()
+            thr = np.quantile(P,S.left_censoring[1])
+            
+            
+            start_time = times.iloc[0]
+            end_time = times.iloc[-1]
+            
+            midyear = np.trunc((start_time.dt.year + (end_time.dt.year - start_time.dt.year)/2).to_numpy()[0])
+            
+            
+            T1 = T[times.oe_time.dt.year <= midyear]
+            P1 = P[times.oe_time.dt.year <= midyear]
+            times1 = times[times.oe_time.dt.year <= midyear]
+            n1 = len(T1)/(midyear - start_time.dt.year + 1)
+            AMS1 = pd.DataFrame(AMS[AMS.index <= midyear]).rename(columns = {"P" : "AMS"})
+            
+            
+            T2 = T[times.oe_time.dt.year > midyear]
+            P2 = P[times.oe_time.dt.year > midyear]
+            times2 = times[times.oe_time.dt.year > midyear]
+            n2 = len(T2)/(end_time.dt.year - midyear)
+            AMS2 = pd.DataFrame(AMS[AMS.index > midyear]).rename(columns = {"P" : "AMS"})
+            
+            S.alpha = 0
+            F_phat, loglik, _, _ = S.magnitude_model(P, T, thr, b_exp = True)
+            
+            
+            F_phats1[i],loglik1,_,_ = S.magnitude_model(P1, T1, thr, b_exp = True)
+            F_phats2[i],loglik2,_,_ = S.magnitude_model(P2, T2, thr, b_exp = True)
+            
+            
+            lambda_LR = -2*( loglik - (loglik1+loglik2) )
+            pvals[i] = chi2.sf(lambda_LR, 4)
+        
+            
+            
+        
+        if i%50 == 0:
+            time_taken = (time.time()-starttime[i-9])/10
+            time_left = (len(new_df)-i)*time_taken/60
+            print(f"{i}/{len(new_df)}. Approx time left: {time_left:.0f} mins")
+    
+    hindcast_Fphat_exp = pd.DataFrame({"station" : val_info.station,
+                                   'kappa1':np.array(F_phats1)[:,0],
+                                   'b1':np.array(F_phats1)[:,1],
+                                   'lambda1':np.array(F_phats1)[:,2],
+                                   'a1':np.array(F_phats1)[:,3],
+                                   'kappa2':np.array(F_phats2)[:,0],
+                                   'b2':np.array(F_phats2)[:,1],
+                                   'lambda2':np.array(F_phats2)[:,2],
+                                   'a2':np.array(F_phats2)[:,3],
+                                   'pvals' : pvals,
+        })
+    hindcast_Fphat_exp.to_csv(hindcast_savename_exp, index = False)
+else:
+    print("Fphats already saved for exponential, loading")
+    hindcast_Fphat_exp = pd.read_csv(hindcast_savename_exp, dtype = {"station" : str})
+
+##############################################################################
 
 val_info.index = range(len(val_info))
 
@@ -504,10 +603,20 @@ for vari in variables:
         poly = np.poly1d(output.beta[::-1])
         poly_y_0 = poly(hindcast_Fphat[f"{vari}1_0"].dropna())
     
+    #exponential stuff
+    df_small_exp = hindcast_Fphat_exp[[f"{vari}1",f"{vari}2"]]
+    corr_table_exp = df_small_exp.corr()
     
     
-    fig = plt.figure(figsize = (10,5))
-    ax1 = fig.add_subplot(1,2,1)
+    data = odr.Data(hindcast_Fphat_exp[f"{vari}1"].dropna(),hindcast_Fphat_exp[f"{vari}2"].dropna())
+    odr_obj = odr.ODR(data, poly_model)
+    output = odr_obj.run()  # running ODR fitting
+    poly = np.poly1d(output.beta[::-1])
+    poly_y_exp = poly(hindcast_Fphat_exp[f"{vari}1"].dropna())
+    
+    
+    fig = plt.figure(figsize = (12,5))
+    ax1 = fig.add_subplot(1,3,1)
     sc = ax1.scatter(hindcast_Fphat[f"{vari}1"],hindcast_Fphat[f"{vari}2"],
                 s=3,c = hindcast_Fphat.pvals,
                 norm = norm, cmap = cmap)#, marker = "*" if val_info.cleaned_years>=30 else ".")
@@ -519,7 +628,7 @@ for vari in variables:
     ax1.set_title(f"free b. corr = {corr_table[f"{vari}1"][f"{vari}2"]:.2f}")
     plt.legend()
     
-    ax2 = fig.add_subplot(1,2,2)
+    ax2 = fig.add_subplot(1,3,2)
     sc = ax2.scatter(hindcast_Fphat[f"{vari}1_0"],hindcast_Fphat[f"{vari}2_0"],
                 s=3,c = hindcast_Fphat.pvals,
                 norm = norm, cmap = cmap)
@@ -532,28 +641,61 @@ for vari in variables:
     ax2.set_title(f"b = 0. corr = {corr_table[f"{vari}1_0"][f"{vari}2_0"]:.2f}")
     
     
+    ax3 = fig.add_subplot(1,3,3)
+    sc = ax3.scatter(hindcast_Fphat_exp[f"{vari}1"],hindcast_Fphat_exp[f"{vari}2"],
+                s=3,c = hindcast_Fphat_exp.pvals,
+                norm = norm, cmap = cmap)#, marker = "*" if val_info.cleaned_years>=30 else ".")
+    
+    ax3.plot([np.min(hindcast_Fphat[f"{vari}1"]),np.max(hindcast_Fphat[f"{vari}1"])*1.1],[np.min(hindcast_Fphat[f"{vari}1"]),np.max(hindcast_Fphat[f"{vari}1"])*1.1],label = "line of equality",linestyle = "--")
+    ax3.plot(hindcast_Fphat_exp[f"{vari}1"].dropna(),poly_y_exp,label = "best fit",color = "r")
+    ax3.set_xlabel(f"{vari}1")
+    ax3.set_ylabel(f"{vari}2")
+    ax3.set_title(f"free b exponential. corr = {corr_table_exp[f"{vari}1"][f"{vari}2"]:.2f}")
+    
+    
+    
+    
     cbar_ax = fig.add_subplot([0.15, -0.02, 0.7, 0.03])  # Position for the colorbar
     cb = plt.colorbar(sc, cax=cbar_ax, orientation='horizontal')
     cb.set_label('p-value', fontsize=14)
     cb.ax.tick_params(labelsize=12)
+    
+    
+    
+    
+    
     plt.tight_layout()
     plt.suptitle(f"{country_save}")
     plt.show()
 
 
-fig = plt.figure(figsize = (12,7))
-ax1 = fig.add_subplot(1,2,1)
+fig = plt.figure(figsize = (12,5))
+ax1 = fig.add_subplot(1,3,1)
 plt.hist(hindcast_Fphat.pvals.dropna(),density = True,bins = 20)
 plt.ylim(0,7)
 plt.xlabel("p value")
 plt.title("b=free")
 
 
-ax2 = fig.add_subplot(1,2,2)
+ax2 = fig.add_subplot(1,3,2)
 plt.hist(hindcast_Fphat.pvals_0.dropna(),density = True,bins = 20)
 plt.ylim(0,7)
 plt.xlabel("p value")
 plt.title("b=0")
+
+
+ax3 = fig.add_subplot(1,3,3)
+plt.hist(hindcast_Fphat_exp.pvals.dropna(),density = True,bins = 20)
+plt.ylim(0,7)
+plt.xlabel("p value")
+plt.title("b=free exponential")
+
+
+
+
+
+
+
 plt.suptitle(f"{country_save}")
 plt.show()
 
