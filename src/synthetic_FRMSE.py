@@ -34,11 +34,11 @@ from pyTENAX.globalTENAX import *
 import glob
 
 
-F_phat_typical = [ 1.1, -0.015, 1, 0.07] # basically Germany
+F_phat_typical = [ 1.1, -0.015, 1, 0.12] # basically Germany
 g_phat_typical = [10, 13] # also basically Germany
-attempt = 2 # IF YOU REPEAT WITH DIFFERENT PARAMETERS CHANGE THIS NUMBER
+attempt = 10 # IF YOU REPEAT WITH DIFFERENT PARAMETERS CHANGE THIS NUMBER
 
-n_years = 10
+n_years = 30
 n = 80. # typical number of events per year
 
 n_its = 1000
@@ -272,17 +272,17 @@ if save_name_exp not in glob.glob("D:/outputs/synthetic/*"):
         )
     RL_set_df_exp.to_csv(f"D:/outputs/synthetic/RL_set_exp{attempt}.csv", index = False)
     
-    use_df_exp = pd.DataFrame({
-        "mu": [g_phat_typical[0]],
-        "sigma": [g_phat_typical[1]],
-        'kappa': [F_phat_typical[0]],
-        'b': [F_phat_typical[1]],
-        'lambda': [F_phat_typical[2]],
-        'a': [F_phat_typical[3]],
-        'n_years': [n_years],
-        'n': [n]
-    })
-    use_df_exp.to_csv(f"D:/outputs/synthetic/parameters_set_exp{attempt}.csv", index = False)
+    # use_df_exp = pd.DataFrame({
+    #     "mu": [g_phat_typical[0]],
+    #     "sigma": [g_phat_typical[1]],
+    #     'kappa': [F_phat_typical[0]],
+    #     'b': [F_phat_typical[1]],
+    #     'lambda': [F_phat_typical[2]],
+    #     'a': [F_phat_typical[3]],
+    #     'n_years': [n_years],
+    #     'n': [n]
+    # })
+    # use_df_exp.to_csv(f"D:/outputs/synthetic/parameters_set_exp{attempt}.csv", index = False)
 else:    
     gen_F_phat_df_exp = pd.read_csv(f"D:/outputs/synthetic/gen_F_phat_exp{attempt}.csv")
     
@@ -294,7 +294,7 @@ else:
     
     RL_set_df_exp = pd.read_csv(f"D:/outputs/synthetic/RL_set_exp{attempt}.csv")
     
-    use_df_exp = pd.read_csv(f"D:/outputs/synthetic/parameters_set_exp{attempt}.csv")
+    # use_df_exp = pd.read_csv(f"D:/outputs/synthetic/parameters_set_exp{attempt}.csv")
     
 #calculate specific RLs and compare to expected from given F_phat etc.
   

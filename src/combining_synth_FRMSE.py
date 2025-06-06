@@ -348,7 +348,14 @@ for i in range(len(synth_RL)):
     plt.show()
     
     
+    
+ 
+#set colors of boxes
+colors = ["r","y","b"]*4
 ret_lvls = ["10","20","50","100"]
+
+
+
 # plot the fractionals all together in a different layout
 fig = plt.figure(figsize=(12,12))
 for i in range(3):
@@ -365,8 +372,6 @@ for i in range(3):
                           whis = [5,95])
     ax.grid(axis = "y")
     
-    #set colors of boxes
-    colors = ["r","g","b","r","g","b","r","g","b","r","g","b",]
     alpha = [1,0.6,0.3]
     for n_patch in range(len(box_plot['boxes'])):
         patch = box_plot['boxes'][n_patch]
@@ -391,15 +396,16 @@ for i in range(3):
     ax.set_xlabel("Return period (years)")
     ax.set_ylabel("gen_RL/RL")
 
+
 legend_elements = [
-    Patch(facecolor='r', label='Free'),  # default matplotlib colors
-    Patch(facecolor='g', label='Set'),
-    Patch(facecolor='b', label='b = 0, 30 years'),
-    Patch(facecolor='b', alpha = 0.6, label='b = 0, 20 years'),
-    Patch(facecolor='b', alpha = 0.3, label='b = 0, 10 years'),
+    Patch(facecolor=colors[0], label='Free'),  # default matplotlib colors
+    Patch(facecolor=colors[1], label='Set'),
+    Patch(facecolor=colors[2], label='b = 0, 30 years'),
+    Patch(facecolor=colors[2], alpha = 0.6, label='b = 0, 20 years'),
+    Patch(facecolor=colors[2], alpha = 0.3, label='b = 0, 10 years'),
     plt.Line2D([0], [0], color='k', label='median'),
     plt.Line2D([0], [0], color='k', linestyle = ":", label='mean') 
-]    
+]  
 
 plt.legend(handles=legend_elements)
 
@@ -419,7 +425,7 @@ for i in range(3):
     plt.grid(axis = "y")
     
     #set colors of boxes
-    colors = ["r","g","b","r","g","b","r","g","b","r","g","b",]
+    
     alpha = [1,0.6,0.3]
     for n_patch in range(len(box_plot['boxes'])):
         patch = box_plot['boxes'][n_patch]
@@ -447,14 +453,14 @@ for i in range(3):
     plt.xlabel("Return period (years)")
 
 legend_elements = [
-    Patch(facecolor='r', label='Free'),  # default matplotlib colors
-    Patch(facecolor='g', label='Set'),
-    Patch(facecolor='b', label='b = 0, 30 years'),
-    Patch(facecolor='b', alpha = 0.6, label='b = 0, 20 years'),
-    Patch(facecolor='b', alpha = 0.3, label='b = 0, 10 years'),
+    Patch(facecolor=colors[0], label='Free'),  # default matplotlib colors
+    Patch(facecolor=colors[1], label='Set'),
+    Patch(facecolor=colors[2], label='b = 0, 30 years'),
+    Patch(facecolor=colors[2], alpha = 0.6, label='b = 0, 20 years'),
+    Patch(facecolor=colors[2], alpha = 0.3, label='b = 0, 10 years'),
     plt.Line2D([0], [0], color='k', label='median'),
     plt.Line2D([0], [0], color='k', linestyle = ":", label='mean') 
-]    
+]  
 
 plt.legend(handles=legend_elements)
 
@@ -484,8 +490,7 @@ for i in range(3):
                           whis = [5,95])
     ax.grid(axis = "y")
     
-    #set colors of boxes
-    colors = ["r","g","b","r","g","b","r","g","b","r","g","b",]
+    
     alpha = [1,0.6,0.3]
     for n_patch in range(len(box_plot['boxes'])):
         patch = box_plot['boxes'][n_patch]
@@ -511,14 +516,14 @@ for i in range(3):
     ax.set_ylabel("gen_RL/RL")
 
 legend_elements = [
-    Patch(facecolor='r', label='Free'),  # default matplotlib colors
-    Patch(facecolor='g', label='Set'),
-    Patch(facecolor='b', label='b = 0, 30 years'),
-    Patch(facecolor='b', alpha = 0.6, label='b = 0, 20 years'),
-    Patch(facecolor='b', alpha = 0.3, label='b = 0, 10 years'),
+    Patch(facecolor=colors[0], label='Free'),  # default matplotlib colors
+    Patch(facecolor=colors[1], label='Set'),
+    Patch(facecolor=colors[2], label='b = 0, 30 years'),
+    Patch(facecolor=colors[2], alpha = 0.6, label='b = 0, 20 years'),
+    Patch(facecolor=colors[2], alpha = 0.3, label='b = 0, 10 years'),
     plt.Line2D([0], [0], color='k', label='median'),
     plt.Line2D([0], [0], color='k', linestyle = ":", label='mean') 
-]    
+]
 
 plt.legend(handles=legend_elements)
 
@@ -537,8 +542,6 @@ for i in range(3):
                           whis = [5,95])
     plt.grid(axis = "y")
     
-    #set colors of boxes
-    colors = ["r","g","b","r","g","b","r","g","b","r","g","b",]
     alpha = [1,0.6,0.3]
     for n_patch in range(len(box_plot['boxes'])):
         patch = box_plot['boxes'][n_patch]
@@ -566,11 +569,11 @@ for i in range(3):
     plt.xlabel("Return period (years)")
 
 legend_elements = [
-    Patch(facecolor='r', label='Free'),  # default matplotlib colors
-    Patch(facecolor='g', label='Set'),
-    Patch(facecolor='b', label='b = 0, 30 years'),
-    Patch(facecolor='b', alpha = 0.6, label='b = 0, 20 years'),
-    Patch(facecolor='b', alpha = 0.3, label='b = 0, 10 years'),
+    Patch(facecolor=colors[0], label='Free'),  # default matplotlib colors
+    Patch(facecolor=colors[1], label='Set'),
+    Patch(facecolor=colors[2], label='b = 0, 30 years'),
+    Patch(facecolor=colors[2], alpha = 0.6, label='b = 0, 20 years'),
+    Patch(facecolor=colors[2], alpha = 0.3, label='b = 0, 10 years'),
     plt.Line2D([0], [0], color='k', label='median'),
     plt.Line2D([0], [0], color='k', linestyle = ":", label='mean') 
 ]    
