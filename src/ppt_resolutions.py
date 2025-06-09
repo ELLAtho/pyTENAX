@@ -8,6 +8,8 @@ Created on Fri Jun  6 12:13:16 2025
 from os.path import dirname, join
 from os import getcwd
 import sys
+import pickle
+
 #run this fro src folder, otherwise it doesn't work
 THIS_DIR = dirname(getcwd())
 CODE_DIR = join(THIS_DIR, 'src')
@@ -177,36 +179,84 @@ else:
 
 
 
-
-
-starttime = [0]*len(val_info)
-yearly_non0_mins = [0]*len(val_info)
-
-for i in range(len(val_info)):
+res_savename = f"{drive}:/outputs/resolutions/{country}\\resolution_info.csv"
+if res_savename not in glob.glob(f"{drive}:/outputs/resolutions/{country}/*"):
+    print("not calculated the resolutions")
+    starttime = [0]*len(val_info)
+    yearly_non0_mins = [0]*len(val_info)
+    unique_mins = [0]*len(val_info)
+    GSDR_res = [0]*len(val_info)
+    change_yr = [0]*len(val_info)
+    n_res = [0]*len(val_info)
     
-    starttime[i] = time.time()
-    station = val_info.station.iloc[i]
+    for i in range(len(val_info)):
+        
+        starttime[i] = time.time()
+        station = val_info.station.iloc[i]
+        
+        file_name = f"{drive}:/{country}/{code_str}{df_parameters.station.iloc[i]}"
+        
+        if 'code_str' in locals():
+            G,data_meta = read_GSDR_file(f"{file_name}.txt",name_col)
+        else:
+            G = pd.read_csv(f"{file_name}.csv")
+            G['prec_time'] = pd.to_datetime(G['prec_time'])
+            G.set_index('prec_time', inplace=True)
+        
+        G[G.ppt == 0] = np.nan #replaces 0s with nan so the min value is the min nonzero value
+        yearly_non0_mins[i] = G.groupby(G.index.year).min()
+        yearly_non0_mins[i] = yearly_non0_mins[i][~np.isnan(yearly_non0_mins[i].ppt)]
+        unique_mins[i] = np.unique(yearly_non0_mins[i])
+        unique_mins[i] = unique_mins[i][~np.isnan(unique_mins[i])]
+        GSDR_res[i] = data_meta.resolution
+        change_yr[i] = [
+            yearly_non0_mins[i].index[j]
+            for j in range(1, len(yearly_non0_mins[i]))
+            if yearly_non0_mins[i]["ppt"].iloc[j] != yearly_non0_mins[i]["ppt"].iloc[j-1]
+        ]
+        n_res[i] = len(unique_mins[i])
+        
+        if i%50 == 0:
+            time_taken = (time.time()-starttime[i-9])/10
+            time_left = (len(new_df)-i)*time_taken/60
+            print(f"{i}/{len(new_df)}. Approx time left: {time_left:.0f} mins")
     
-    file_name = f"{drive}:/{country}/{code_str}{df_parameters.station.iloc[i]}"
+    resolution_df = pd.DataFrame({
+        "station" : val_info.station,
+        "GSDR_res" : GSDR_res,
+        "n_mins" : n_res,
+        
+        })  
     
-    if 'code_str' in locals():
-        G,data_meta = read_GSDR_file(f"{file_name}.txt",name_col)
-    else:
-        G = pd.read_csv(f"{file_name}.csv")
-        G['prec_time'] = pd.to_datetime(G['prec_time'])
-        G.set_index('prec_time', inplace=True)
+    resolution_df.to_csv(f"{drive}:/outputs/resolutions/{country}/resolution_info.csv", index = False)
+      
     
-    G[G.ppt == 0] = np.nan #replaces 0s with nan so the min value is the min nonzero value
-    yearly_non0_mins[i] = G.groupby(G.index.year).min()
-    if i%50 == 0:
-        time_taken = (time.time()-starttime[i-9])/10
-        time_left = (len(new_df)-i)*time_taken/60
-        print(f"{i}/{len(new_df)}. Approx time left: {time_left:.0f} mins")
+    yearly_non0_mins_labelled = dict(zip(val_info.station, [yearly_non0_mins[j].ppt.to_numpy() for j in range(len(yearly_non0_mins))]))
+    change_yr_labelled = dict(zip(val_info.station,change_yr))
+    unique_mins_labelled = dict(zip(val_info.station,unique_mins))
     
+    with open(f"{drive}:/outputs/resolutions/{country}/non0_mins.pkl", 'wb') as f:
+        pickle.dump(yearly_non0_mins_labelled, f)
+        
+    with open(f"{drive}:/outputs/resolutions/{country}/years_when_change_res.pkl", 'wb') as f:
+        pickle.dump(change_yr_labelled, f)
     
+    with open(f"{drive}:/outputs/resolutions/{country}/unique_mins.pkl", 'wb') as f:
+        pickle.dump(unique_mins_labelled, f)
+        
+else:
+    print("reading resolution data")
+    resolution_df = pd.read_csv(f"{drive}:/outputs/resolutions/{country}/resolution_info.csv")
     
+    with open(f"{drive}:/outputs/resolutions/{country}/non0_mins.pkl", 'rb') as f:
+        yearly_non0_mins_labelled = pickle.load(f)
+        
+    with open(f"{drive}:/outputs/resolutions/{country}/years_when_change_res.pkl", 'rb') as f:
+        change_yr_labelled = pickle.load(f)
     
-    
-    
-    
-    
+    with open(f"{drive}:/outputs/resolutions/{country}/unique_mins.pkl", 'rb') as f:
+        unique_mins_labelled = pickle.load(f)
+      
+        
+        
+        
