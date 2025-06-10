@@ -929,6 +929,7 @@ min_years_strong = 20
 
 if min_years_strong < np.max(val_info.cleaned_years):
     hindcast_Fphat_short = hindcast_Fphat[val_info.cleaned_years>=min_years_strong]
+    hindcast_Fphat_exp_short = hindcast_Fphat_exp[val_info.cleaned_years>=min_years_strong]
     new_df_short = new_df[val_info.cleaned_years>=min_years_strong]
     
     norm = mcolors.Normalize(vmin=0, vmax=1)
@@ -937,7 +938,9 @@ if min_years_strong < np.max(val_info.cleaned_years):
     variables = ["kappa","b","lambda","a"]
     for vari in variables: 
         df_small = hindcast_Fphat_short[[f"{vari}1",f"{vari}2",f"{vari}1_0",f"{vari}2_0"]]
+        df_small_exp = hindcast_Fphat_exp_short[[f"{vari}1",f"{vari}2"]]
         corr_table = df_small.corr()
+        corr_table_exp = df_small_exp.corr()
         
         poly_model = odr.polynomial(1)  # using first order polynomial model
         data = odr.Data(hindcast_Fphat_short[f"{vari}1"].dropna(),hindcast_Fphat_short[f"{vari}2"].dropna())
@@ -945,6 +948,13 @@ if min_years_strong < np.max(val_info.cleaned_years):
         output = odr_obj.run()  # running ODR fitting
         poly = np.poly1d(output.beta[::-1])
         poly_y = poly(hindcast_Fphat_short[f"{vari}1"].dropna())
+        
+        
+        data = odr.Data(hindcast_Fphat_exp_short[f"{vari}1"].dropna(),hindcast_Fphat_exp_short[f"{vari}2"].dropna())
+        odr_obj = odr.ODR(data, poly_model)
+        output = odr_obj.run()  # running ODR fitting
+        poly = np.poly1d(output.beta[::-1])
+        poly_y_exp = poly(hindcast_Fphat_exp_short[f"{vari}1"].dropna())
         
         
         if vari != "b":    
@@ -956,8 +966,8 @@ if min_years_strong < np.max(val_info.cleaned_years):
         
         
         
-        fig = plt.figure(figsize = (10,5))
-        ax1 = fig.add_subplot(1,2,1)
+        fig = plt.figure(figsize = (12,5))
+        ax1 = fig.add_subplot(1,3,1)
         sc = ax1.scatter(hindcast_Fphat_short[f"{vari}1"],hindcast_Fphat_short[f"{vari}2"],
                     s=3,c = hindcast_Fphat_short.pvals,
                     norm = norm, cmap = cmap)
@@ -969,7 +979,7 @@ if min_years_strong < np.max(val_info.cleaned_years):
         ax1.set_title(f"free b. corr = {corr_table[f"{vari}1"][f"{vari}2"]:.2f}")
         plt.legend()
         
-        ax2 = fig.add_subplot(1,2,2)
+        ax2 = fig.add_subplot(1,3,2)
         sc = ax2.scatter(hindcast_Fphat_short[f"{vari}1_0"],hindcast_Fphat_short[f"{vari}2_0"],
                     s=3,c = hindcast_Fphat_short.pvals,
                     norm = norm, cmap = cmap)
@@ -982,6 +992,19 @@ if min_years_strong < np.max(val_info.cleaned_years):
         ax2.set_ylabel(f"{vari}2_0")
         ax2.set_title(f"b = 0. corr = {corr_table[f"{vari}1_0"][f"{vari}2_0"]:.2f}")
         
+        ax3 = fig.add_subplot(1,3,3)
+        sc = ax3.scatter(hindcast_Fphat_exp_short[f"{vari}1"],hindcast_Fphat_exp_short[f"{vari}2"],
+                    s=3,c = hindcast_Fphat_exp_short.pvals,
+                    norm = norm, cmap = cmap)#, marker = "*" if val_info.cleaned_years>=30 else ".")
+        
+        ax3.plot([np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],[np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],label = "line of equality",linestyle = "--")
+        ax3.plot(hindcast_Fphat_exp_short[f"{vari}1"].dropna(),poly_y_exp,label = "best fit",color = "r")
+        ax3.set_xlabel(f"{vari}1")
+        ax3.set_ylabel(f"{vari}2")
+        ax3.set_title(f"free b exponential. corr = {corr_table_exp[f"{vari}1"][f"{vari}2"]:.2f}")
+        
+        
+        
         
         cbar_ax = fig.add_subplot([0.15, -0.02, 0.7, 0.03])  # Position for the colorbar
         cb = plt.colorbar(sc, cax=cbar_ax, orientation='horizontal')
@@ -993,19 +1016,27 @@ if min_years_strong < np.max(val_info.cleaned_years):
     
     
     
-    fig = plt.figure(figsize = (12,7))
-    ax1 = fig.add_subplot(1,2,1)
+    fig = plt.figure(figsize = (12,5))
+    ax1 = fig.add_subplot(1,3,1)
     plt.hist(hindcast_Fphat_short.pvals.dropna(),density = True,bins = 20)
     plt.ylim(0,7)
     plt.xlabel("p value")
     plt.title(f"b=free {min_years_strong} yrs plus")
     
     
-    ax2 = fig.add_subplot(1,2,2)
+    ax2 = fig.add_subplot(1,3,2)
     plt.hist(hindcast_Fphat_short.pvals_0.dropna(),density = True,bins = 20)
     plt.ylim(0,7)
     plt.xlabel("p value")
     plt.title(f"b=0 {min_years_strong} yrs plus")
+    
+    ax3 = fig.add_subplot(1,3,3)
+    plt.hist(hindcast_Fphat_exp_short.pvals.dropna(),density = True,bins = 20)
+    plt.ylim(0,7)
+    plt.xlabel("p value")
+    plt.title("b=free exponential")
+
+    
     plt.suptitle(f"{country_save}")
     plt.show()
     
@@ -1278,152 +1309,680 @@ else:
 
 
 ###############################################################################
-#hindcasts loop
+# CUTTING OUT RESOLUTION CHANGES
+resolution_df = pd.read_csv(f"{drive}:/outputs/resolutions/{country_save}/resolution_info.csv")
 
-# val_info.index = range(len(val_info))
-# df_parameters.index = range(len(df_parameters))
-# delta_mu.index = range(len(delta_mu))
+hindcast_Fphat_short = hindcast_Fphat[resolution_df.n_mins==1]
+new_df_short = new_df[resolution_df.n_mins==1]
 
+hindcast_Fphat_exp_short = hindcast_Fphat_exp[resolution_df.n_mins==1]
 
-
-
-# mask = ((val_info.cleaned_years >= 20) &
-#         (delta_mu >= 1) 
-#         & (val_info.latitude > 40)
-#         )
-
-
-# info_mask = val_info[mask]
-# parameters_mask = df_parameters[mask]
-
-# n_hindcasts = len(info_mask)
-
-
-# for i in range(n_hindcasts):
-#     station = info_mask.station.iloc[i]
-#     T = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/T_{station}.csv")
-#     P = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/P_{station}.csv")
-#     times = pd.read_csv(f"{drive}:/ordinary_events/{country_save}/time_{station}.csv",parse_dates = ["oe_time"])
-#     oe_df = pd.DataFrame({"year":times.oe_time.dt.year, "P": P, "T": T,})
-#     AMS = oe_df.groupby(oe_df.year).P.max()
-#     thr = parameters_mask.thr.iloc[i]
+norm = mcolors.Normalize(vmin=0, vmax=1)
+cmap = 'plasma'
+# plot comparisons of the two period F_phat values
+variables = ["kappa","b","lambda","a"]
+for vari in variables: 
+    df_small = hindcast_Fphat_short[[f"{vari}1",f"{vari}2",f"{vari}1_0",f"{vari}2_0"]]
+    corr_table = df_small.corr()
+    df_small_exp = hindcast_Fphat_exp_short[[f"{vari}1",f"{vari}2"]]
+    corr_table_exp = df_small_exp.corr()
     
-#     unique_years = oe_df.year.unique()
+    poly_model = odr.polynomial(1)  # using first order polynomial model
+    data = odr.Data(hindcast_Fphat_short[f"{vari}1"].dropna(),hindcast_Fphat_short[f"{vari}2"].dropna())
+    odr_obj = odr.ODR(data, poly_model)
+    output = odr_obj.run()  # running ODR fitting
+    poly = np.poly1d(output.beta[::-1])
+    poly_y = poly(hindcast_Fphat_short[f"{vari}1"].dropna())
     
+    data = odr.Data(hindcast_Fphat_exp_short[f"{vari}1"].dropna(),hindcast_Fphat_exp_short[f"{vari}2"].dropna())
+    odr_obj = odr.ODR(data, poly_model)
+    output = odr_obj.run()  # running ODR fitting
+    poly = np.poly1d(output.beta[::-1])
+    poly_y_exp = poly(hindcast_Fphat_exp_short[f"{vari}1"].dropna())
     
-#     start_time = times.iloc[0]
-#     end_time = times.iloc[-1]
-    
-#     n = len(T)/(len(unique_years))
-
-#     midyear = unique_years[int(np.trunc(len(unique_years)/2) - 1)]
-    
-#     S.alpha = 0
-#     F_phat, loglik, _, _ = S.magnitude_model(P, T, thr)
-#     g_phat = S.temperature_model(T)
-    
-#     T1 = T[times.oe_time.dt.year <= midyear]
-#     P1 = P[times.oe_time.dt.year <= midyear]
-#     times1 = times[times.oe_time.dt.year <= midyear]
-#     thr1 = np.quantile(P1,S.left_censoring[1])
-#     n1 = len(T1)/(midyear - start_time.dt.year + 1)
-#     AMS1 = pd.DataFrame(AMS[AMS.index <= midyear]).rename(columns = {"P" : "AMS"})
-
-
-#     T2 = T[times.oe_time.dt.year > midyear]
-#     P2 = P[times.oe_time.dt.year > midyear]
-#     times2 = times[times.oe_time.dt.year > midyear]
-#     thr2 = np.quantile(P2,S.left_censoring[1])
-#     n2 = len(T2)/(end_time.dt.year - midyear)
-#     AMS2 = pd.DataFrame(AMS[AMS.index > midyear]).rename(columns = {"P" : "AMS"})
-
-
-#     g_phat1 = S.temperature_model(T1)
-#     g_phat2 = S.temperature_model(T2)
-    
-#     delta_mu_here = g_phat2[0] - g_phat1[0]
-#     g_phat2 = [g_phat1[0]+delta_mu_here,g_phat1[1]]
-
-
-#     F_phat1,loglik1,_,_ = S.magnitude_model(P1, T1, thr1)
-#     F_phat2,loglik2,_,_ = S.magnitude_model(P2, T2, thr2)
-
-#     S.alpha = 1
-#     F_phat_b0, loglik_b0, _, _ = S.magnitude_model(P, T, thr)
-
-#     F_phat1_b0,loglik1_b0,_,_ = S.magnitude_model(P1, T1, thr1)
-#     F_phat2_b0,loglik2_b0,_,_ = S.magnitude_model(P2, T2, thr2)
-
-
-#     eT = np.arange(np.min(T),np.max(T)+4)
-#     Ts = np.arange(np.min(T)- S.temp_delta, np.max(T)+ S.temp_delta, S.temp_res_monte_carlo)
-
-
-
-#     TNX_FIG_temp_model(T1, g_phat1, S.beta, eT,obscol='b',valcol='b',
-#                            obslabel = f'observations {start_time.dt.year.to_numpy()[0]} - {int(midyear)}',
-#                            vallabel = 'temperature model g(T) first period')
-
-#     TNX_FIG_temp_model(T2, g_phat2, S.beta, eT,obscol='r',valcol='r',
-#                            obslabel = f'observations {int(midyear+1)} - {end_time.dt.year.to_numpy()[0]}',
-#                            vallabel = 'temperature model g(T) second period')
-#     plt.xlim(np.min(T)-4,np.max(T)+4)
-#     plt.title(f"{station}.")
-#     plt.show()
-
-#     RL, _, _ = S.model_inversion(F_phat, g_phat, n, Ts)
-    
-#     RL1, _, _ = S.model_inversion(F_phat1_b0, g_phat1, n1, Ts)
-
-#     RL2, _, _ = S.model_inversion(F_phat1_b0, g_phat2, n1, Ts) #calculated with the same F_phat and n
-    
-#     lambda_LR = -2*( loglik - (loglik1+loglik2) )
-#     pval = chi2.sf(lambda_LR, 4)
-#     if pval > 0.05:
-#         mag_str = f"p={pval}. Magnitude models not  different at 5% significance."
-#     else:
-#         mag_str = f"p={pval}. Magnitude models are different at 5% significance."
+    if vari != "b":    
+        data = odr.Data(hindcast_Fphat_short[f"{vari}1_0"].dropna(),hindcast_Fphat_short[f"{vari}2_0"].dropna())
+        odr_obj = odr.ODR(data, poly_model)
+        output = odr_obj.run()  # running ODR fitting
+        poly = np.poly1d(output.beta[::-1])
+        poly_y_0 = poly(hindcast_Fphat_short[f"{vari}1_0"].dropna())
     
     
-#     lambda_LR = -2*( loglik_b0 - (loglik1_b0+loglik2_b0) )
-#     pval = chi2.sf(lambda_LR, 3)
-#     if pval > 0.05:
-#         mag_str_b0 = f"p={pval}. Magnitude models not  different at 5% significance."
-#     else:
-#         mag_str_b0 = f"p={pval}. Magnitude models are different at 5% significance."
+    
+    fig = plt.figure(figsize = (12,5))
+    ax1 = fig.add_subplot(1,3,1)
+    sc = ax1.scatter(hindcast_Fphat_short[f"{vari}1"],hindcast_Fphat_short[f"{vari}2"],
+                s=3,c = hindcast_Fphat_short.pvals,
+                norm = norm, cmap = cmap)
+    
+    ax1.plot([np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],[np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],label = "line of equality",linestyle = "--")
+    ax1.plot(hindcast_Fphat_short[f"{vari}1"].dropna(),poly_y,label = "best fit",color = "r")
+    ax1.set_xlabel(f"{vari}1")
+    ax1.set_ylabel(f"{vari}2")
+    ax1.set_title(f"free b. corr = {corr_table[f"{vari}1"][f"{vari}2"]:.2f}")
+    plt.legend()
+    
+    ax2 = fig.add_subplot(1,3,2)
+    sc = ax2.scatter(hindcast_Fphat_short[f"{vari}1_0"],hindcast_Fphat_short[f"{vari}2_0"],
+                s=3,c = hindcast_Fphat_short.pvals,
+                norm = norm, cmap = cmap)
+    ax2.plot([np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],[np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],label = "line of equality",linestyle = "--")
+    
+    if vari != "b":    
+        ax2.plot(hindcast_Fphat_short[f"{vari}1_0"].dropna(),poly_y_0,label = "best fit",color = "r")
+        
+    ax2.set_xlabel(f"{vari}1_0")
+    ax2.set_ylabel(f"{vari}2_0")
+    ax2.set_title(f"b = 0. corr = {corr_table[f"{vari}1_0"][f"{vari}2_0"]:.2f}")
+    
+    ax3 = fig.add_subplot(1,3,3)
+    sc = ax3.scatter(hindcast_Fphat_exp_short[f"{vari}1"],hindcast_Fphat_exp_short[f"{vari}2"],
+                s=3,c = hindcast_Fphat_exp_short.pvals,
+                norm = norm, cmap = cmap)#, marker = "*" if val_info.cleaned_years>=30 else ".")
+    
+    ax3.plot([np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],[np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],label = "line of equality",linestyle = "--")
+    ax3.plot(hindcast_Fphat_exp_short[f"{vari}1"].dropna(),poly_y_exp,label = "best fit",color = "r")
+    ax3.set_xlabel(f"{vari}1")
+    ax3.set_ylabel(f"{vari}2")
+    ax3.set_title(f"free b exponential. corr = {corr_table_exp[f"{vari}1"][f"{vari}2"]:.2f}")
     
     
-#     TNX_FIG_valid(pd.DataFrame(AMS).rename(columns = {"P" : "AMS"}), S.return_period, RL,TENAXcol='b',obscol_shape = 'g+',TENAXlabel = 'TENAX all',obslabel='Observed annual maxima')
-#     plt.show()
+    cbar_ax = fig.add_subplot([0.15, -0.02, 0.7, 0.03])  # Position for the colorbar
+    cb = plt.colorbar(sc, cax=cbar_ax, orientation='horizontal')
+    cb.set_label('p-value', fontsize=14)
+    cb.ax.tick_params(labelsize=12)
+    plt.tight_layout()
+    plt.suptitle(f"{country_save}. resolution doesn't change")
+    plt.show()
+
+
+
+fig = plt.figure(figsize = (12,5))
+ax1 = fig.add_subplot(1,3,1)
+plt.hist(hindcast_Fphat_short.pvals.dropna(),density = True,bins = 20)
+plt.ylim(0,7)
+plt.xlabel("p value")
+plt.title(f"b=free only one resolution")
+
+
+ax2 = fig.add_subplot(1,3,2)
+plt.hist(hindcast_Fphat_short.pvals_0.dropna(),density = True,bins = 20)
+plt.ylim(0,7)
+plt.xlabel("p value")
+plt.title(f"b=0 one resolution")
+
+ax3 = fig.add_subplot(1,3,3)
+plt.hist(hindcast_Fphat_exp.pvals.dropna(),density = True,bins = 20)
+plt.ylim(0,7)
+plt.xlabel("p value")
+plt.title("b=free exponential")
+
+plt.suptitle(f"{country_save}")
+plt.show()
+
+
+
+
+#plot maps
+
+base_cmap = plt.cm.get_cmap("viridis")
+color_list = base_cmap(np.linspace(0,1,10))
+
+discrete_viridis = ListedColormap(color_list, name = "viridis")
+
+s = 3
+fontsize = 12
+
+fig = plt.figure(figsize=(8, 22))
+proj = ccrs.PlateCarree()
+ax1 = fig.add_subplot(3, 1, 1, projection=proj)
+
+# Add map features
+ax1.coastlines(zorder = 2)
+ax1.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc = ax1.scatter( #plot the negligable at 5% lvl points
+    new_df_short.longitude,
+    new_df_short.latitude,
+    c = hindcast_Fphat_short.pvals,
+    s = s,
+    cmap = discrete_viridis,
+    norm = norm,zorder = 1
+)
+
+# Add a colorbar at the bottom
+cb = plt.colorbar(sc, orientation='horizontal', pad=0.15)
+cb.set_label('p value', fontsize=14)  
+cb.ax.tick_params(labelsize=12)
+
+
+gl = ax1.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': fontsize-2}
+gl.ylabel_style = {'size': fontsize-2}
+plt.title(f'{country_save} p value, b = free. resolution doesnt change', fontsize=16)
+
+
+ax2 = fig.add_subplot(3, 1, 2, projection=proj)
+ax2.coastlines(zorder = 2)
+ax2.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc = ax2.scatter( #plot the negligable at 5% lvl points
+    new_df_short.longitude,
+    new_df_short.latitude,
+    c = hindcast_Fphat_short.pvals_0,
+    s = s,
+    cmap = discrete_viridis,
+    norm = norm,zorder = 1
+)
+
+
+gl = ax2.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': fontsize-2}
+gl.ylabel_style = {'size': fontsize-2}
+
+
+# Add a colorbar at the bottom
+cb = plt.colorbar(sc, orientation='horizontal', pad=0.15)
+cb.set_label('p value', fontsize=14)  
+cb.ax.tick_params(labelsize=12)
+
+plt.title(f'{country_save} p value, b = 0', fontsize=16)
+
+ax3 = fig.add_subplot(3, 1, 3, projection=proj)
+ax3.coastlines(zorder = 2)
+ax3.add_feature(cfeature.BORDERS, linestyle=':')
+
+norm = mcolors.Normalize(vmin=-1, vmax=1)
+sc = ax3.scatter( #plot the negligable at 5% lvl points
+    new_df_short.longitude,
+    new_df_short.latitude,
+    c = hindcast_Fphat_short.pvals_0 - hindcast_Fphat_short.pvals,
+    s = s,
+    cmap = 'seismic',
+    norm = norm,zorder = 1
+)
+
+
+gl = ax3.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': fontsize-2}
+gl.ylabel_style = {'size': fontsize-2}
+
+# Add a colorbar at the bottom
+cb = plt.colorbar(sc, orientation='horizontal', pad=0.15)
+cb.set_label('delta p value', fontsize=14)  
+cb.ax.tick_params(labelsize=12)
+
+plt.title('p_0 - p_free', fontsize=16)
+
+plt.show()
+
+# make list of significance
+significance = 0.05
+sig_list = hindcast_Fphat_short.pvals > significance #True/1 = insignificant
+sig_list_0 = hindcast_Fphat_short.pvals_0 > significance
+
+hindcast_Fphat_short["sig"] = sig_list.replace({True: 1, False: 0})
+hindcast_Fphat_short["sig_0"] = sig_list_0.replace({True: 1, False: 0})
+
+changes_pvals = hindcast_Fphat_short.sig + hindcast_Fphat_short.sig_0*2 # 0 means both sig, 1 means free insig but 0 sig, 2 means free sig then 0 insig, 3 means both insig
+
+
+# plot map showing sig vs not sig
+
+norm = mcolors.Normalize(vmin=0, vmax=1)
+s = 3
+fontsize = 12
+
+fig = plt.figure(figsize=(10, 18))
+proj = ccrs.PlateCarree()
+ax1 = fig.add_subplot(3, 1, 1, projection=proj)
+
+# Add map features
+ax1.coastlines(zorder = 2)
+ax1.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc = ax1.scatter( #plot the negligable at 5% lvl points
+    new_df_short.longitude,
+    new_df_short.latitude,
+    c = sig_list,
+    s = s,
+    cmap = discrete_viridis,
+    norm = norm,zorder = 1
+)
+
+
+gl = ax1.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': fontsize-2}
+gl.ylabel_style = {'size': fontsize-2}
+
+
+legend_elements = [
+    Patch(facecolor=base_cmap(1.0), label=f'insignificant at {significance*100}%'),  # default matplotlib colors
+    Patch(facecolor=base_cmap(0), label=f'significant at {significance*100}%'),
+]
+
+plt.legend(handles=legend_elements)
+
+
+
+plt.title(f'{country_save} p value, b = free. resolution doesnt change', fontsize=16)
+
+
+ax2 = fig.add_subplot(3, 1, 2, projection=proj)
+ax2.coastlines(zorder = 2)
+ax2.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc = ax2.scatter( #plot the negligable at 5% lvl points
+    new_df_short.longitude,
+    new_df_short.latitude,
+    c = sig_list_0,
+    s = s,
+    cmap = discrete_viridis,
+    norm = norm,zorder = 1
+)
+
+
+gl = ax2.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': fontsize-2}
+gl.ylabel_style = {'size': fontsize-2}
+
+
+plt.legend(handles=legend_elements)
+
+plt.title(f'{country_save} p value, b = 0', fontsize=16)
+
+
+
+base_cmap = plt.cm.get_cmap("rainbow") #new cmap for ax3
+
+ax3 = fig.add_subplot(3, 1, 3, projection=proj)
+ax3.coastlines(zorder = 2)
+ax3.add_feature(cfeature.BORDERS, linestyle=':')
+
+norm = mcolors.Normalize(vmin=0, vmax=3)
+sc = ax3.scatter( #plot the negligable at 5% lvl points
+    new_df_short.longitude,
+    new_df_short.latitude,
+    c = changes_pvals,
+    s = s,
+    cmap = 'rainbow',
+    norm = norm,zorder = 1
+)
+
+
+gl = ax3.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': fontsize-2}
+gl.ylabel_style = {'size': fontsize-2}
+
+
+legend_elements = [
+    Patch(facecolor=base_cmap(0), label=f'both significant at {significance*100}% ({np.sum(changes_pvals==0)*100/len(changes_pvals):.0f}% stations)'),  # default matplotlib colors
+    Patch(facecolor=base_cmap(1/3), label=f'free insignificant, 0 significant ({np.sum(changes_pvals==1)*100/len(changes_pvals):.0f}% stations)'),
+    Patch(facecolor=base_cmap(2/3), label=f'free significant, 0 insignificant ({np.sum(changes_pvals==2)*100/len(changes_pvals):.0f}% stations)'),
+    Patch(facecolor=base_cmap(1.0), label=f'both insignificant ({np.sum(changes_pvals==3)*100/len(changes_pvals):.0f}% stations)'),
+]
+
+plt.legend(handles=legend_elements)
+
+plt.title('changes in significance', fontsize=16)
+
+plt.show()
+
+
+
+###############################################################################
+#resolution doesn't change AND long yrs only
+
+
+hindcast_Fphat_short = hindcast_Fphat[(resolution_df.n_mins==1)&(val_info.cleaned_years>=min_years_strong)]
+new_df_short = new_df[(resolution_df.n_mins==1)&(val_info.cleaned_years>=min_years_strong)]
+hindcast_Fphat_exp_short = hindcast_Fphat_exp[(resolution_df.n_mins==1)&(val_info.cleaned_years>=min_years_strong)]
+
+norm = mcolors.Normalize(vmin=0, vmax=1)
+cmap = 'plasma'
+# plot comparisons of the two period F_phat values
+variables = ["kappa","b","lambda","a"]
+for vari in variables: 
+    df_small = hindcast_Fphat_short[[f"{vari}1",f"{vari}2",f"{vari}1_0",f"{vari}2_0"]]
+    corr_table = df_small.corr()
+    df_small_exp = hindcast_Fphat_exp_short[[f"{vari}1",f"{vari}2"]]
+    corr_table_exp = df_small_exp.corr()
     
-#     qs = [0.75,0.9,0.99]
-#     TNX_FIG_magn_model(P, T, F_phat, thr, eT, qs)
-#     plt.show()
     
-#     TNX_FIG_valid(AMS1, S.return_period, RL1,TENAXcol='b',obscol_shape = 'b+',TENAXlabel = 'first period',obslabel='Observed annual maxima')
-#     TNX_FIG_valid(AMS2, S.return_period, RL2,TENAXcol='r',obscol_shape = 'r+',TENAXlabel = 'predicted second period',obslabel='Observed annual maxima')
-#     plt.ylim(0,np.nanmax(RL2))
-#     plt.title(f"{station}.b = 0.\n {mag_str_b0}")
-#     plt.show()
+    poly_model = odr.polynomial(1)  # using first order polynomial model
+    data = odr.Data(hindcast_Fphat_short[f"{vari}1"].dropna(),hindcast_Fphat_short[f"{vari}2"].dropna())
+    odr_obj = odr.ODR(data, poly_model)
+    output = odr_obj.run()  # running ODR fitting
+    poly = np.poly1d(output.beta[::-1])
+    poly_y = poly(hindcast_Fphat_short[f"{vari}1"].dropna())
+    
+    data = odr.Data(hindcast_Fphat_exp_short[f"{vari}1"].dropna(),hindcast_Fphat_exp_short[f"{vari}2"].dropna())
+    odr_obj = odr.ODR(data, poly_model)
+    output = odr_obj.run()  # running ODR fitting
+    poly = np.poly1d(output.beta[::-1])
+    poly_y_exp = poly(hindcast_Fphat_exp_short[f"{vari}1"].dropna())
+    
+    
+    
+    if vari != "b":    
+        data = odr.Data(hindcast_Fphat_short[f"{vari}1_0"].dropna(),hindcast_Fphat_short[f"{vari}2_0"].dropna())
+        odr_obj = odr.ODR(data, poly_model)
+        output = odr_obj.run()  # running ODR fitting
+        poly = np.poly1d(output.beta[::-1])
+        poly_y_0 = poly(hindcast_Fphat_short[f"{vari}1_0"].dropna())
+    
+    
+    
+    fig = plt.figure(figsize = (12,5))
+    ax1 = fig.add_subplot(1,3,1)
+    sc = ax1.scatter(hindcast_Fphat_short[f"{vari}1"],hindcast_Fphat_short[f"{vari}2"],
+                s=3,c = hindcast_Fphat_short.pvals,
+                norm = norm, cmap = cmap)
+    
+    ax1.plot([np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],[np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],label = "line of equality",linestyle = "--")
+    ax1.plot(hindcast_Fphat_short[f"{vari}1"].dropna(),poly_y,label = "best fit",color = "r")
+    ax1.set_xlabel(f"{vari}1")
+    ax1.set_ylabel(f"{vari}2")
+    ax1.set_title(f"free b. corr = {corr_table[f"{vari}1"][f"{vari}2"]:.2f}")
+    plt.legend()
+    
+    ax2 = fig.add_subplot(1,3,2)
+    sc = ax2.scatter(hindcast_Fphat_short[f"{vari}1_0"],hindcast_Fphat_short[f"{vari}2_0"],
+                s=3,c = hindcast_Fphat_short.pvals,
+                norm = norm, cmap = cmap)
+    ax2.plot([np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],[np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],label = "line of equality",linestyle = "--")
+    
+    if vari != "b":    
+        ax2.plot(hindcast_Fphat_short[f"{vari}1_0"].dropna(),poly_y_0,label = "best fit",color = "r")
+        
+    ax2.set_xlabel(f"{vari}1_0")
+    ax2.set_ylabel(f"{vari}2_0")
+    ax2.set_title(f"b = 0. corr = {corr_table[f"{vari}1_0"][f"{vari}2_0"]:.2f}")
+    
+    ax3 = fig.add_subplot(1,3,3)
+    sc = ax3.scatter(hindcast_Fphat_exp_short[f"{vari}1"],hindcast_Fphat_exp_short[f"{vari}2"],
+                s=3,c = hindcast_Fphat_exp_short.pvals,
+                norm = norm, cmap = cmap)#, marker = "*" if val_info.cleaned_years>=30 else ".")
+    
+    ax3.plot([np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],[np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],label = "line of equality",linestyle = "--")
+    ax3.plot(hindcast_Fphat_exp_short[f"{vari}1"].dropna(),poly_y_exp,label = "best fit",color = "r")
+    ax3.set_xlabel(f"{vari}1")
+    ax3.set_ylabel(f"{vari}2")
+    ax3.set_title(f"free b exponential. corr = {corr_table_exp[f"{vari}1"][f"{vari}2"]:.2f}")
+    
+    
+    cbar_ax = fig.add_subplot([0.15, -0.02, 0.7, 0.03])  # Position for the colorbar
+    cb = plt.colorbar(sc, cax=cbar_ax, orientation='horizontal')
+    cb.set_label('p-value', fontsize=14)
+    cb.ax.tick_params(labelsize=12)
+    plt.tight_layout()
+    plt.suptitle(f"{country_save}. resolution doesn't change and years longer than {min_years_strong}")
+    plt.show()
 
 
-#     RL1, _, _ = S.model_inversion(F_phat1, g_phat1, n1, Ts)
 
-#     RL2, _, _ = S.model_inversion(F_phat1, g_phat2, n1, Ts) #calculated with the same F_phat and n
-
-
-#     TNX_FIG_valid(AMS1, S.return_period, RL1,TENAXcol='b',obscol_shape = 'b+',TENAXlabel = 'first period',obslabel='Observed annual maxima')
-#     TNX_FIG_valid(AMS2, S.return_period, RL2,TENAXcol='r',obscol_shape = 'r+',TENAXlabel = 'predicted second period',obslabel='Observed annual maxima')
-#     plt.ylim(0,np.nanmax(RL2))
-#     plt.title(f"{station}.  free b. \n {mag_str}")
-#     plt.show()
+fig = plt.figure(figsize = (12,5))
+ax1 = fig.add_subplot(1,3,1)
+plt.hist(hindcast_Fphat_short.pvals.dropna(),density = True,bins = 20)
+plt.ylim(0,7)
+plt.xlabel("p value")
+plt.title(f"b=free only one resolution")
 
 
+ax2 = fig.add_subplot(1,3,2)
+plt.hist(hindcast_Fphat_short.pvals_0.dropna(),density = True,bins = 20)
+plt.ylim(0,7)
+plt.xlabel("p value")
+plt.title(f"b=0 one resolution")
+
+ax3 = fig.add_subplot(1,3,3)
+plt.hist(hindcast_Fphat_exp.pvals.dropna(),density = True,bins = 20)
+plt.ylim(0,7)
+plt.xlabel("p value")
+plt.title("b=free exponential")
+
+plt.suptitle(f"{country_save}")
+plt.show()
 
 
 
 
+#plot maps
 
+base_cmap = plt.cm.get_cmap("viridis")
+color_list = base_cmap(np.linspace(0,1,10))
+
+discrete_viridis = ListedColormap(color_list, name = "viridis")
+
+s = 3
+fontsize = 12
+
+fig = plt.figure(figsize=(8, 22))
+proj = ccrs.PlateCarree()
+ax1 = fig.add_subplot(3, 1, 1, projection=proj)
+
+# Add map features
+ax1.coastlines(zorder = 2)
+ax1.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc = ax1.scatter( #plot the negligable at 5% lvl points
+    new_df_short.longitude,
+    new_df_short.latitude,
+    c = hindcast_Fphat_short.pvals,
+    s = s,
+    cmap = discrete_viridis,
+    norm = norm,zorder = 1
+)
+
+# Add a colorbar at the bottom
+cb = plt.colorbar(sc, orientation='horizontal', pad=0.15)
+cb.set_label('p value', fontsize=14)  
+cb.ax.tick_params(labelsize=12)
+
+
+gl = ax1.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': fontsize-2}
+gl.ylabel_style = {'size': fontsize-2}
+plt.title(f'{country_save} p value, b = free. resolution doesnt change and years longer than {min_years_strong}', fontsize=16)
+
+
+ax2 = fig.add_subplot(3, 1, 2, projection=proj)
+ax2.coastlines(zorder = 2)
+ax2.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc = ax2.scatter( #plot the negligable at 5% lvl points
+    new_df_short.longitude,
+    new_df_short.latitude,
+    c = hindcast_Fphat_short.pvals_0,
+    s = s,
+    cmap = discrete_viridis,
+    norm = norm,zorder = 1
+)
+
+
+gl = ax2.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': fontsize-2}
+gl.ylabel_style = {'size': fontsize-2}
+
+
+# Add a colorbar at the bottom
+cb = plt.colorbar(sc, orientation='horizontal', pad=0.15)
+cb.set_label('p value', fontsize=14)  
+cb.ax.tick_params(labelsize=12)
+
+plt.title(f'{country_save} p value, b = 0', fontsize=16)
+
+ax3 = fig.add_subplot(3, 1, 3, projection=proj)
+ax3.coastlines(zorder = 2)
+ax3.add_feature(cfeature.BORDERS, linestyle=':')
+
+norm = mcolors.Normalize(vmin=-1, vmax=1)
+sc = ax3.scatter( #plot the negligable at 5% lvl points
+    new_df_short.longitude,
+    new_df_short.latitude,
+    c = hindcast_Fphat_short.pvals_0 - hindcast_Fphat_short.pvals,
+    s = s,
+    cmap = 'seismic',
+    norm = norm,zorder = 1
+)
+
+
+gl = ax3.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': fontsize-2}
+gl.ylabel_style = {'size': fontsize-2}
+
+# Add a colorbar at the bottom
+cb = plt.colorbar(sc, orientation='horizontal', pad=0.15)
+cb.set_label('delta p value', fontsize=14)  
+cb.ax.tick_params(labelsize=12)
+
+plt.title('p_0 - p_free', fontsize=16)
+
+plt.show()
+
+# make list of significance
+significance = 0.05
+sig_list = hindcast_Fphat_short.pvals > significance #True/1 = insignificant
+sig_list_0 = hindcast_Fphat_short.pvals_0 > significance
+
+hindcast_Fphat_short["sig"] = sig_list.replace({True: 1, False: 0})
+hindcast_Fphat_short["sig_0"] = sig_list_0.replace({True: 1, False: 0})
+
+changes_pvals = hindcast_Fphat_short.sig + hindcast_Fphat_short.sig_0*2 # 0 means both sig, 1 means free insig but 0 sig, 2 means free sig then 0 insig, 3 means both insig
+
+
+# plot map showing sig vs not sig
+
+norm = mcolors.Normalize(vmin=0, vmax=1)
+s = 3
+fontsize = 12
+
+fig = plt.figure(figsize=(10, 18))
+proj = ccrs.PlateCarree()
+ax1 = fig.add_subplot(3, 1, 1, projection=proj)
+
+# Add map features
+ax1.coastlines(zorder = 2)
+ax1.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc = ax1.scatter( #plot the negligable at 5% lvl points
+    new_df_short.longitude,
+    new_df_short.latitude,
+    c = sig_list,
+    s = s,
+    cmap = discrete_viridis,
+    norm = norm,zorder = 1
+)
+
+
+gl = ax1.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': fontsize-2}
+gl.ylabel_style = {'size': fontsize-2}
+
+
+legend_elements = [
+    Patch(facecolor=base_cmap(1.0), label=f'insignificant at {significance*100}%'),  # default matplotlib colors
+    Patch(facecolor=base_cmap(0), label=f'significant at {significance*100}%'),
+]
+
+plt.legend(handles=legend_elements)
+
+
+
+plt.title(f'{country_save} p value, b = free. resolution doesnt change and years longer than {min_years_strong}', fontsize=16)
+
+
+ax2 = fig.add_subplot(3, 1, 2, projection=proj)
+ax2.coastlines(zorder = 2)
+ax2.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+sc = ax2.scatter( #plot the negligable at 5% lvl points
+    new_df_short.longitude,
+    new_df_short.latitude,
+    c = sig_list_0,
+    s = s,
+    cmap = discrete_viridis,
+    norm = norm,zorder = 1
+)
+
+
+gl = ax2.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': fontsize-2}
+gl.ylabel_style = {'size': fontsize-2}
+
+
+plt.legend(handles=legend_elements)
+
+plt.title(f'{country_save} p value, b = 0', fontsize=16)
+
+
+
+base_cmap = plt.cm.get_cmap("rainbow") #new cmap for ax3
+
+ax3 = fig.add_subplot(3, 1, 3, projection=proj)
+ax3.coastlines(zorder = 2)
+ax3.add_feature(cfeature.BORDERS, linestyle=':')
+
+norm = mcolors.Normalize(vmin=0, vmax=3)
+sc = ax3.scatter( #plot the negligable at 5% lvl points
+    new_df_short.longitude,
+    new_df_short.latitude,
+    c = changes_pvals,
+    s = s,
+    cmap = 'rainbow',
+    norm = norm,zorder = 1
+)
+
+
+gl = ax3.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': fontsize-2}
+gl.ylabel_style = {'size': fontsize-2}
+
+
+legend_elements = [
+    Patch(facecolor=base_cmap(0), label=f'both significant at {significance*100}% ({np.sum(changes_pvals==0)*100/len(changes_pvals):.0f}% stations)'),  # default matplotlib colors
+    Patch(facecolor=base_cmap(1/3), label=f'free insignificant, 0 significant ({np.sum(changes_pvals==1)*100/len(changes_pvals):.0f}% stations)'),
+    Patch(facecolor=base_cmap(2/3), label=f'free significant, 0 insignificant ({np.sum(changes_pvals==2)*100/len(changes_pvals):.0f}% stations)'),
+    Patch(facecolor=base_cmap(1.0), label=f'both insignificant ({np.sum(changes_pvals==3)*100/len(changes_pvals):.0f}% stations)'),
+]
+
+plt.legend(handles=legend_elements)
+
+plt.title('changes in significance', fontsize=16)
+
+plt.show()
 
 
 
