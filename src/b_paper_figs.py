@@ -20,6 +20,7 @@ import numpy as np
 import pandas as pd
 from scipy.stats import gaussian_kde
 from scipy.stats import ttest_ind
+from scipy.stats import ttest_1samp
 
 import datetime as dt
 import glob
@@ -133,6 +134,16 @@ for country_i in range(4):
     else:
         pass
 
+
+# t test for average of b
+for country_i in range(4):
+    t_test = ttest_1samp(new_df[country_i].b,0,nan_policy = "omit")
+    print(f"p value for {countries[country_i]} is {t_test[1]}")
+
+
+
+
+
 # FIG 1
 
 
@@ -155,7 +166,7 @@ for country_i in range(4):
 
     
 
-    norm = norm = mcolors.TwoSlopeNorm(vmin=-0.1, vcenter=0, vmax=0.1)
+    norm = mcolors.TwoSlopeNorm(vmin=-0.1, vcenter=0, vmax=0.1)
     
     sc = ax.scatter(
         df_parameters[country_i].longitude[df_parameters[country_i].b==0],
