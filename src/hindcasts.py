@@ -1742,14 +1742,14 @@ ax1 = fig.add_subplot(1,3,1)
 plt.hist(hindcast_Fphat_short.pvals.dropna(),density = True,bins = 20)
 plt.ylim(0,7)
 plt.xlabel("p value")
-plt.title(f"b=free only one resolution")
+plt.title(f"b=free only one resolution and {min_years_strong} yrs plus")
 
 
 ax2 = fig.add_subplot(1,3,2)
 plt.hist(hindcast_Fphat_short.pvals_0.dropna(),density = True,bins = 20)
 plt.ylim(0,7)
 plt.xlabel("p value")
-plt.title(f"b=0 one resolution")
+plt.title(f"b=0 one resolution and {min_years_strong} yrs plus")
 
 ax3 = fig.add_subplot(1,3,3)
 plt.hist(hindcast_Fphat_exp.pvals.dropna(),density = True,bins = 20)
