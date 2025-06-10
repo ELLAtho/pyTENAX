@@ -56,14 +56,14 @@ drive = "D"
 # censor_thr = 0.9
 
 
-# country = 'Japan'
-# ERA_country = 'Japan'
-# country_save = 'Japan'
-# code_str = 'JP_'
-# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
-# name_len = 5
-# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-# censor_thr = 0.9
+country = 'Japan'
+ERA_country = 'Japan'
+country_save = 'Japan'
+code_str = 'JP_'
+minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+name_len = 5
+min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+censor_thr = 0.9
 # station_chose = "18256"
 # station_chose = "12261"
 station_chose = "19376"
@@ -78,14 +78,14 @@ station_chose = "19376"
 # censor_thr = 0.9
 
 
-country = 'UK' 
-ERA_country = 'UK'
-country_save = 'UK'
-code_str = 'UK_'
-minlat,minlon,maxlat,maxlon = 49, -9.0, 62, 3
-name_len = 6
-min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
-censor_thr = 0.9
+# country = 'UK' 
+# ERA_country = 'UK'
+# country_save = 'UK'
+# code_str = 'UK_'
+# minlat,minlon,maxlat,maxlon = 49, -9.0, 62, 3
+# name_len = 6
+# min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+# censor_thr = 0.9
 
 name_col = 'ppt' 
 temp_name_col = "t2m"
@@ -179,8 +179,8 @@ else:
 
 
 
-res_savename = f"{drive}:/outputs/resolutions/{country}\\resolution_info.csv"
-if res_savename not in glob.glob(f"{drive}:/outputs/resolutions/{country}/*"):
+res_savename = f"{drive}:/outputs/resolutions/{country_save}\\resolution_info.csv"
+if res_savename not in glob.glob(f"{drive}:/outputs/resolutions/{country_save}/*"):
     print("not calculated the resolutions")
     starttime = [0]*len(val_info)
     yearly_non0_mins = [0]*len(val_info)
@@ -228,33 +228,33 @@ if res_savename not in glob.glob(f"{drive}:/outputs/resolutions/{country}/*"):
         
         })  
     
-    resolution_df.to_csv(f"{drive}:/outputs/resolutions/{country}/resolution_info.csv", index = False)
+    resolution_df.to_csv(f"{drive}:/outputs/resolutions/{country_save}/resolution_info.csv", index = False)
       
     
     yearly_non0_mins_labelled = dict(zip(val_info.station, [yearly_non0_mins[j].ppt.to_numpy() for j in range(len(yearly_non0_mins))]))
     change_yr_labelled = dict(zip(val_info.station,change_yr))
     unique_mins_labelled = dict(zip(val_info.station,unique_mins))
     
-    with open(f"{drive}:/outputs/resolutions/{country}/non0_mins.pkl", 'wb') as f:
+    with open(f"{drive}:/outputs/resolutions/{country_save}/non0_mins.pkl", 'wb') as f:
         pickle.dump(yearly_non0_mins_labelled, f)
         
-    with open(f"{drive}:/outputs/resolutions/{country}/years_when_change_res.pkl", 'wb') as f:
+    with open(f"{drive}:/outputs/resolutions/{country_save}/years_when_change_res.pkl", 'wb') as f:
         pickle.dump(change_yr_labelled, f)
     
-    with open(f"{drive}:/outputs/resolutions/{country}/unique_mins.pkl", 'wb') as f:
+    with open(f"{drive}:/outputs/resolutions/{country_save}/unique_mins.pkl", 'wb') as f:
         pickle.dump(unique_mins_labelled, f)
         
 else:
     print("reading resolution data")
-    resolution_df = pd.read_csv(f"{drive}:/outputs/resolutions/{country}/resolution_info.csv")
+    resolution_df = pd.read_csv(f"{drive}:/outputs/resolutions/{country_save}/resolution_info.csv")
     
-    with open(f"{drive}:/outputs/resolutions/{country}/non0_mins.pkl", 'rb') as f:
+    with open(f"{drive}:/outputs/resolutions/{country_save}/non0_mins.pkl", 'rb') as f:
         yearly_non0_mins_labelled = pickle.load(f)
         
-    with open(f"{drive}:/outputs/resolutions/{country}/years_when_change_res.pkl", 'rb') as f:
+    with open(f"{drive}:/outputs/resolutions/{country_save}/years_when_change_res.pkl", 'rb') as f:
         change_yr_labelled = pickle.load(f)
     
-    with open(f"{drive}:/outputs/resolutions/{country}/unique_mins.pkl", 'rb') as f:
+    with open(f"{drive}:/outputs/resolutions/{country_save}/unique_mins.pkl", 'rb') as f:
         unique_mins_labelled = pickle.load(f)
       
         
