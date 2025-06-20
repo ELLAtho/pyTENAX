@@ -351,7 +351,7 @@ for i in range(len(synth_RL)):
     
  
 #set colors of boxes
-colors = ["r","y","b"]*4
+colors = ['#377eb8', '#ff7f00', '#4daf4a']*4
 ret_lvls = ["10","20","50","100"]
 
 
@@ -472,6 +472,9 @@ plt.show()
 
 # same as above but with less stuff
 
+gap1 = 0.3 #gaps between the bar plots
+gap2 = 1.2
+fontsize = 14
     
 ret_lvls = ["10","100"]
 # plot the fractionals all together in a different layout
@@ -481,13 +484,35 @@ for i in range(3):
     
     #plot boxes
     boxplot_list = [synth_RL[years][f"{bstyle}_{ret_lvls[ret_n]}"].dropna()/RL_true[years][ret_n*3] for ret_n in range(2) for bstyle in ["free","set","b0"] for years in [i*3,i*3+2,i*3+1]]
-       
+    # positions = np.concat([np.arange(0,4.5,0.5),np.arange(5,9.5,0.5)]) 
+    
+    base_positions = np.concat([np.arange(0+pos*(1.5+gap1),1.5+pos*(1.5+gap1),0.5) for pos in range(3)])
+    positions = np.concat([base_positions,base_positions+(1.5+2*(1.5+gap1))+gap2])
+                          
+    
     box_plot = ax.boxplot(boxplot_list,
-                          positions = np.concat([np.arange(0,4.5,0.5),np.arange(5,9.5,0.5)]),
+                          positions = positions,
                           showmeans = True, meanline = True, patch_artist=True,
                           meanprops=dict(marker=None, linestyle=':', linewidth=1,color = 'k'),
                           sym = "",
                           whis = [5,95])
+    
+    strip_list = [box[(box<np.quantile(box,0.05)) | (box>np.quantile(box,0.95))] for box in boxplot_list]
+    
+    for l in range(len(strip_list)):
+        strip_list[l][strip_list[l]>2] = 2
+        strip_list[l][strip_list[l]<1/2] = 1/2
+    
+    strip_data = pd.DataFrame({
+        
+        "x": np.concatenate([[pos]*len(vals) for pos, vals in zip(positions, strip_list)]),
+        "y": np.concatenate(strip_list)
+        })
+    
+    
+    seaborn.stripplot(x="x", y="y", data=strip_data, color='black',alpha = 0.5,size = 3,native_scale=True)
+    
+    
     ax.grid(axis = "y")
     
     
@@ -500,32 +525,30 @@ for i in range(3):
     for median_line in box_plot["medians"]:
         median_line.set_color('k')
     
-    ax.set_xticks(np.arange(2,9,5),ret_lvls)
+    ax.set_xticks([positions[4],positions[13]],ret_lvls,fontsize = fontsize)
     
     ax.set_yscale("log")
-    ax.set_ylim(10**-0.15,10**0.15)
-    custom_ticks = [1/1.1, 1, 1.1]
-    custom_ticklabels = ["1/1.1", "1", "1.1"]
+    ax.set_ylim(1/2.1,2.1)
+    custom_ticks = [1/2,1/1.5,1/1.1, 1, 1.1,1.5,2]
+    custom_ticklabels = ["≤ 1/2","1/1.5","1/1.1", "1", "1.1","1.5","≥ 2"]
     ax.set_yticks(custom_ticks)
-    ax.set_yticklabels(custom_ticklabels)
+    ax.set_yticklabels(custom_ticklabels,fontsize = fontsize)
     ax.yaxis.set_major_locator(plt.FixedLocator(custom_ticks)) 
     ax.yaxis.set_minor_locator(plt.NullLocator())
     
-    ax.set_title(f"linear b = {uses[i*3].b[0]}")
-    ax.set_xlabel("Return period (years)")
-    ax.set_ylabel("gen_RL/RL")
+    ax.set_title(f"linear b = {uses[i*3].b[0]}",fontsize = fontsize+2)
+    ax.set_xlabel("Return period (years)",fontsize = fontsize)
+    ax.set_ylabel("gen_RL/RL",fontsize = fontsize)
 
 legend_elements = [
     Patch(facecolor=colors[0], label='Free'),  # default matplotlib colors
     Patch(facecolor=colors[1], label='Set'),
-    Patch(facecolor=colors[2], label='b = 0, 30 years'),
-    Patch(facecolor=colors[2], alpha = 0.6, label='b = 0, 20 years'),
-    Patch(facecolor=colors[2], alpha = 0.3, label='b = 0, 10 years'),
+    Patch(facecolor=colors[2], label='b = 0'),
     plt.Line2D([0], [0], color='k', label='median'),
     plt.Line2D([0], [0], color='k', linestyle = ":", label='mean') 
 ]
 
-plt.legend(handles=legend_elements)
+plt.legend(handles=legend_elements,fontsize = fontsize)
 
 
 for i in range(3):
@@ -533,13 +556,32 @@ for i in range(3):
     
     #plot boxes
     boxplot_list = [synth_RL[years][f"{bstyle}_{ret_lvls[ret_n]}_exp"].dropna()/RL_true_exp[years][ret_n*3] for ret_n in range(2) for bstyle in ["free","set","b0"] for years in [i*3,i*3+2,i*3+1]]
+    
+    base_positions = np.concat([np.arange(0+pos*(1.5+gap1),1.5+pos*(1.5+gap1),0.5) for pos in range(3)])
+    positions = np.concat([base_positions,base_positions+(1.5+2*(1.5+gap1))+gap2])
        
+    
     box_plot = ax.boxplot(boxplot_list,
-                          positions = np.concat([np.arange(0,4.5,0.5),np.arange(5,9.5,0.5)]),
+                          positions = positions,
                           showmeans = True, meanline = True, patch_artist=True,
                           meanprops=dict(marker=None, linestyle=':', linewidth=1,color = 'k'),
                           sym = "",
                           whis = [5,95])
+    
+    strip_list = [box[(box<np.quantile(box,0.05)) | (box>np.quantile(box,0.95))] for box in boxplot_list]
+    for l in range(len(strip_list)):
+        strip_list[l][strip_list[l]>2] = 2
+        strip_list[l][strip_list[l]<1/2] = 1/2
+    
+    strip_data = pd.DataFrame({
+        
+        "x": np.concatenate([[pos]*len(vals) for pos, vals in zip(positions, strip_list)]),
+        "y": np.concatenate(strip_list)
+        })
+    
+    
+    seaborn.stripplot(x="x", y="y", data=strip_data, color='black',alpha = 0.5,size = 3,native_scale=True)
+    
     plt.grid(axis = "y")
     
     alpha = [1,0.6,0.3]
@@ -551,34 +593,30 @@ for i in range(3):
     for median_line in box_plot["medians"]:
         median_line.set_color('k')
     
-    plt.xticks(np.arange(2,9,5),ret_lvls)
+    plt.xticks([positions[4],positions[13]],ret_lvls)
     
     plt.yscale("log")
-    plt.ylim(10**-0.15,10**0.15)
+    plt.ylim(1/2.1,2.1)
     
-    custom_ticks = [1/1.1, 1, 1.1]
-    custom_ticklabels = ["1/1.1", "1", "1.1"]
+    custom_ticks = [1/2,1/1.5,1/1.1, 1, 1.1,1.5,2]
+    custom_ticklabels = ["≤ 1/2","1/1.5","1/1.1", "1", "1.1","1.5","≥ 2"]
     ax.set_yticks(custom_ticks)
-    ax.set_yticklabels(custom_ticklabels)
+    ax.set_yticklabels(custom_ticklabels,fontsize = fontsize)
     ax.yaxis.set_major_locator(plt.FixedLocator(custom_ticks)) 
     ax.yaxis.set_minor_locator(plt.NullLocator())
-    ax.set_ylabel("gen_RL/RL")
+    ax.set_ylabel("gen_RL/RL",fontsize = fontsize)
     
     
-    plt.title(f"exponential b = {uses[i*3].b[0]}")
-    plt.xlabel("Return period (years)")
+    plt.title(f"exponential b = {uses[i*3].b[0]}",fontsize = fontsize+2)
+    plt.xlabel("Return period (years)",fontsize = fontsize)
 
 legend_elements = [
-    Patch(facecolor=colors[0], label='Free'),  # default matplotlib colors
-    Patch(facecolor=colors[1], label='Set'),
-    Patch(facecolor=colors[2], label='b = 0, 30 years'),
-    Patch(facecolor=colors[2], alpha = 0.6, label='b = 0, 20 years'),
-    Patch(facecolor=colors[2], alpha = 0.3, label='b = 0, 10 years'),
-    plt.Line2D([0], [0], color='k', label='median'),
-    plt.Line2D([0], [0], color='k', linestyle = ":", label='mean') 
+    Patch(facecolor="k", label='30 years'),
+    Patch(facecolor="k", alpha = 0.6, label='20 years'),
+    Patch(facecolor="k", alpha = 0.3, label='10 years'),
 ]    
 
-plt.legend(handles=legend_elements)
+plt.legend(handles=legend_elements,fontsize = fontsize)
 
 plt.tight_layout()
 plt.show()

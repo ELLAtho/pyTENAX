@@ -21,6 +21,7 @@ import pandas as pd
 from scipy.stats import gaussian_kde
 from scipy.stats import ttest_ind
 from scipy.stats import ttest_1samp
+from scipy.stats import lmoment
 
 import datetime as dt
 import glob
@@ -60,6 +61,7 @@ drive = 'D'
 countries = ["germany","Japan","UK","US"]
 country_saves = ["germany","Japan","UK","US_main"]
 code_strs = ["DP_","JP_","UK_","US_"]
+min_startdates = [dt.datetime(1900,1,1),dt.datetime(1900,1,1),dt.datetime(1950,1,1),dt.datetime(1950,1,1)] #this is for if havent read all ERA5 data yet
 
 lons_lats = [[47, 3, 55, 15],[24, 122.9, 45.6, 145.8],[49, -9.0, 62, 3] ,[24, -125, 56, -66]]
 
@@ -70,7 +72,7 @@ lons_lats = [[47, 3, 55, 15],[24, 122.9, 45.6, 145.8],[49, -9.0, 62, 3] ,[24, -1
 # code_str = 'JP_'
 # minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
 # name_len = 5
-# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+min_yrs = 10
 # censor_thr = 0.9
 
 
@@ -84,11 +86,15 @@ new_df = [0]*4
 df_generated_parameters = [0]*4
 df_generated_parameters_0 = [0]*4
 df_generated_parameters_exp = [0]*4
+info = [0]*4
 
 for country_i in range(4):
     country_save = country_saves[country_i]
     country = countries[country_i]
     code_str = code_strs[country_i]
+    
+    minlat, minlon, maxlat, maxlon = lons_lats[country_i]
+    min_startdate = min_startdates[country_i]
     
     
     save_path_neg = drive + ':/outputs/'+country_save+'\\parameters_neg.csv'
@@ -104,9 +110,18 @@ for country_i in range(4):
     df_generated_parameters_0[country_i] = pd.read_csv(f"{drive}:/outputs/{country_save}_b0/synth_generated_parameters.csv")
     df_generated_parameters_exp[country_i] = pd.read_csv(f"{drive}:/outputs/{country_save}/synth_generated_parameters_exp.csv")
     
+    info1 = pd.read_csv(drive+':/metadata/'+country+'_fulldata.csv', dtype={'station': str})
     
+    info1.startdate = pd.to_datetime(info1.startdate)
+    info1.enddate = pd.to_datetime(info1.enddate)
+    val_info = info1[info1['cleaned_years']>=min_yrs] #filter out stations that are less than min
+    val_info = val_info[val_info['startdate']>=min_startdate]
+    val_info = val_info[val_info['latitude']>=minlat] #filter station locations to within ERA bounds
+    val_info = val_info[val_info['latitude']<=maxlat]
+    val_info = val_info[val_info['longitude']>=minlon]
+    val_info = val_info[val_info['longitude']<=maxlon]
     
-    
+    info[country_i] = val_info.reset_index()
     
     if np.size(glob.glob(save_path_neg)) != 0:
         df_parameters_neg[country_i] = pd.read_csv(save_path_neg, dtype={'station': str})
@@ -140,7 +155,31 @@ for country_i in range(4):
     t_test = ttest_1samp(new_df[country_i].b,0,nan_policy = "omit")
     print(f"p value for {countries[country_i]} is {t_test[1]}")
 
+def weighted_avg_and_std(values, weights):
+    """
+    Return the weighted average and standard deviation.
 
+    They weights are in effect first normalized so that they 
+    sum to 1 (and so they must not all be 0).
+
+    values, weights -- NumPy ndarrays with the same shape.
+    """
+    average = np.average(values, weights=weights)
+    # Fast and numerically precise:
+    variance = np.average((values-average)**2, weights=weights)
+    return (average, np.sqrt(variance))
+
+
+# L moments and measure of spatial spread
+l_moments = [0]*4
+l_moments_synth = [0]*4
+for country_i in range(4):
+    l_moments[country_i] = lmoment(new_df[country_i].b)
+    l_moments_synth[country_i] = lmoment(df_generated_parameters[country_i].b)
+    
+    n_events = np.ceil(new_df[country_i].n_events_per_yr * info[country_i].cleaned_years) # this is wrong because the events per year are wrong
+    weights = n_events/np.sum(n_events)
+    mean_l1,std_l1 = weighted_avg_and_std(l_moments[country_i][1], weights)
 
 
 
