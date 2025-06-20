@@ -42,6 +42,9 @@ from matplotlib.colors import LinearSegmentedColormap
 import matplotlib.patches as patches
 import matplotlib.colors as mcolors
 import matplotlib.patches as mpatches
+from matplotlib.patches import Patch
+from matplotlib.gridspec import GridSpec
+from matplotlib.ticker import FixedLocator
 
 
 from scipy.stats import kendalltau, pearsonr, spearmanr
@@ -171,15 +174,15 @@ def weighted_avg_and_std(values, weights):
 
 
 # L moments and measure of spatial spread
-l_moments = [0]*4
-l_moments_synth = [0]*4
-for country_i in range(4):
-    l_moments[country_i] = lmoment(new_df[country_i].b)
-    l_moments_synth[country_i] = lmoment(df_generated_parameters[country_i].b)
+# l_moments = [0]*4
+# l_moments_synth = [0]*4
+# for country_i in range(4):
+#     l_moments[country_i] = lmoment(new_df[country_i].b)
+#     l_moments_synth[country_i] = lmoment(df_generated_parameters[country_i].b) # these are nan
     
-    n_events = np.ceil(new_df[country_i].n_events_per_yr * info[country_i].cleaned_years) # this is wrong because the events per year are wrong
-    weights = n_events/np.sum(n_events)
-    mean_l1,std_l1 = weighted_avg_and_std(l_moments[country_i][1], weights)
+#     n_events = np.ceil(new_df[country_i].n_events_per_yr * info[country_i].cleaned_years) # this is wrong because the events per year are wrong
+#     weights = n_events/np.sum(n_events)
+#     mean_l1,std_l1 = weighted_avg_and_std(l_moments[country_i][1], weights)
 
 
 
@@ -190,6 +193,7 @@ for country_i in range(4):
 # maps of spatial distributions
 
 s = 3
+sig_mod = 4
 fontsize = 12
 
 
@@ -240,22 +244,24 @@ cb.ax.tick_params(labelsize=fontsize)
     
 plt.show()
 
-
+letter = ["(c)","(a)","(b)","(d)"]
+fontsize = 14
 
 fig = plt.figure(figsize=(12, 17))
+gs = GridSpec(3, 2, figure=fig,
+              width_ratios = [2.2,1],height_ratios = [1.2,1,1.7],
+              hspace = 0)
 
-(topfig, bottomfig) = fig.subfigures(2, 1, height_ratios=(1,1))
+axes = [fig.add_subplot(gs[1, 1], projection=ccrs.PlateCarree()),
+        fig.add_subplot(gs[0:2, 0], projection=ccrs.PlateCarree()),
+        fig.add_subplot(gs[0, 1], projection=ccrs.PlateCarree()),
+        fig.add_subplot(gs[2, :], projection=ccrs.PlateCarree()),
+        ]
 
-(topleft, topright) = topfig.subfigures(1, 2, width_ratios=(2.5,1))
-topleft_axs = topleft.add_subplot(1, 1, 1, projection=proj)
-
-topright_axs = topright.subfigures(2, 1, height_ratios=(1.5,1))
-topright_ax1 = topright_axs[0].add_subplot(1, 1, 1, projection=proj)
-topright_ax2 = topright_axs[1].add_subplot(1, 1, 1, projection=proj)
-bottom_axs = bottomfig.add_subplot(1, 1, 1, projection=proj)
-
-
-axes = [topright_ax2,topleft_axs,topright_ax1,bottom_axs]
+legend_elements = [
+    plt.Line2D([0], [0], marker = "o",markersize  = np.sqrt(s), linestyle = " ", color='k', label='insignificant at 5%'),
+    plt.Line2D([0], [0], marker = "o",markersize = np.sqrt(s*sig_mod), linestyle = " ", color='k', label='significant at 5%'),
+]
 
 #loop to go through the countries
 for country_i in range(4): 
@@ -263,32 +269,53 @@ for country_i in range(4):
     axes[country_i].coastlines()
     axes[country_i].add_feature(cfeature.BORDERS, linestyle=':')
     
-    # # Choosing cmap
-    # if df_parameters.b.min() == 0:
-    #     norm = mcolors.TwoSlopeNorm(vmin=-0.06, vcenter=0, vmax=0.06)
-    # else:
-    #     norm = mcolors.TwoSlopeNorm(vmin=df_parameters.b.min(), vcenter=0, vmax=-1*df_parameters.b.min())
+    axes[country_i].set_title(letter[country_i],fontsize = fontsize+2,loc = "left")
     
-    sc = axes[country_i].scatter( #plot the negligable at 5% lvl points
-        new_df[country_i].longitude,
-        new_df[country_i].latitude,
-        c = new_df[country_i].b,
+    
+    
+    sc = axes[country_i].scatter(
+        df_parameters[country_i].longitude[df_parameters[country_i].b==0],
+        df_parameters[country_i].latitude[df_parameters[country_i].b==0],
+        c=new_df[country_i].b[df_parameters[country_i].b==0],
         s = s,
-        cmap = 'seismic',
-        norm = norm
+        cmap='seismic',  
+        norm=norm,
     )
+
+    sc = axes[country_i].scatter(
+        df_parameters[country_i].longitude[df_parameters[country_i].b!=0],
+        df_parameters[country_i].latitude[df_parameters[country_i].b!=0],
+        c=new_df[country_i].b[df_parameters[country_i].b!=0],
+        s = s*sig_mod,
+        # edgecolors = "grey",
+        cmap='seismic',  
+        norm=norm,
+    )
+    
+    
     
     
     # Set x and y ticks
     gl = axes[country_i].gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+    
+    if country_i == 0:
+        gl.xlocator = FixedLocator([6,9,12,15])
+        gl.ylocator = FixedLocator([48,50,52,54])
+    elif country_i == 2:
+        gl.xlocator = FixedLocator([-7,-4,-1,2])
+    
     gl.top_labels = False
     gl.right_labels = False
-    gl.xlabel_style = {'size': 12}
-    gl.ylabel_style = {'size': 12}
+    gl.xlabel_style = {'size': fontsize}
+    gl.ylabel_style = {'size': fontsize}
+    
 
 
-topfig.subplots_adjust(bottom = 0.3,left=.1, right=.9, wspace=0.2, hspace=.4)
 
+
+
+
+plt.legend(handles = legend_elements,fontsize = fontsize)
 
 cb = plt.colorbar(sc, orientation='horizontal',  extend = "both")
 cb.set_label('b', fontsize=fontsize)  
@@ -300,7 +327,86 @@ plt.show()
 
 
 # exponential b
+fig = plt.figure(figsize=(12, 17))
+gs = GridSpec(3, 2, figure=fig,
+              width_ratios = [2.2,1],height_ratios = [1.2,1,1.7],
+              hspace = 0)
 
+axes = [fig.add_subplot(gs[1, 1], projection=ccrs.PlateCarree()),
+        fig.add_subplot(gs[0:2, 0], projection=ccrs.PlateCarree()),
+        fig.add_subplot(gs[0, 1], projection=ccrs.PlateCarree()),
+        fig.add_subplot(gs[2, :], projection=ccrs.PlateCarree()),
+        ]
+
+legend_elements = [
+    plt.Line2D([0], [0], marker = "o",markersize  = np.sqrt(s), linestyle = " ", color='k', label='insignificant at 5%'),
+    plt.Line2D([0], [0], marker = "o",markersize = np.sqrt(s*sig_mod), linestyle = " ", color='k', label='significant at 5%'),
+]
+
+#loop to go through the countries
+for country_i in range(4): 
+
+    axes[country_i].coastlines()
+    axes[country_i].add_feature(cfeature.BORDERS, linestyle=':')
+    
+    axes[country_i].set_title(letter[country_i],fontsize = fontsize+2,loc = "left")
+    
+    
+    
+    sc = axes[country_i].scatter(
+        df_parameters_exp[country_i].longitude[df_parameters[country_i].b==0],
+        df_parameters_exp[country_i].latitude[df_parameters[country_i].b==0],
+        c=df_parameters_exp[country_i].b[df_parameters[country_i].b==0],
+        s = s,
+        cmap='seismic',  
+        norm=norm,
+    )
+
+    sc = axes[country_i].scatter(
+        df_parameters_exp[country_i].longitude[df_parameters[country_i].b!=0],
+        df_parameters_exp[country_i].latitude[df_parameters[country_i].b!=0],
+        c=df_parameters_exp[country_i].b[df_parameters[country_i].b!=0],
+        s = s*sig_mod,
+        # edgecolors = "grey",
+        cmap='seismic',  
+        norm=norm,
+    )
+    
+    
+    
+    
+    # Set x and y ticks
+    gl = axes[country_i].gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+    
+    if country_i == 0:
+        gl.xlocator = FixedLocator([6,9,12,15])
+        gl.ylocator = FixedLocator([48,50,52,54])
+    elif country_i == 2:
+        gl.xlocator = FixedLocator([-7,-4,-1,2])
+    
+    gl.top_labels = False
+    gl.right_labels = False
+    gl.xlabel_style = {'size': fontsize}
+    gl.ylabel_style = {'size': fontsize}
+    
+
+
+
+
+
+
+plt.legend(handles = legend_elements,fontsize = fontsize)
+
+cb = plt.colorbar(sc, orientation='horizontal',  extend = "both")
+cb.set_label('b (exp)', fontsize=fontsize)  
+cb.ax.tick_params(labelsize=fontsize)
+
+
+
+plt.show()
+
+
+#################################################################
 fig = plt.figure(figsize=(12, 17))
 
 (topfig, bottomfig) = fig.subfigures(2, 1, height_ratios=(1,1))
@@ -321,6 +427,7 @@ for country_i in range(4):
 
     axes[country_i].coastlines()
     axes[country_i].add_feature(cfeature.BORDERS, linestyle=':')
+    
     
     # # Choosing cmap
     # if df_parameters.b.min() == 0:
@@ -362,11 +469,13 @@ plt.show()
 # FIG 3
 # Synthetic spreads
 
+letter = ["(a)","(b)","(c)","(d)"]
+
 # linear b
 params = ["lambda","a","kappa","b"]
 params_titles =  [r"$\lambda_0$",r"$a$",r"$\kappa_0$",r"$b$"]
 xticks_list = [np.arange(0,15,3),np.arange(-0.1,0.2,0.06),np.arange(0,5),np.arange(-0.18,0.1,0.06)]
-letter = ["(a)","(b)","(c)","(d)"]
+
 
 fig = plt.figure(figsize=[12,12])
 for param_num in range(4):
