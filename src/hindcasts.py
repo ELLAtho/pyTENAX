@@ -54,14 +54,14 @@ drive = "D"
 # censor_thr = 0.9
 
 
-# country = 'Japan'
-# ERA_country = 'Japan'
-# country_save = 'Japan'
-# code_str = 'JP_'
-# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
-# name_len = 5
-# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-# censor_thr = 0.9
+country = 'Japan'
+ERA_country = 'Japan'
+country_save = 'Japan'
+code_str = 'JP_'
+minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+name_len = 5
+min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+censor_thr = 0.9
 # station_chose = "18256"
 # station_chose = "12261"
 station_chose = "19376"
@@ -76,14 +76,14 @@ station_chose = "19376"
 # censor_thr = 0.9
 
 
-country = 'UK' 
-ERA_country = 'UK'
-country_save = 'UK'
-code_str = 'UK_'
-minlat,minlon,maxlat,maxlon = 49, -9.0, 62, 3
-name_len = 6
-min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
-censor_thr = 0.9
+# country = 'UK' 
+# ERA_country = 'UK'
+# country_save = 'UK'
+# code_str = 'UK_'
+# minlat,minlon,maxlat,maxlon = 49, -9.0, 62, 3
+# name_len = 6
+# min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+# censor_thr = 0.9
 
 name_col = 'ppt' 
 temp_name_col = "t2m"
@@ -1983,6 +1983,229 @@ plt.legend(handles=legend_elements)
 plt.title('changes in significance', fontsize=16)
 
 plt.show()
+
+#################################################################################
+# drop outliers
+from scipy.stats import zscore
+
+def fit_odr_with_outlier_removal(x, y, model, beta0=None, threshold=2.5, max_iter=5):
+    x = np.array(x)
+    y = np.array(y)
+    mask = ~(np.isnan(x) | np.isnan(y))
+    x = x[mask]
+    y = y[mask]
+
+    for _ in range(max_iter):
+        data = odr.Data(x, y)
+        odr_obj = odr.ODR(data, model, beta0=beta0)
+        output = odr_obj.run()
+
+        # Handle odr.polynomial (beta[0] + beta[1]*x + beta[2]*x^2 + ...)
+        y_pred = np.polyval(output.beta[::-1], x)
+
+        residuals = y - y_pred
+        z = np.abs(zscore(residuals))
+
+        new_mask = z < threshold
+        if np.all(new_mask):
+            break
+
+        x = x[new_mask]
+        y = y[new_mask]
+
+    return output, x, y
+
+
+
+threshold = 2.5
+
+hindcast_Fphat_short = hindcast_Fphat[val_info.cleaned_years>=min_years_strong]
+hindcast_Fphat_exp_short = hindcast_Fphat_exp[val_info.cleaned_years>=min_years_strong]
+new_df_short = new_df[val_info.cleaned_years>=min_years_strong]
+
+variables = ["kappa","b","lambda","a"]
+for vari in variables: 
+    varis = [f"{vari}1",f"{vari}2",f"{vari}1_0",f"{vari}2_0"]
+    df_small = hindcast_Fphat[varis]
+    
+    
+    df_small_exp = hindcast_Fphat_exp[[f"{vari}1",f"{vari}2"]]
+    
+    corr_table = df_small.corr()
+    corr_table_exp = df_small_exp.corr()
+    
+    
+    poly_model = odr.polynomial(1)  # using first order polynomial model
+    output, x_fit, y = fit_odr_with_outlier_removal(
+        hindcast_Fphat_short[f"{vari}1"],
+        hindcast_Fphat_short[f"{vari}2"],
+        poly_model,
+        beta0=[0, 0],
+        threshold = threshold        )
+    poly = np.poly1d(output.beta[::-1])
+    poly_y = poly(x_fit)
+    
+    
+    poly_model = odr.polynomial(1)  # using first order polynomial model
+    data = odr.Data(hindcast_Fphat_short[f"{vari}1"].dropna(),hindcast_Fphat_short[f"{vari}2"].dropna())
+    odr_obj = odr.ODR(data, poly_model)
+    output = odr_obj.run()  # running ODR fitting
+    poly = np.poly1d(output.beta[::-1])
+    poly_y2 = poly(hindcast_Fphat_short[f"{vari}1"].dropna())
+    
+    poly_model = odr.polynomial(1)  # using first order polynomial model
+    output, x_fit_exp, y_exp = fit_odr_with_outlier_removal(
+        hindcast_Fphat_exp_short[f"{vari}1"],
+        hindcast_Fphat_exp_short[f"{vari}2"],
+        poly_model,
+        beta0=[0, 0],
+        threshold = threshold
+        )
+    poly = np.poly1d(output.beta[::-1])
+    poly_y_exp = poly(x_fit_exp)
+    
+    
+    data = odr.Data(hindcast_Fphat_exp_short[f"{vari}1"].dropna(),hindcast_Fphat_exp_short[f"{vari}2"].dropna())
+    odr_obj = odr.ODR(data, poly_model)
+    output = odr_obj.run()  # running ODR fitting
+    poly = np.poly1d(output.beta[::-1])
+    poly_y_exp2 = poly(hindcast_Fphat_exp_short[f"{vari}1"].dropna())
+    
+    
+    
+    if vari != "b":    
+        
+        poly_model = odr.polynomial(1)  # using first order polynomial model
+        output, x_fit_0, y_0 = fit_odr_with_outlier_removal(
+            hindcast_Fphat_short[f"{vari}1_0"],
+            hindcast_Fphat_short[f"{vari}2_0"],
+            poly_model,
+            beta0=[0, 0],
+            threshold = threshold        )
+        poly = np.poly1d(output.beta[::-1])
+        poly_y_0 = poly(x_fit_0)
+        
+        
+        data = odr.Data(hindcast_Fphat_short[f"{vari}1_0"].dropna(),hindcast_Fphat_short[f"{vari}2_0"].dropna())
+        odr_obj = odr.ODR(data, poly_model)
+        output = odr_obj.run()  # running ODR fitting
+        poly = np.poly1d(output.beta[::-1])
+        poly_y_02 = poly(hindcast_Fphat_short[f"{vari}1_0"].dropna())
+        
+        
+    
+    
+    
+    fig = plt.figure(figsize = (12,5))
+    ax1 = fig.add_subplot(1,3,1)
+    sc = ax1.scatter(hindcast_Fphat_short[f"{vari}1"],hindcast_Fphat_short[f"{vari}2"],
+                s=3,c = hindcast_Fphat_short.pvals,
+                norm = norm, cmap = cmap)
+    
+    
+    ax1.plot([np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],[np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],label = "line of equality",linestyle = "--")
+    ax1.plot(x_fit,poly_y,label = "best fit, outliers removed",color = "r")
+    ax1.plot(hindcast_Fphat_short[f"{vari}1"].dropna(),poly_y2,label = "best fit")
+    ax1.set_xlabel(f"{vari}1")
+    ax1.set_ylabel(f"{vari}2")
+    ax1.set_title(f"free b. corr = {corr_table[f"{vari}1"][f"{vari}2"]:.2f}")
+    plt.legend()
+    
+    ax2 = fig.add_subplot(1,3,2)
+    sc = ax2.scatter(hindcast_Fphat_short[f"{vari}1_0"],hindcast_Fphat_short[f"{vari}2_0"],
+                s=3,c = hindcast_Fphat_short.pvals,
+                norm = norm, cmap = cmap)
+    ax2.plot([np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],[np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],label = "line of equality",linestyle = "--")
+    
+    if vari != "b": 
+        ax2.plot(x_fit_0,poly_y_0,label = "best fit, outliers removed",color = "r")
+        ax2.plot(hindcast_Fphat_short[f"{vari}1_0"].dropna(),poly_y_02,label = "best fit")
+        
+    ax2.set_xlabel(f"{vari}1_0")
+    ax2.set_ylabel(f"{vari}2_0")
+    ax2.set_title(f"b = 0. corr = {corr_table[f"{vari}1_0"][f"{vari}2_0"]:.2f}")
+    
+    ax3 = fig.add_subplot(1,3,3)
+    sc = ax3.scatter(hindcast_Fphat_exp_short[f"{vari}1"],hindcast_Fphat_exp_short[f"{vari}2"],
+                s=3,c = hindcast_Fphat_exp_short.pvals,
+                norm = norm, cmap = cmap)#, marker = "*" if val_info.cleaned_years>=30 else ".")
+    
+    ax3.plot([np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],[np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],label = "line of equality",linestyle = "--")
+    ax3.plot(x_fit_exp,poly_y_exp,label = "best fit, outliers remove",color = "r")
+    ax3.plot(hindcast_Fphat_exp_short[f"{vari}1"].dropna(),poly_y_exp2,label = "best fit")
+    ax3.set_xlabel(f"{vari}1")
+    ax3.set_ylabel(f"{vari}2")
+    ax3.set_title(f"free b exponential. corr = {corr_table_exp[f"{vari}1"][f"{vari}2"]:.2f}")
+    
+    
+    cbar_ax = fig.add_subplot([0.15, -0.02, 0.7, 0.03])  # Position for the colorbar
+    cb = plt.colorbar(sc, cax=cbar_ax, orientation='horizontal')
+    cb.set_label('p-value', fontsize=14)
+    cb.ax.tick_params(labelsize=12)
+    plt.suptitle(f"{country_save}. years longer than {min_years_strong}")
+    plt.tight_layout()
+    plt.show()
+    
+    
+    
+    fig = plt.figure(figsize = (12,5))
+    ax1 = fig.add_subplot(1,3,1)
+    sc = ax1.scatter(x_fit,y,
+                s=3)
+    
+    ax1.plot([np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],[np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],label = "line of equality",linestyle = "--")
+    ax1.plot(x_fit,poly_y,label = "best fit, outliers removed",color = "r")
+    #ax1.plot(hindcast_Fphat_short[f"{vari}1"].dropna(),poly_y2,label = "best fit")
+    ax1.set_xlabel(f"{vari}1")
+    ax1.set_ylabel(f"{vari}2")
+    ax1.set_title(f"free b. corr = {corr_table[f"{vari}1"][f"{vari}2"]:.2f}")
+    plt.legend()
+    
+    ax2 = fig.add_subplot(1,3,2)
+    
+    if vari != "b": 
+        sc = ax2.scatter(x_fit_0,y_0,
+                    s=3)
+    ax2.plot([np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],[np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],label = "line of equality",linestyle = "--")
+    
+    if vari != "b":    
+        ax2.plot(x_fit_0,poly_y_0,label = "best fit, outliers removed",color = "r")
+        
+    ax2.set_xlabel(f"{vari}1_0")
+    ax2.set_ylabel(f"{vari}2_0")
+    ax2.set_title(f"b = 0. corr = {corr_table[f"{vari}1_0"][f"{vari}2_0"]:.2f}")
+    
+    ax3 = fig.add_subplot(1,3,3)
+    sc = ax3.scatter(x_fit_exp,y_exp,
+                s=3)#, marker = "*" if val_info.cleaned_years>=30 else ".")
+    
+    ax3.plot([np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],[np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],label = "line of equality",linestyle = "--")
+    ax3.plot(x_fit_exp,poly_y_exp,label = "best fit, outliers remove",color = "r")
+    #ax3.plot(hindcast_Fphat_exp_short[f"{vari}1"].dropna(),poly_y_exp2,label = "best fit")
+    ax3.set_xlabel(f"{vari}1")
+    ax3.set_ylabel(f"{vari}2")
+    ax3.set_title(f"free b exponential. corr = {corr_table_exp[f"{vari}1"][f"{vari}2"]:.2f}")
+    
+    
+    plt.suptitle(f"{country_save}. years longer than {min_years_strong} outliers removed")
+    plt.tight_layout()
+    plt.show()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

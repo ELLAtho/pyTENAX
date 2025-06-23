@@ -45,6 +45,7 @@ import matplotlib.patches as mpatches
 from matplotlib.patches import Patch
 from matplotlib.gridspec import GridSpec
 from matplotlib.ticker import FixedLocator
+import matplotlib.ticker 
 
 
 from scipy.stats import kendalltau, pearsonr, spearmanr
@@ -464,17 +465,19 @@ cb.ax.tick_params(labelsize=fontsize)
 
 plt.show()
 
-
+###############################################################################
 
 # FIG 3
 # Synthetic spreads
 
 letter = ["(a)","(b)","(c)","(d)"]
+darken = 2
 
 # linear b
 params = ["lambda","a","kappa","b"]
 params_titles =  [r"$\lambda_0$",r"$a$",r"$\kappa_0$",r"$b$"]
-xticks_list = [np.arange(0,15,3),np.arange(-0.1,0.2,0.06),np.arange(0,5),np.arange(-0.18,0.1,0.06)]
+xticks_list = [[0.3,1,3,9],np.arange(-0.04,0.14,0.06),[0.5,1,2,4],np.arange(-0.18,0.1,0.06)]
+lims = [[0.11,11],[-0.05,0.15],[0.3,5],[-0.19,0.1]]
 
 
 fig = plt.figure(figsize=[12,12])
@@ -483,31 +486,42 @@ for param_num in range(4):
     
     vln_list = [item 
             for country_num in range(4) 
-            for item in [new_df[country_num][params[param_num]].copy().dropna(), 
+            for item in [ 
+            df_generated_parameters_0[country_num][params[param_num]],
+            df_parameters_0[country_num][params[param_num]].copy().dropna(),
                          df_generated_parameters[country_num][params[param_num]],
-                         df_parameters_0[country_num][params[param_num]].copy().dropna(),
-                         df_generated_parameters_0[country_num][params[param_num]]]]
+                         new_df[country_num][params[param_num]].copy().dropna(),]
+            ]
     
     violin = plt.violinplot(vln_list,vert=False,showmeans = True)
+    
+    #stupid workaround to darken the observed plots
+    for drk in range(darken):
+        violin2 = plt.violinplot([vln_list[l] for l in np.arange(1,17,2)],vert=False,showmeans = True,positions = np.arange(2,17,2))
     
     if param_num == 0:
         plt.yticks(list(np.arange(1,17)),
                    
-                    ['Free b',
-                    'MC gen',
+                    [
+                    'MC gen, b=0',
                     'b=0',
-                    'MC gen, b=0']*4,
+                    'MC gen',
+                    'Free b',]*4,
                     
                    rotation = 50,
                    size = fontsize
                    )
+        plt.xscale("log")
+        
+        
     elif param_num == 3:
         plt.yticks(list(np.arange(1,17)),
                    
-                    ['Free b',
-                    'MC gen',
+                    [
+                    'MC gen, b=0',
                     'b=0',
-                    'MC gen, b=0']*4,
+                    'MC gen',
+                    'Free b',]*4,
                     
                    rotation = -50,
                    size = fontsize,
@@ -516,32 +530,48 @@ for param_num in range(4):
         ax.yaxis.set_label_position("right")
     else:
         ax.get_yaxis().set_visible(False)
-    plt.xticks(size = fontsize)
-    
+        
+        
+    if param_num == 2:
+        plt.xscale("log")
+        
     
     for n in np.arange(0,4):
         violin['bodies'][n].set_facecolor('y')
     for n in np.arange(4,8):
         violin['bodies'][n].set_facecolor('r')   
     for n in np.arange(8,12):
-        violin['bodies'][n].set_facecolor('g')   
+        violin['bodies'][n].set_facecolor('g')  
     for n in np.arange(12,16):
         violin['bodies'][n].set_facecolor('b')   
+        
+    for n in np.arange(0,2):
+        violin2['bodies'][n].set_facecolor('y')
+    for n in np.arange(2,4):
+        violin2['bodies'][n].set_facecolor('r')   
+    for n in np.arange(4,6):
+        violin2['bodies'][n].set_facecolor('g')  
+    for n in np.arange(6,8):
+        violin2['bodies'][n].set_facecolor('b')   
 
 
         
     for partname in ('cbars', 'cmeans', 'cmins', 'cmaxes'):
         violin[partname].set_color('k')
+        violin2[partname].set_color('k')
      
     plt.grid(axis = 'x')
+    plt.xlim(lims[param_num])
     
     ax.text(0.12, 1.03, letter[param_num], transform=ax.transAxes,
       fontsize=fontsize, va='top', ha='right')
     
     
     
-    plt.xticks(xticks_list[param_num])
-    plt.title(params_titles[param_num])
+    plt.xticks(xticks_list[param_num],fontsize = fontsize,rotation = 45 if param_num%2 == 1 else 0)
+    ax.get_xaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
+    
+    plt.title(params_titles[param_num],fontsize = fontsize+2)
 
 
 yellow_patch = mpatches.Patch(color='y', label='Germany')
@@ -549,8 +579,119 @@ red_patch = mpatches.Patch(color='r', label='Japan')
 green_patch = mpatches.Patch(color='g', label='UK')
 blue_patch = mpatches.Patch(color='b', label='USA')
 
-plt.legend(handles=[blue_patch, green_patch, red_patch, yellow_patch], loc='upper right', fontsize=fontsize)
+plt.legend(handles=[blue_patch, green_patch, red_patch, yellow_patch], loc='lower right', fontsize=fontsize)
 
 plt.subplots_adjust(wspace=0, hspace=0)
+plt.suptitle("Linear", fontsize = fontsize+2)
 
 plt.show()
+
+
+################################################################################
+# exp b
+
+fig = plt.figure(figsize=[12,12])
+for param_num in range(4):
+    ax = fig.add_subplot(1,4,param_num+1)
+    
+    vln_list = [item 
+            for country_num in range(4) 
+            for item in [ 
+            df_generated_parameters_0[country_num][params[param_num]],
+            df_parameters_0[country_num][params[param_num]].copy().dropna(),
+                         df_generated_parameters_exp[country_num][params[param_num]],
+                         df_parameters_exp[country_num][params[param_num]].copy().dropna(),]
+            ]
+    
+    violin = plt.violinplot(vln_list,vert=False,showmeans = True)
+    
+    #stupid workaround to darken the observed plots
+    for drk in range(darken):
+        violin2 = plt.violinplot([vln_list[l] for l in np.arange(1,17,2)],vert=False,showmeans = True,positions = np.arange(2,17,2))
+    
+    if param_num == 0:
+        plt.yticks(list(np.arange(1,17)),
+                   
+                    [
+                    'MC gen, b=0',
+                    'b=0',
+                    'MC gen',
+                    'Free b',]*4,
+                    
+                   rotation = 50,
+                   size = fontsize
+                   )
+        plt.xscale("log")
+        
+        
+    elif param_num == 3:
+        plt.yticks(list(np.arange(1,17)),
+                   
+                    [
+                    'MC gen, b=0',
+                    'b=0',
+                    'MC gen',
+                    'Free b',]*4,
+                    
+                   rotation = -50,
+                   size = fontsize,
+                   )
+        ax.yaxis.set_ticks_position("right")
+        ax.yaxis.set_label_position("right")
+    else:
+        ax.get_yaxis().set_visible(False)
+        
+        
+    if param_num == 2:
+        plt.xscale("log")
+        
+    
+    for n in np.arange(0,4):
+        violin['bodies'][n].set_facecolor('y')
+    for n in np.arange(4,8):
+        violin['bodies'][n].set_facecolor('r')   
+    for n in np.arange(8,12):
+        violin['bodies'][n].set_facecolor('g')  
+    for n in np.arange(12,16):
+        violin['bodies'][n].set_facecolor('b')   
+        
+    for n in np.arange(0,2):
+        violin2['bodies'][n].set_facecolor('y')
+    for n in np.arange(2,4):
+        violin2['bodies'][n].set_facecolor('r')   
+    for n in np.arange(4,6):
+        violin2['bodies'][n].set_facecolor('g')  
+    for n in np.arange(6,8):
+        violin2['bodies'][n].set_facecolor('b')   
+
+
+        
+    for partname in ('cbars', 'cmeans', 'cmins', 'cmaxes'):
+        violin[partname].set_color('k')
+        violin2[partname].set_color('k')
+     
+    plt.grid(axis = 'x')
+    plt.xlim(lims[param_num])
+    
+    ax.text(0.12, 1.03, letter[param_num], transform=ax.transAxes,
+      fontsize=fontsize, va='top', ha='right')
+    
+    
+    
+    plt.xticks(xticks_list[param_num],fontsize = fontsize,rotation = 45 if param_num%2 == 1 else 0)
+    ax.get_xaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
+    
+    plt.title(params_titles[param_num],fontsize = fontsize+2)
+
+
+yellow_patch = mpatches.Patch(color='y', label='Germany')
+red_patch = mpatches.Patch(color='r', label='Japan')
+green_patch = mpatches.Patch(color='g', label='UK')
+blue_patch = mpatches.Patch(color='b', label='USA')
+
+plt.legend(handles=[blue_patch, green_patch, red_patch, yellow_patch], loc='lower right', fontsize=fontsize)
+
+plt.subplots_adjust(wspace=0, hspace=0)
+plt.suptitle("Exponential", fontsize = fontsize+2)
+plt.show()
+
