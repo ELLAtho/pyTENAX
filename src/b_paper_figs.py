@@ -1096,6 +1096,21 @@ plt.show()
 ###############################################################################
 # FIG 5
 # hindcast maps
+significance = 0.05
 
+changes_pvals = [0]*4
+sig_list = [0]*4
+sig_list_0 = [0]*4
+
+for country_i in range(4):
+    hindcast_Fphat = hindcasts[country_i][info[country_i].cleaned_years>=min_years_strong]
+    
+    sig_list[country_i] = hindcast_Fphat.pvals > significance #True/1 = insignificant
+    sig_list_0[country_i] = hindcast_Fphat.pvals_0 > significance
+    
+    sig_list[country_i] = sig_list[country_i].replace({True: 1, False: 0})
+    sig_list_0[country_i] = sig_list_0[country_i].replace({True: 1, False: 0})
+    
+    changes_pvals[country_i] = sig_list[country_i] + sig_list_0[country_i]*2 # 0 means both sig, 1 means free insig but 0 sig, 2 means free sig then 0 insig, 3 means both insig
 
 
