@@ -2019,6 +2019,8 @@ def fit_odr_with_outlier_removal(x, y, model, beta0=None, threshold=2.5, max_ite
 
 threshold = 2.5
 
+norm = mcolors.Normalize(vmin=0, vmax=1)
+
 hindcast_Fphat_short = hindcast_Fphat[val_info.cleaned_years>=min_years_strong]
 hindcast_Fphat_exp_short = hindcast_Fphat_exp[val_info.cleaned_years>=min_years_strong]
 new_df_short = new_df[val_info.cleaned_years>=min_years_strong]

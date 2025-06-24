@@ -154,6 +154,20 @@ for country_i in range(4):
         pass
 
 
+# load hindcast data
+
+
+hindcasts = [0]*4
+hindcasts_exp = [0]*4
+
+for country_i in range(4):
+    country_save = country_saves[country_i]
+    hindcast_savename = f"{drive}:/outputs/{country_save}/hindcasts\\F_phat.csv"
+    hindcast_savename_exp = f"{drive}:/outputs/{country_save}/hindcasts\\F_phat_exp.csv"
+    hindcasts[country_i] = pd.read_csv(hindcast_savename, dtype = {"station" : str})
+    hindcasts_exp[country_i] = pd.read_csv(hindcast_savename_exp, dtype = {"station" : str})
+
+
 # t test for average of b
 for country_i in range(4):
     t_test = ttest_1samp(new_df[country_i].b,0,nan_policy = "omit")
@@ -694,4 +708,81 @@ plt.legend(handles=[blue_patch, green_patch, red_patch, yellow_patch], loc='lowe
 plt.subplots_adjust(wspace=0, hspace=0)
 plt.suptitle("Exponential", fontsize = fontsize+2)
 plt.show()
+
+
+#################################################################################
+# FIG ?
+# hindcasts
+norm = mcolors.Normalize(vmin=0, vmax=1)
+threshold = 2.5
+min_years_strong = 20
+
+
+fig = plt.figure(figsize = (12,5))
+ax1 = fig.add_subplot(1,3,1)
+ax2 = fig.add_subplot(1,3,2)
+ax3 = fig.add_subplot(1,3,3)
+
+for country_i in range(4):
+
+    hindcast_Fphat_short = hindcasts[country_i][info[country_i].cleaned_years>=min_years_strong]
+    hindcast_Fphat_exp_short = hindcasts_exp[country_i][info[country_i].cleaned_years>=min_years_strong]
+    new_df_short = new_df[country_i][info[country_i].cleaned_years>=min_years_strong]
+    
+    vari = "kappa"
+    
+    sc = ax1.scatter(hindcast_Fphat_short[f"{vari}1"],hindcast_Fphat_short[f"{vari}2"],
+                s=3,label = countries[country_i])
+    
+    
+    ax1.plot([np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],[np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],label = "line of equality",linestyle = "--")
+    # ax1.plot(x_fit,poly_y,label = "best fit, outliers removed",color = "r")
+    # ax1.plot(hindcast_Fphat_short[f"{vari}1"].dropna(),poly_y2,label = "best fit")
+    ax1.set_xlabel(f"{vari}1")
+    ax1.set_ylabel(f"{vari}2")
+    # ax1.set_title(f"free b. corr = {corr_table[f"{vari}1"][f"{vari}2"]:.2f}")
+    
+    
+    sc = ax2.scatter(hindcast_Fphat_short[f"{vari}1_0"],hindcast_Fphat_short[f"{vari}2_0"],
+                s=3,label = countries[country_i])
+    ax2.plot([np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],[np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],label = "line of equality",linestyle = "--")
+    
+    # if vari != "b": 
+    #     ax2.plot(x_fit_0,poly_y_0,label = "best fit, outliers removed",color = "r")
+    #     ax2.plot(hindcast_Fphat_short[f"{vari}1_0"].dropna(),poly_y_02,label = "best fit")
+        
+    ax2.set_xlabel(f"{vari}1_0")
+    ax2.set_ylabel(f"{vari}2_0")
+    # ax2.set_title(f"b = 0. corr = {corr_table[f"{vari}1_0"][f"{vari}2_0"]:.2f}")
+    
+    sc = ax3.scatter(hindcast_Fphat_exp_short[f"{vari}1"],hindcast_Fphat_exp_short[f"{vari}2"],
+                s=3,label = countries[country_i])#, marker = "*" if val_info.cleaned_years>=30 else ".")
+    
+    ax3.plot([np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],[np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],label = "line of equality",linestyle = "--")
+    # ax3.plot(x_fit_exp,poly_y_exp,label = "best fit, outliers remove",color = "r")
+    # ax3.plot(hindcast_Fphat_exp_short[f"{vari}1"].dropna(),poly_y_exp2,label = "best fit")
+    ax3.set_xlabel(f"{vari}1")
+    ax3.set_ylabel(f"{vari}2")
+    # ax3.set_title(f"free b exponential. corr = {corr_table_exp[f"{vari}1"][f"{vari}2"]:.2f}")
+    
+plt.legend()   
+plt.tight_layout()
+plt.show()
+
+    
+    # variables = ["kappa","b","lambda","a"]
+    # for vari in variables: 
+    #     varis = [f"{vari}1",f"{vari}2",f"{vari}1_0",f"{vari}2_0"]
+
+
+
+
+
+
+
+
+
+
+
+
 
