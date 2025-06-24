@@ -46,6 +46,7 @@ from matplotlib.patches import Patch
 from matplotlib.gridspec import GridSpec
 from matplotlib.ticker import FixedLocator
 import matplotlib.ticker 
+import seaborn
 
 
 from scipy.stats import kendalltau, pearsonr, spearmanr
@@ -168,6 +169,40 @@ for country_i in range(4):
     hindcasts_exp[country_i] = pd.read_csv(hindcast_savename_exp, dtype = {"station" : str})
 
 
+# load synthetic FRMSE data
+
+
+synth_files = glob.glob("D:/outputs/synthetic\\RL_specific*")
+use_files = glob.glob("D:/outputs/synthetic\\parameters_set*")
+
+
+synth_RL = [pd.read_csv(file) for file in synth_files]
+uses = [pd.read_csv(file) for file in use_files]
+
+
+S = TENAX(
+        return_period = [10,20,50,100],  
+        durations = [60, 180],
+        left_censoring = [0, 0.90],
+        alpha = 0,
+        n_monte_carlo = 20000, # total number of events (on average)
+        
+    )
+
+RL_true = []
+RL_true_exp = []
+for i in range(len(uses)):
+    F_phat_typical = [uses[i].kappa[0],uses[i].b[0],uses[i]["lambda"][0],uses[i].a[0]]
+    g_phat_typical = [uses[i].mu[0],uses[i].sigma[0]]
+    
+    Ts = np.arange(g_phat_typical[0]-2*g_phat_typical[1] - S.temp_delta, g_phat_typical[0]+2*g_phat_typical[1] + S.temp_delta, S.temp_res_monte_carlo)
+    
+    RL_typical_exp, _, _ = S.model_inversion(F_phat_typical, g_phat_typical, uses[i].n, Ts,b_exp = True)
+    RL_typical, _, _ = S.model_inversion(F_phat_typical, g_phat_typical, uses[i].n, Ts)
+    RL_true.append(RL_typical)
+    RL_true_exp.append(RL_typical_exp)
+
+
 # t test for average of b
 for country_i in range(4):
     t_test = ttest_1samp(new_df[country_i].b,0,nan_policy = "omit")
@@ -202,14 +237,11 @@ def weighted_avg_and_std(values, weights):
 
 
 # FIG 1
-
-
-# FIG 2
 # maps of spatial distributions
 
 s = 3
 sig_mod = 4
-fontsize = 12
+fontsize = 15
 
 
 
@@ -260,12 +292,12 @@ cb.ax.tick_params(labelsize=fontsize)
 plt.show()
 
 letter = ["(c)","(a)","(b)","(d)"]
-fontsize = 14
+fontsize = 20
 
 fig = plt.figure(figsize=(12, 17))
 gs = GridSpec(3, 2, figure=fig,
-              width_ratios = [2.2,1],height_ratios = [1.2,1,1.7],
-              hspace = 0)
+              width_ratios = [2.3,1],height_ratios = [1.2,1,1.7],
+              hspace = 0, wspace = 0.25)
 
 axes = [fig.add_subplot(gs[1, 1], projection=ccrs.PlateCarree()),
         fig.add_subplot(gs[0:2, 0], projection=ccrs.PlateCarree()),
@@ -323,6 +355,8 @@ for country_i in range(4):
     gl.right_labels = False
     gl.xlabel_style = {'size': fontsize}
     gl.ylabel_style = {'size': fontsize}
+    gl.xformatter = LongitudeFormatter(degree_symbol="° ")
+    gl.yformatter = LatitudeFormatter(degree_symbol="° ")
     
 
 
@@ -333,7 +367,7 @@ for country_i in range(4):
 plt.legend(handles = legend_elements,fontsize = fontsize)
 
 cb = plt.colorbar(sc, orientation='horizontal',  extend = "both")
-cb.set_label('b', fontsize=fontsize)  
+cb.set_label(r'b [K$^{-1}$]', fontsize=fontsize)  
 cb.ax.tick_params(labelsize=fontsize)
 
 
@@ -344,8 +378,8 @@ plt.show()
 # exponential b
 fig = plt.figure(figsize=(12, 17))
 gs = GridSpec(3, 2, figure=fig,
-              width_ratios = [2.2,1],height_ratios = [1.2,1,1.7],
-              hspace = 0)
+              width_ratios = [2.3,1],height_ratios = [1.2,1,1.7],
+              hspace = 0, wspace = 0.25)
 
 axes = [fig.add_subplot(gs[1, 1], projection=ccrs.PlateCarree()),
         fig.add_subplot(gs[0:2, 0], projection=ccrs.PlateCarree()),
@@ -403,6 +437,8 @@ for country_i in range(4):
     gl.right_labels = False
     gl.xlabel_style = {'size': fontsize}
     gl.ylabel_style = {'size': fontsize}
+    gl.xformatter = LongitudeFormatter(degree_symbol="° ")
+    gl.yformatter = LatitudeFormatter(degree_symbol="° ")
     
 
 
@@ -413,7 +449,7 @@ for country_i in range(4):
 plt.legend(handles = legend_elements,fontsize = fontsize)
 
 cb = plt.colorbar(sc, orientation='horizontal',  extend = "both")
-cb.set_label('b (exp)', fontsize=fontsize)  
+cb.set_label(r'b exponential [K$^{-1}$]', fontsize=fontsize)  
 cb.ax.tick_params(labelsize=fontsize)
 
 
@@ -481,7 +517,7 @@ plt.show()
 
 ###############################################################################
 
-# FIG 3
+# FIG 2
 # Synthetic spreads
 
 letter = ["(a)","(b)","(c)","(d)"]
@@ -489,7 +525,7 @@ darken = 2
 
 # linear b
 params = ["lambda","a","kappa","b"]
-params_titles =  [r"$\lambda_0$",r"$a$",r"$\kappa_0$",r"$b$"]
+params_titles =  [r"$\lambda_0$ [mm h${^{-1}}$]",r"$a$ [K$^{-1}$]",r"$\kappa_0$ ",r"$b$ [K$^{-1}$]"]
 xticks_list = [[0.3,1,3,9],np.arange(-0.04,0.14,0.06),[0.5,1,2,4],np.arange(-0.18,0.1,0.06)]
 lims = [[0.11,11],[-0.05,0.15],[0.3,5],[-0.19,0.1]]
 
@@ -555,18 +591,18 @@ for param_num in range(4):
     for n in np.arange(4,8):
         violin['bodies'][n].set_facecolor('r')   
     for n in np.arange(8,12):
-        violin['bodies'][n].set_facecolor('g')  
+        violin['bodies'][n].set_facecolor('b')  
     for n in np.arange(12,16):
-        violin['bodies'][n].set_facecolor('b')   
+        violin['bodies'][n].set_facecolor('g')   
         
     for n in np.arange(0,2):
         violin2['bodies'][n].set_facecolor('y')
     for n in np.arange(2,4):
         violin2['bodies'][n].set_facecolor('r')   
     for n in np.arange(4,6):
-        violin2['bodies'][n].set_facecolor('g')  
+        violin2['bodies'][n].set_facecolor('b')  
     for n in np.arange(6,8):
-        violin2['bodies'][n].set_facecolor('b')   
+        violin2['bodies'][n].set_facecolor('g')   
 
 
         
@@ -585,18 +621,18 @@ for param_num in range(4):
     plt.xticks(xticks_list[param_num],fontsize = fontsize,rotation = 45 if param_num%2 == 1 else 0)
     ax.get_xaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
     
-    plt.title(params_titles[param_num],fontsize = fontsize+2)
+    plt.title(params_titles[param_num],fontsize = fontsize)
 
 
 yellow_patch = mpatches.Patch(color='y', label='Germany')
 red_patch = mpatches.Patch(color='r', label='Japan')
-green_patch = mpatches.Patch(color='g', label='UK')
-blue_patch = mpatches.Patch(color='b', label='USA')
+green_patch = mpatches.Patch(color='b', label='UK')
+blue_patch = mpatches.Patch(color='g', label='USA')
 
 plt.legend(handles=[blue_patch, green_patch, red_patch, yellow_patch], loc='lower right', fontsize=fontsize)
 
 plt.subplots_adjust(wspace=0, hspace=0)
-plt.suptitle("Linear", fontsize = fontsize+2)
+#plt.suptitle("Linear", fontsize = fontsize+2)
 
 plt.show()
 
@@ -665,18 +701,18 @@ for param_num in range(4):
     for n in np.arange(4,8):
         violin['bodies'][n].set_facecolor('r')   
     for n in np.arange(8,12):
-        violin['bodies'][n].set_facecolor('g')  
+        violin['bodies'][n].set_facecolor('b')  
     for n in np.arange(12,16):
-        violin['bodies'][n].set_facecolor('b')   
+        violin['bodies'][n].set_facecolor('g')   
         
     for n in np.arange(0,2):
         violin2['bodies'][n].set_facecolor('y')
     for n in np.arange(2,4):
         violin2['bodies'][n].set_facecolor('r')   
     for n in np.arange(4,6):
-        violin2['bodies'][n].set_facecolor('g')  
+        violin2['bodies'][n].set_facecolor('b')  
     for n in np.arange(6,8):
-        violin2['bodies'][n].set_facecolor('b')   
+        violin2['bodies'][n].set_facecolor('g')   
 
 
         
@@ -695,13 +731,13 @@ for param_num in range(4):
     plt.xticks(xticks_list[param_num],fontsize = fontsize,rotation = 45 if param_num%2 == 1 else 0)
     ax.get_xaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
     
-    plt.title(params_titles[param_num],fontsize = fontsize+2)
+    plt.title(params_titles[param_num],fontsize = fontsize)
 
 
 yellow_patch = mpatches.Patch(color='y', label='Germany')
 red_patch = mpatches.Patch(color='r', label='Japan')
-green_patch = mpatches.Patch(color='g', label='UK')
-blue_patch = mpatches.Patch(color='b', label='USA')
+green_patch = mpatches.Patch(color='b', label='UK')
+blue_patch = mpatches.Patch(color='g', label='USA')
 
 plt.legend(handles=[blue_patch, green_patch, red_patch, yellow_patch], loc='lower right', fontsize=fontsize)
 
@@ -710,79 +746,356 @@ plt.suptitle("Exponential", fontsize = fontsize+2)
 plt.show()
 
 
+
 #################################################################################
-# FIG ?
+# FIG 3
+# synthetic FRMSE
+
+
+gap1 = 0.3 #gaps between the bar plots
+gap2 = 1.2
+fontsize = 20
+
+colors = ['#377eb8', '#ff7f00', '#4daf4a']*4
+    
+ret_lvls = ["10","100"]
+# plot the fractionals all together in a different layout
+fig = plt.figure(figsize=(12,12))
+for i in range(3):
+    ax = fig.add_subplot(2,3,i+1)
+    
+    #plot boxes
+    boxplot_list = [synth_RL[years][f"{bstyle}_{ret_lvls[ret_n]}"].dropna()/RL_true[years][ret_n*3] for ret_n in range(2) for bstyle in ["free","set","b0"] for years in [i*3,i*3+2,i*3+1]]
+    # positions = np.concat([np.arange(0,4.5,0.5),np.arange(5,9.5,0.5)]) 
+    
+    base_positions = np.concat([np.arange(0+pos*(1.5+gap1),1.5+pos*(1.5+gap1),0.5) for pos in range(3)])
+    positions = np.concat([base_positions,base_positions+(1.5+2*(1.5+gap1))+gap2])
+                          
+    
+    box_plot = ax.boxplot(boxplot_list,
+                          positions = positions,
+                          showmeans = True, meanline = True, patch_artist=True,
+                          meanprops=dict(marker=None, linestyle=':', linewidth=1,color = 'k'),
+                          sym = "",
+                          whis = [5,95])
+    
+    strip_list = [box[(box<np.quantile(box,0.05)) | (box>np.quantile(box,0.95))] for box in boxplot_list]
+    
+    for l in range(len(strip_list)):
+        strip_list[l][strip_list[l]>2] = 2
+        strip_list[l][strip_list[l]<1/2] = 1/2
+    
+    strip_data = pd.DataFrame({
+        
+        "x": np.concatenate([[pos]*len(vals) for pos, vals in zip(positions, strip_list)]),
+        "y": np.concatenate(strip_list)
+        })
+    
+    
+    seaborn.stripplot(x="x", y="y", data=strip_data, color='black',alpha = 0.5,size = 3,native_scale=True)
+    
+    
+    ax.grid(axis = "y")
+    
+    
+    alpha = [1,0.6,0.3]
+    for n_patch in range(len(box_plot['boxes'])):
+        patch = box_plot['boxes'][n_patch]
+        patch.set_facecolor(colors[int(np.trunc(n_patch/3))])
+        patch.set_alpha(alpha[int(n_patch%3)])
+                
+    for median_line in box_plot["medians"]:
+        median_line.set_color('k')
+    
+    ax.set_xticks([positions[4],positions[13]],ret_lvls,fontsize = fontsize)
+    
+    ax.set_yscale("log")
+    ax.set_ylim(1/2.1,2.1)
+    custom_ticks = [1/2,1/1.5,1/1.1, 1, 1.1,1.5,2]
+    custom_ticklabels = ["≤ 1/2","1/1.5","1/1.1", "1", "1.1","1.5","≥ 2"]
+    ax.set_yticks(custom_ticks)
+    ax.set_yticklabels(custom_ticklabels,fontsize = fontsize)
+    ax.yaxis.set_major_locator(plt.FixedLocator(custom_ticks)) 
+    ax.yaxis.set_minor_locator(plt.NullLocator())
+    
+    ax.set_title(f"b = {uses[i*3].b[0]}",fontsize = fontsize+2)
+    ax.set_xlabel("Return period (years)",fontsize = fontsize)
+    ax.set_ylabel("gen_RL/RL",fontsize = fontsize)
+    
+    if i == 0:
+        legend_elements = [
+        plt.Line2D([0], [0], color='k', label='median'),
+        plt.Line2D([0], [0], color='k', linestyle = ":", label='mean') 
+        ]
+        plt.legend(handles=legend_elements,fontsize = fontsize)
+
+    
+    if i == 1:
+        legend_elements = [
+            Patch(facecolor="k", label='30 years'),
+            Patch(facecolor="k", alpha = 0.6, label='20 years'),
+            Patch(facecolor="k", alpha = 0.3, label='10 years'),
+            ]    
+        
+        plt.legend(handles=legend_elements,fontsize = fontsize)
+    else:
+        pass
+
+legend_elements = [
+    Patch(facecolor=colors[0], label='Free'),  # default matplotlib colors
+    Patch(facecolor=colors[1], label='Set'),
+    Patch(facecolor=colors[2], label='b = 0'),
+]
+
+plt.legend(handles=legend_elements,fontsize = fontsize)
+
+plt.tight_layout()
+plt.show()
+
+
+fig = plt.figure(figsize=(12,12))
+for i in range(3):
+    ax = fig.add_subplot(2,3,i+1)
+    
+    #plot boxes
+    boxplot_list = [synth_RL[years][f"{bstyle}_{ret_lvls[ret_n]}_exp"].dropna()/RL_true_exp[years][ret_n*3] for ret_n in range(2) for bstyle in ["free","set","b0"] for years in [i*3,i*3+2,i*3+1]]
+    
+    base_positions = np.concat([np.arange(0+pos*(1.5+gap1),1.5+pos*(1.5+gap1),0.5) for pos in range(3)])
+    positions = np.concat([base_positions,base_positions+(1.5+2*(1.5+gap1))+gap2])
+       
+    
+    box_plot = ax.boxplot(boxplot_list,
+                          positions = positions,
+                          showmeans = True, meanline = True, patch_artist=True,
+                          meanprops=dict(marker=None, linestyle=':', linewidth=1,color = 'k'),
+                          sym = "",
+                          whis = [5,95])
+    
+    strip_list = [box[(box<np.quantile(box,0.05)) | (box>np.quantile(box,0.95))] for box in boxplot_list]
+    for l in range(len(strip_list)):
+        strip_list[l][strip_list[l]>2] = 2
+        strip_list[l][strip_list[l]<1/2] = 1/2
+    
+    strip_data = pd.DataFrame({
+        
+        "x": np.concatenate([[pos]*len(vals) for pos, vals in zip(positions, strip_list)]),
+        "y": np.concatenate(strip_list)
+        })
+    
+    
+    seaborn.stripplot(x="x", y="y", data=strip_data, color='black',alpha = 0.5,size = 3,native_scale=True)
+    
+    plt.grid(axis = "y")
+    
+    alpha = [1,0.6,0.3]
+    for n_patch in range(len(box_plot['boxes'])):
+        patch = box_plot['boxes'][n_patch]
+        patch.set_facecolor(colors[int(np.trunc(n_patch/3))])
+        patch.set_alpha(alpha[int(n_patch%3)])
+                
+    for median_line in box_plot["medians"]:
+        median_line.set_color('k')
+    
+    plt.xticks([positions[4],positions[13]],ret_lvls,fontsize = fontsize)
+    
+    plt.yscale("log")
+    plt.ylim(1/2.1,2.1)
+    
+    custom_ticks = [1/2,1/1.5,1/1.1, 1, 1.1,1.5,2]
+    custom_ticklabels = ["≤ 1/2","1/1.5","1/1.1", "1", "1.1","1.5","≥ 2"]
+    ax.set_yticks(custom_ticks)
+    ax.set_yticklabels(custom_ticklabels,fontsize = fontsize)
+    ax.yaxis.set_major_locator(plt.FixedLocator(custom_ticks)) 
+    ax.yaxis.set_minor_locator(plt.NullLocator())
+    ax.set_ylabel("gen_RL/RL",fontsize = fontsize)
+    
+    
+    plt.title(f"exponential b = {uses[i*3].b[0]}",fontsize = fontsize+2)
+    plt.xlabel("Return period (years)",fontsize = fontsize)
+    
+    if i == 0:
+        legend_elements = [
+            plt.Line2D([0], [0], color='k', label='median'),
+            plt.Line2D([0], [0], color='k', linestyle = ":", label='mean') 
+        ]
+        plt.legend(handles=legend_elements,fontsize = fontsize)
+
+    
+    
+    if i == 1:
+        legend_elements = [
+            Patch(facecolor="k", label='30 years'),
+            Patch(facecolor="k", alpha = 0.6, label='20 years'),
+            Patch(facecolor="k", alpha = 0.3, label='10 years'),
+            ]    
+        
+        plt.legend(handles=legend_elements,fontsize = fontsize)
+    else:
+        pass
+
+legend_elements = [  
+    Patch(facecolor=colors[0], label='Free'), 
+    Patch(facecolor=colors[1], label='Set'),
+    Patch(facecolor=colors[2], label='b = 0'),
+]
+
+plt.legend(handles=legend_elements,fontsize = fontsize)
+
+plt.tight_layout()
+plt.show()
+
+
+#################################################################################
+# FIG 4
 # hindcasts
+
+colors = ["y","r","b","g"]
+s = 5
+
 norm = mcolors.Normalize(vmin=0, vmax=1)
 threshold = 2.5
 min_years_strong = 20
 
+lims = [
+        [0,13],
+        [-0.1,0.15],
+        [0.5,4],
+        [-0.2,0.1]
+        ]
 
-fig = plt.figure(figsize = (12,5))
-ax1 = fig.add_subplot(1,3,1)
-ax2 = fig.add_subplot(1,3,2)
-ax3 = fig.add_subplot(1,3,3)
+variables = ["kappa","b","lambda","a"]
+variables = ["lambda","a","kappa","b"]
+params_titles =  [r"$\lambda_0$",r"$a$",r"$\kappa_0$ ",r"$b$"]
+param_units = [r"[mm h${^{-1}}$]",r"[K$^{-1}$]",r"",r"[K$^{-1}$]"]
 
-for country_i in range(4):
+fig = plt.figure(figsize = (12,17))
 
-    hindcast_Fphat_short = hindcasts[country_i][info[country_i].cleaned_years>=min_years_strong]
-    hindcast_Fphat_exp_short = hindcasts_exp[country_i][info[country_i].cleaned_years>=min_years_strong]
-    new_df_short = new_df[country_i][info[country_i].cleaned_years>=min_years_strong]
+
+for i in range(4):
+    vari = variables[i]
     
-    vari = "kappa"
+    ax1 = fig.add_subplot(4,2,1+2*i)
+    ax2 = fig.add_subplot(4,2,2+2*i)
     
-    sc = ax1.scatter(hindcast_Fphat_short[f"{vari}1"],hindcast_Fphat_short[f"{vari}2"],
-                s=3,label = countries[country_i])
-    
-    
-    ax1.plot([np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],[np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],label = "line of equality",linestyle = "--")
-    # ax1.plot(x_fit,poly_y,label = "best fit, outliers removed",color = "r")
-    # ax1.plot(hindcast_Fphat_short[f"{vari}1"].dropna(),poly_y2,label = "best fit")
-    ax1.set_xlabel(f"{vari}1")
-    ax1.set_ylabel(f"{vari}2")
-    # ax1.set_title(f"free b. corr = {corr_table[f"{vari}1"][f"{vari}2"]:.2f}")
-    
-    
-    sc = ax2.scatter(hindcast_Fphat_short[f"{vari}1_0"],hindcast_Fphat_short[f"{vari}2_0"],
-                s=3,label = countries[country_i])
-    ax2.plot([np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],[np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],label = "line of equality",linestyle = "--")
-    
-    # if vari != "b": 
-    #     ax2.plot(x_fit_0,poly_y_0,label = "best fit, outliers removed",color = "r")
-    #     ax2.plot(hindcast_Fphat_short[f"{vari}1_0"].dropna(),poly_y_02,label = "best fit")
+    if i == 0:
+        ax1.set_title("b = linear",fontsize = fontsize)
+        ax2.set_title("b = 0",fontsize = fontsize)
         
-    ax2.set_xlabel(f"{vari}1_0")
-    ax2.set_ylabel(f"{vari}2_0")
-    # ax2.set_title(f"b = 0. corr = {corr_table[f"{vari}1_0"][f"{vari}2_0"]:.2f}")
     
-    sc = ax3.scatter(hindcast_Fphat_exp_short[f"{vari}1"],hindcast_Fphat_exp_short[f"{vari}2"],
-                s=3,label = countries[country_i])#, marker = "*" if val_info.cleaned_years>=30 else ".")
+    ax1.set_xlim(lims[i])
+    ax1.set_ylim(lims[i])
     
-    ax3.plot([np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],[np.min(hindcast_Fphat_short[f"{vari}1"]),np.max(hindcast_Fphat_short[f"{vari}1"])*1.1],label = "line of equality",linestyle = "--")
-    # ax3.plot(x_fit_exp,poly_y_exp,label = "best fit, outliers remove",color = "r")
-    # ax3.plot(hindcast_Fphat_exp_short[f"{vari}1"].dropna(),poly_y_exp2,label = "best fit")
-    ax3.set_xlabel(f"{vari}1")
-    ax3.set_ylabel(f"{vari}2")
-    # ax3.set_title(f"free b exponential. corr = {corr_table_exp[f"{vari}1"][f"{vari}2"]:.2f}")
+    ax1.set_xlabel(f"{params_titles[i]} first period {param_units[i]}",fontsize = fontsize)
+    ax1.set_ylabel(f"{params_titles[i]} second period {param_units[i]}",fontsize = fontsize)
+    ax1.tick_params(labelsize=fontsize)
     
-plt.legend()   
+    if vari != "b":
+        ax2.set_xlim(lims[i])
+        ax2.set_ylim(lims[i])
+        
+        ax2.set_xlabel(f"{params_titles[i]} first period {param_units[i]}",fontsize = fontsize)
+        ax2.set_ylabel(f"{params_titles[i]} second period {param_units[i]}",fontsize = fontsize)
+        ax2.tick_params(labelsize=fontsize)
+    if vari == "b":
+        ax2.set_axis_off()
+    
+    for country_i in [3,1,2,0]:
+    
+        hindcast_Fphat_short = hindcasts[country_i][info[country_i].cleaned_years>=min_years_strong]
+        hindcast_Fphat_exp_short = hindcasts_exp[country_i][info[country_i].cleaned_years>=min_years_strong]
+        new_df_short = new_df[country_i][info[country_i].cleaned_years>=min_years_strong]
+        
+        
+        if country_i == 3:
+            ax1.plot(lims[i],lims[i],label = "line of equality",linestyle = "--")
+            if vari != "b":
+                ax2.plot(lims[i],lims[i],label = "line of equality",linestyle = "--")
+            
+        sc = ax1.scatter(hindcast_Fphat_short[f"{vari}1"],hindcast_Fphat_short[f"{vari}2"],
+                    s=s,label = countries[country_i],color = colors[country_i],alpha = 0.5)
+        
+        
+        
+        # ax1.plot(x_fit,poly_y,label = "best fit, outliers removed",color = "r")
+        # ax1.plot(hindcast_Fphat_short[f"{vari}1"].dropna(),poly_y2,label = "best fit")
+        
+        # ax1.set_title(f"free b. corr = {corr_table[f"{vari}1"][f"{vari}2"]:.2f}")
+        
+        
+        if vari != "b": 
+            sc = ax2.scatter(hindcast_Fphat_short[f"{vari}1_0"],hindcast_Fphat_short[f"{vari}2_0"],
+                        s=s,label = countries[country_i],color = colors[country_i],alpha = 0.5)
+        
+        
+        
+legend_elements = [
+    Patch(facecolor=colors[0], alpha = 0.5, label='Germany          '),  # default matplotlib colors
+    Patch(facecolor=colors[1], alpha = 0.5, label='UK'),
+    Patch(facecolor=colors[2], alpha = 0.5, label='Japan'),
+    Patch(facecolor=colors[3], alpha = 0.5, label='USA'),
+]
+
+plt.legend(handles = legend_elements, fontsize = fontsize, loc = "upper left")   
 plt.tight_layout()
 plt.show()
 
     
-    # variables = ["kappa","b","lambda","a"]
-    # for vari in variables: 
-    #     varis = [f"{vari}1",f"{vari}2",f"{vari}1_0",f"{vari}2_0"]
+ 
 
 
+fig = plt.figure(figsize = (8.3,19))
 
+for i in range(4):
+    vari = variables[i]
+    ax1 = fig.add_subplot(4,1,1+i)
+    
+    ax1.set_xlim(lims[i])
+    ax1.set_ylim(lims[i])
+    ax1.tick_params(labelsize=fontsize)
+    
+    
+    ax1.set_xlabel(f"{params_titles[i]} first period {param_units[i]}",fontsize = fontsize)
+    ax1.set_ylabel(f"{params_titles[i]} second period {param_units[i]}",fontsize = fontsize)
+    
+    
+    for country_i in [3,1,2,0]:
+    
+        hindcast_Fphat_short = hindcasts[country_i][info[country_i].cleaned_years>=min_years_strong]
+        hindcast_Fphat_exp_short = hindcasts_exp[country_i][info[country_i].cleaned_years>=min_years_strong]
+        new_df_short = new_df[country_i][info[country_i].cleaned_years>=min_years_strong]
+        
+        
+        if country_i == 3:
+            ax1.plot(lims[i],lims[i],label = "line of equality",linestyle = "--")
+            
+            
+        sc = ax1.scatter(hindcast_Fphat_exp_short[f"{vari}1"],hindcast_Fphat_exp_short[f"{vari}2"],
+                    s=s,label = countries[country_i],color = colors[country_i],alpha = 0.5)
 
+        
+        
+        # ax1.plot(x_fit,poly_y,label = "best fit, outliers removed",color = "r")
+        # ax1.plot(hindcast_Fphat_short[f"{vari}1"].dropna(),poly_y2,label = "best fit")
+        
+        
+        
+    
+legend_elements = [
+    Patch(facecolor=colors[0], alpha = 0.5, label='Germany          '),  # default matplotlib colors
+    Patch(facecolor=colors[1], alpha = 0.5, label='UK'),
+    Patch(facecolor=colors[2], alpha = 0.5, label='Japan'),
+    Patch(facecolor=colors[3], alpha = 0.5, label='USA'),
+]
 
+plt.legend(handles = legend_elements, fontsize = fontsize, loc = "upper left")      
+plt.suptitle("exponential", fontsize = fontsize)
+plt.tight_layout()
+plt.show()
 
-
-
-
-
+    
+###############################################################################
+# FIG 5
+# hindcast maps
 
 
 
