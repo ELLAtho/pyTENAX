@@ -172,8 +172,10 @@ for country_i in range(4):
 # load synthetic FRMSE data
 
 
-synth_files = glob.glob("D:/outputs/synthetic\\RL_specific*")
-use_files = glob.glob("D:/outputs/synthetic\\parameters_set*")
+synth_files = [f"D:/outputs/synthetic\\RL_specific{num}.csv" for num in np.arange(1,10)]
+#glob.glob("D:/outputs/synthetic\\RL_specific*")
+use_files = [f"D:/outputs/synthetic\\parameters_set{num}.csv" for num in np.arange(1,10)]
+#glob.glob("D:/outputs/synthetic\\parameters_set*")
 
 
 synth_RL = [pd.read_csv(file) for file in synth_files]
@@ -241,55 +243,54 @@ def weighted_avg_and_std(values, weights):
 
 s = 3
 sig_mod = 4
-fontsize = 15
+norm = mcolors.TwoSlopeNorm(vmin=-0.1, vcenter=0, vmax=0.1)
 
 
 
-
-fig = plt.figure(figsize=(12, 10))
-proj = ccrs.PlateCarree()
-for country_i in range(4):
-    ax = fig.add_subplot(2, 2, country_i+1, projection=proj)
+# fig = plt.figure(figsize=(12, 10))
+# proj = ccrs.PlateCarree()
+# for country_i in range(4):
+#     ax = fig.add_subplot(2, 2, country_i+1, projection=proj)
     
-    ax.coastlines()
-    ax.add_feature(cfeature.BORDERS, linestyle=':')
-
-    
-
-    norm = mcolors.TwoSlopeNorm(vmin=-0.1, vcenter=0, vmax=0.1)
-    
-    sc = ax.scatter(
-        df_parameters[country_i].longitude[df_parameters[country_i].b==0],
-        df_parameters[country_i].latitude[df_parameters[country_i].b==0],
-        s = s,
-        color = 'darkgrey',  
-    )
-
-    sc = ax.scatter(
-        df_parameters[country_i].longitude[df_parameters[country_i].b!=0],
-        df_parameters[country_i].latitude[df_parameters[country_i].b!=0],
-        c=df_parameters[country_i].b[df_parameters[country_i].b!=0],
-        s = s,
-        cmap='seismic',  
-        norm=norm
-    )
-    
-    gl = ax.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
-    gl.top_labels = False
-    gl.right_labels = False
-    gl.xlabel_style = {'size': fontsize}
-    gl.ylabel_style = {'size': fontsize}
-    gl.xformatter = LongitudeFormatter(degree_symbol="° ")
-    gl.yformatter = LatitudeFormatter(degree_symbol="° ")
-
-
-# Add a colorbar at the bottom
-cb = plt.colorbar(sc, orientation='horizontal',  extend = "both")
-cb.set_label('b', fontsize=fontsize)  
-cb.ax.tick_params(labelsize=fontsize)
+#     ax.coastlines()
+#     ax.add_feature(cfeature.BORDERS, linestyle=':')
 
     
-plt.show()
+
+#     norm = mcolors.TwoSlopeNorm(vmin=-0.1, vcenter=0, vmax=0.1)
+    
+#     sc = ax.scatter(
+#         df_parameters[country_i].longitude[df_parameters[country_i].b==0],
+#         df_parameters[country_i].latitude[df_parameters[country_i].b==0],
+#         s = s,
+#         color = 'darkgrey',  
+#     )
+
+#     sc = ax.scatter(
+#         df_parameters[country_i].longitude[df_parameters[country_i].b!=0],
+#         df_parameters[country_i].latitude[df_parameters[country_i].b!=0],
+#         c=df_parameters[country_i].b[df_parameters[country_i].b!=0],
+#         s = s,
+#         cmap='seismic',  
+#         norm=norm
+#     )
+    
+#     gl = ax.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+#     gl.top_labels = False
+#     gl.right_labels = False
+#     gl.xlabel_style = {'size': fontsize}
+#     gl.ylabel_style = {'size': fontsize}
+#     gl.xformatter = LongitudeFormatter(degree_symbol="° ")
+#     gl.yformatter = LatitudeFormatter(degree_symbol="° ")
+
+
+# # Add a colorbar at the bottom
+# cb = plt.colorbar(sc, orientation='horizontal',  extend = "both")
+# cb.set_label('b', fontsize=fontsize)  
+# cb.ax.tick_params(labelsize=fontsize)
+
+    
+# plt.show()
 
 letter = ["(c)","(a)","(b)","(d)"]
 fontsize = 20
@@ -306,8 +307,8 @@ axes = [fig.add_subplot(gs[1, 1], projection=ccrs.PlateCarree()),
         ]
 
 legend_elements = [
-    plt.Line2D([0], [0], marker = "o",markersize  = np.sqrt(s), linestyle = " ", color='k', label='insignificant at 5%'),
-    plt.Line2D([0], [0], marker = "o",markersize = np.sqrt(s*sig_mod), linestyle = " ", color='k', label='significant at 5%'),
+    plt.Line2D([0], [0], marker = "o",markersize = np.sqrt(s*sig_mod), linestyle = " ", color='k', label=r'$b$ significantly'+' \ndifferent from 0'),
+    plt.Line2D([0], [0], marker = "o",markersize  = np.sqrt(s), linestyle = " ", color='k', label=r'not significant'),
 ]
 
 #loop to go through the countries
@@ -339,7 +340,10 @@ for country_i in range(4):
         norm=norm,
     )
     
-    
+    if country_i == 1:        
+        axes[country_i].legend(handles = legend_elements,fontsize = fontsize)
+    else: 
+        pass
     
     
     # Set x and y ticks
@@ -364,12 +368,10 @@ for country_i in range(4):
 
 
 
-plt.legend(handles = legend_elements,fontsize = fontsize)
 
 cb = plt.colorbar(sc, orientation='horizontal',  extend = "both")
-cb.set_label(r'b [K$^{-1}$]', fontsize=fontsize)  
+cb.set_label(r'$b$ [K$^{-1}$]', fontsize=fontsize)  
 cb.ax.tick_params(labelsize=fontsize)
-
 
 
 plt.show()
@@ -388,10 +390,9 @@ axes = [fig.add_subplot(gs[1, 1], projection=ccrs.PlateCarree()),
         ]
 
 legend_elements = [
-    plt.Line2D([0], [0], marker = "o",markersize  = np.sqrt(s), linestyle = " ", color='k', label='insignificant at 5%'),
-    plt.Line2D([0], [0], marker = "o",markersize = np.sqrt(s*sig_mod), linestyle = " ", color='k', label='significant at 5%'),
+    plt.Line2D([0], [0], marker = "o",markersize = np.sqrt(s*sig_mod), linestyle = " ", color='k', label=r'$b_{\mathrm{exp}}$ significantly'+' \ndifferent from 0'),
+    plt.Line2D([0], [0], marker = "o",markersize  = np.sqrt(s), linestyle = " ", color='k', label=r'not significant'),
 ]
-
 #loop to go through the countries
 for country_i in range(4): 
 
@@ -405,7 +406,7 @@ for country_i in range(4):
     sc = axes[country_i].scatter(
         df_parameters_exp[country_i].longitude[df_parameters[country_i].b==0],
         df_parameters_exp[country_i].latitude[df_parameters[country_i].b==0],
-        c=df_parameters_exp[country_i].b[df_parameters[country_i].b==0],
+        c=df_parameters_exp[country_i].b[df_parameters[country_i].b==0]*df_parameters_exp[country_i].kappa[df_parameters[country_i].b==0],
         s = s,
         cmap='seismic',  
         norm=norm,
@@ -414,14 +415,17 @@ for country_i in range(4):
     sc = axes[country_i].scatter(
         df_parameters_exp[country_i].longitude[df_parameters[country_i].b!=0],
         df_parameters_exp[country_i].latitude[df_parameters[country_i].b!=0],
-        c=df_parameters_exp[country_i].b[df_parameters[country_i].b!=0],
+        c=df_parameters_exp[country_i].b[df_parameters[country_i].b!=0]*df_parameters_exp[country_i].kappa[df_parameters[country_i].b!=0],
         s = s*sig_mod,
         # edgecolors = "grey",
         cmap='seismic',  
         norm=norm,
     )
     
-    
+    if country_i == 1:        
+        axes[country_i].legend(handles = legend_elements,fontsize = fontsize)
+    else: 
+        pass
     
     
     # Set x and y ticks
@@ -446,69 +450,8 @@ for country_i in range(4):
 
 
 
-plt.legend(handles = legend_elements,fontsize = fontsize)
-
 cb = plt.colorbar(sc, orientation='horizontal',  extend = "both")
-cb.set_label(r'b exponential [K$^{-1}$]', fontsize=fontsize)  
-cb.ax.tick_params(labelsize=fontsize)
-
-
-
-plt.show()
-
-
-#################################################################
-fig = plt.figure(figsize=(12, 17))
-
-(topfig, bottomfig) = fig.subfigures(2, 1, height_ratios=(1,1))
-
-(topleft, topright) = topfig.subfigures(1, 2, width_ratios=(2.5,1))
-topleft_axs = topleft.add_subplot(1, 1, 1, projection=proj)
-
-topright_axs = topright.subfigures(2, 1, height_ratios=(1.5,1))
-topright_ax1 = topright_axs[0].add_subplot(1, 1, 1, projection=proj)
-topright_ax2 = topright_axs[1].add_subplot(1, 1, 1, projection=proj)
-bottom_axs = bottomfig.add_subplot(1, 1, 1, projection=proj)
-
-
-axes = [topright_ax2,topleft_axs,topright_ax1,bottom_axs]
-
-#loop to go through the countries
-for country_i in range(4): 
-
-    axes[country_i].coastlines()
-    axes[country_i].add_feature(cfeature.BORDERS, linestyle=':')
-    
-    
-    # # Choosing cmap
-    # if df_parameters.b.min() == 0:
-    #     norm = mcolors.TwoSlopeNorm(vmin=-0.06, vcenter=0, vmax=0.06)
-    # else:
-    #     norm = mcolors.TwoSlopeNorm(vmin=df_parameters.b.min(), vcenter=0, vmax=-1*df_parameters.b.min())
-    
-    sc = axes[country_i].scatter( #plot the negligable at 5% lvl points
-        df_parameters_exp[country_i].longitude,
-        df_parameters_exp[country_i].latitude,
-        c = df_parameters_exp[country_i].b,
-        s = s,
-        cmap = 'seismic',
-        norm = norm
-    )
-    
-    
-    # Set x and y ticks
-    gl = axes[country_i].gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
-    gl.top_labels = False
-    gl.right_labels = False
-    gl.xlabel_style = {'size': 12}
-    gl.ylabel_style = {'size': 12}
-
-
-topfig.subplots_adjust(bottom = 0.3,left=.1, right=.9, wspace=0.2, hspace=.4)
-
-
-cb = plt.colorbar(sc, orientation='horizontal',  extend = "both")
-cb.set_label('b (exp)', fontsize=fontsize)  
+cb.set_label(r'$b_{\mathrm{exp}}$ [K$^{-1}$]', fontsize=fontsize)  
 cb.ax.tick_params(labelsize=fontsize)
 
 
@@ -526,8 +469,8 @@ darken = 2
 # linear b
 params = ["lambda","a","kappa","b"]
 params_titles =  [r"$\lambda_0$ [mm h${^{-1}}$]",r"$a$ [K$^{-1}$]",r"$\kappa_0$ ",r"$b$ [K$^{-1}$]"]
-xticks_list = [[0.3,1,3,9],np.arange(-0.04,0.14,0.06),[0.5,1,2,4],np.arange(-0.18,0.1,0.06)]
-lims = [[0.11,11],[-0.05,0.15],[0.3,5],[-0.19,0.1]]
+xticks_list = [[0.3,1,3,9],np.arange(-0.07,0.15,0.07),[0.5,1,2,4],np.arange(-0.18,0.1,0.06)]
+lims = [[0.11,16],[-0.07,0.15],[0.3,6],[-0.19,0.1]]
 
 
 fig = plt.figure(figsize=[12,12])
@@ -550,13 +493,9 @@ for param_num in range(4):
         violin2 = plt.violinplot([vln_list[l] for l in np.arange(1,17,2)],vert=False,showmeans = True,positions = np.arange(2,17,2))
     
     if param_num == 0:
-        plt.yticks(list(np.arange(1,17)),
+        plt.yticks(list(np.arange(2,17,2)),
                    
-                    [
-                    'MC gen, b=0',
-                    'b=0',
-                    'MC gen',
-                    'Free b',]*4,
+                    [r"$b$ = 0", r"$b$ = free"]*4,
                     
                    rotation = 50,
                    size = fontsize
@@ -565,19 +504,25 @@ for param_num in range(4):
         
         
     elif param_num == 3:
-        plt.yticks(list(np.arange(1,17)),
+        plt.yticks(list(np.arange(2.5,17,4)),
                    
                     [
-                    'MC gen, b=0',
-                    'b=0',
-                    'MC gen',
-                    'Free b',]*4,
+                    'Germany',
+                    'Japan',
+                    'UK',
+                    'USA',],
                     
-                   rotation = -50,
+                   rotation = -90,
                    size = fontsize,
+                   verticalalignment = "center",
                    )
+        
+        
         ax.yaxis.set_ticks_position("right")
         ax.yaxis.set_label_position("right")
+        
+        
+        
     else:
         ax.get_yaxis().set_visible(False)
         
@@ -611,6 +556,15 @@ for param_num in range(4):
         violin2[partname].set_color('k')
      
     plt.grid(axis = 'x')
+    plt.plot(lims[param_num],[4.5,4.5],color = "k",alpha = 0.6)
+    plt.plot(lims[param_num],[8.5,8.5],color = "k",alpha = 0.6)
+    plt.plot(lims[param_num],[12.5,12.5],color = "k",alpha = 0.6)
+    
+    plt.plot(lims[param_num],[2.5,2.5],color = "k",alpha = 0.3)
+    plt.plot(lims[param_num],[6.5,6.5],color = "k",alpha = 0.3)
+    plt.plot(lims[param_num],[10.5,10.5],color = "k",alpha = 0.3)
+    plt.plot(lims[param_num],[14.5,14.5],color = "k",alpha = 0.3)
+    
     plt.xlim(lims[param_num])
     
     ax.text(0.12, 1.03, letter[param_num], transform=ax.transAxes,
@@ -624,12 +578,10 @@ for param_num in range(4):
     plt.title(params_titles[param_num],fontsize = fontsize)
 
 
-yellow_patch = mpatches.Patch(color='y', label='Germany')
-red_patch = mpatches.Patch(color='r', label='Japan')
-green_patch = mpatches.Patch(color='b', label='UK')
-blue_patch = mpatches.Patch(color='g', label='USA')
+dark_patch = mpatches.Patch(color='k', alpha = 0.7, label='Observed')
+light_patch = mpatches.Patch(color='k', alpha = 0.3, label='MC generated')
 
-plt.legend(handles=[blue_patch, green_patch, red_patch, yellow_patch], loc='lower right', fontsize=fontsize)
+plt.legend(handles=[dark_patch,light_patch], loc='lower right', fontsize=fontsize)
 
 plt.subplots_adjust(wspace=0, hspace=0)
 #plt.suptitle("Linear", fontsize = fontsize+2)
@@ -639,9 +591,16 @@ plt.show()
 
 ################################################################################
 # exp b
+params_titles =  [r"$\lambda_0$ [mm h${^{-1}}$]",r"$a$ [K$^{-1}$]",r"$\kappa_0$ ",r"$b_{\mathrm{exp}}$ [K$^{-1}$]"]
+
+for country_num in range(4):
+    df_generated_parameters_exp[country_num].b = df_generated_parameters_exp[country_num].b * df_generated_parameters_exp[country_num].kappa #change b to b * kappa
+    df_parameters_exp[country_num].b =df_parameters_exp[country_num].b * df_parameters_exp[country_num].kappa
 
 fig = plt.figure(figsize=[12,12])
 for param_num in range(4):
+    
+    
     ax = fig.add_subplot(1,4,param_num+1)
     
     vln_list = [item 
@@ -660,13 +619,9 @@ for param_num in range(4):
         violin2 = plt.violinplot([vln_list[l] for l in np.arange(1,17,2)],vert=False,showmeans = True,positions = np.arange(2,17,2))
     
     if param_num == 0:
-        plt.yticks(list(np.arange(1,17)),
+        plt.yticks(list(np.arange(2,17,2)),
                    
-                    [
-                    'MC gen, b=0',
-                    'b=0',
-                    'MC gen',
-                    'Free b',]*4,
+                    ["$b$ = 0", "$b$ = free"]*4,
                     
                    rotation = 50,
                    size = fontsize
@@ -675,19 +630,25 @@ for param_num in range(4):
         
         
     elif param_num == 3:
-        plt.yticks(list(np.arange(1,17)),
+        plt.yticks(list(np.arange(2.5,17,4)),
                    
                     [
-                    'MC gen, b=0',
-                    'b=0',
-                    'MC gen',
-                    'Free b',]*4,
+                    'Germany',
+                    'Japan',
+                    'UK',
+                    'USA',],
                     
-                   rotation = -50,
+                   rotation = -90,
                    size = fontsize,
+                   verticalalignment = "center",
                    )
+        
+        
         ax.yaxis.set_ticks_position("right")
         ax.yaxis.set_label_position("right")
+        
+        
+        
     else:
         ax.get_yaxis().set_visible(False)
         
@@ -721,6 +682,15 @@ for param_num in range(4):
         violin2[partname].set_color('k')
      
     plt.grid(axis = 'x')
+    plt.plot(lims[param_num],[4.5,4.5],color = "k",alpha = 0.6)
+    plt.plot(lims[param_num],[8.5,8.5],color = "k",alpha = 0.6)
+    plt.plot(lims[param_num],[12.5,12.5],color = "k",alpha = 0.6)
+    
+    plt.plot(lims[param_num],[2.5,2.5],color = "k",alpha = 0.3)
+    plt.plot(lims[param_num],[6.5,6.5],color = "k",alpha = 0.3)
+    plt.plot(lims[param_num],[10.5,10.5],color = "k",alpha = 0.3)
+    plt.plot(lims[param_num],[14.5,14.5],color = "k",alpha = 0.3)
+    
     plt.xlim(lims[param_num])
     
     ax.text(0.12, 1.03, letter[param_num], transform=ax.transAxes,
@@ -734,18 +704,79 @@ for param_num in range(4):
     plt.title(params_titles[param_num],fontsize = fontsize)
 
 
-yellow_patch = mpatches.Patch(color='y', label='Germany')
-red_patch = mpatches.Patch(color='r', label='Japan')
-green_patch = mpatches.Patch(color='b', label='UK')
-blue_patch = mpatches.Patch(color='g', label='USA')
+dark_patch = mpatches.Patch(color='k', alpha = 0.7, label='Observed')
+light_patch = mpatches.Patch(color='k', alpha = 0.3, label='MC generated')
 
-plt.legend(handles=[blue_patch, green_patch, red_patch, yellow_patch], loc='lower right', fontsize=fontsize)
+plt.legend(handles=[dark_patch,light_patch], loc='lower right', fontsize=fontsize)
 
 plt.subplots_adjust(wspace=0, hspace=0)
 plt.suptitle("Exponential", fontsize = fontsize+2)
 plt.show()
 
+###############################################################################
+#calculating the numbers
+# for country_i in range(len(countries)):
+#     print(countries[country_i])
+#     for param_num in range(4):
+#         param = params[param_num]
+        
+#         gen = df_generated_parameters[country_i][param]
+#         obs = new_df[country_i][param]
+#         gen_0 = df_generated_parameters_0[country_i][param]
+#         obs_0 = df_parameters_0[country_i][param]
+        
+#         SD_ratio = gen.std()/obs.std()
+#         IQR_ratio = (gen.quantile(0.75) - gen.quantile(0.25)
+#                      )/(obs.quantile(0.75) - obs.quantile(0.25))
+        
+#         SD_ratio_0 = gen_0.std()/obs_0.std()
+#         IQR_ratio_0 = (gen_0.quantile(0.75) - gen_0.quantile(0.25)
+#                      )/(obs_0.quantile(0.75) - obs_0.quantile(0.25))
+        
+#         print(f"The ratio of the standard deviations for {param} is {SD_ratio}. When b = 0, it is {SD_ratio_0}.")
+#         print(f"The ratio of the IQR for {param} is {IQR_ratio}. When b = 0, it is {IQR_ratio_0}.")
+        
 
+
+print("\\begin{tabular}{l l c c c c}")
+print("\\toprule")
+print("Country & Parameter & SD Ratio & SD Ratio ($b=0$) & IQR Ratio & IQR Ratio ($b=0$) \\\\")
+print("\\midrule")
+
+for country_i in range(len(countries)):
+    country_name = countries[country_i]
+
+    for param_num, param in enumerate(params):
+        gen = df_generated_parameters[country_i][param]
+        obs = new_df[country_i][param]
+        gen_0 = df_generated_parameters_0[country_i][param]
+        obs_0 = df_parameters_0[country_i][param]
+
+        SD_ratio = gen.std() / obs.std()
+        IQR_ratio = (gen.quantile(0.75) - gen.quantile(0.25)) / (obs.quantile(0.75) - obs.quantile(0.25))
+        SD_ratio_0 = gen_0.std() / obs_0.std()
+        IQR_ratio_0 = (gen_0.quantile(0.75) - gen_0.quantile(0.25)) / (obs_0.quantile(0.75) - obs_0.quantile(0.25))
+
+        if param_num == 0:
+            print(f"\\multirow{{{len(params)}}}{{*}}{{{country_name}}} & {param} & {SD_ratio:.2f} & {SD_ratio_0:.2f} & {IQR_ratio:.2f} & {IQR_ratio_0:.2f} \\\\")
+        else:
+            print(f" & {param} & {SD_ratio:.2f} & {SD_ratio_0:.2f} & {IQR_ratio:.2f} & {IQR_ratio_0:.2f} \\\\")
+
+print("\\bottomrule")
+print("\\end{tabular}")
+
+for country_i in range(len(countries)):
+    country_name = countries[country_i]
+
+    for param_num, param in enumerate(params):
+        gen = df_generated_parameters_exp[country_i][param]
+        obs = df_parameters_exp[country_i][param]
+        
+        SD_ratio = gen.std() / obs.std()
+        IQR_ratio = (gen.quantile(0.75) - gen.quantile(0.25)) / (obs.quantile(0.75) - obs.quantile(0.25))
+        print(country_name)
+        print(param)
+        print(f"IQR ratio: {IQR_ratio}")
 
 #################################################################################
 # FIG 3
@@ -758,6 +789,8 @@ fontsize = 20
 
 colors = ['#377eb8', '#ff7f00', '#4daf4a']*4
     
+labels = ["(a)","(b)","(c)"]
+
 ret_lvls = ["10","100"]
 # plot the fractionals all together in a different layout
 fig = plt.figure(figsize=(12,12))
@@ -818,7 +851,10 @@ for i in range(3):
     ax.yaxis.set_major_locator(plt.FixedLocator(custom_ticks)) 
     ax.yaxis.set_minor_locator(plt.NullLocator())
     
-    ax.set_title(f"b = {uses[i*3].b[0]}",fontsize = fontsize+2)
+    ax.text(0.12, 1.06, labels[i], transform=ax.transAxes,
+      fontsize=fontsize+2, va='top', ha='right')
+    
+    ax.set_title(f"$b$ = {uses[i*3].b[0]}",fontsize = fontsize+2)
     ax.set_xlabel("Return period (years)",fontsize = fontsize)
     ax.set_ylabel("gen_RL/RL",fontsize = fontsize)
     
@@ -844,7 +880,7 @@ for i in range(3):
 legend_elements = [
     Patch(facecolor=colors[0], label='Free'),  # default matplotlib colors
     Patch(facecolor=colors[1], label='Set'),
-    Patch(facecolor=colors[2], label='b = 0'),
+    Patch(facecolor=colors[2], label=r'$b$ = 0'),
 ]
 
 plt.legend(handles=legend_elements,fontsize = fontsize)
@@ -909,8 +945,10 @@ for i in range(3):
     ax.yaxis.set_minor_locator(plt.NullLocator())
     ax.set_ylabel("gen_RL/RL",fontsize = fontsize)
     
+    ax.text(0.12, 1.06, labels[i], transform=ax.transAxes,
+      fontsize=fontsize+2, va='top', ha='right')
     
-    plt.title(f"exponential b = {uses[i*3].b[0]}",fontsize = fontsize+2)
+    ax.set_title(r"$b_{\mathrm{exp}}$"+f" = {uses[i*3].b[0]}",fontsize = fontsize+2)
     plt.xlabel("Return period (years)",fontsize = fontsize)
     
     if i == 0:
@@ -936,10 +974,11 @@ for i in range(3):
 legend_elements = [  
     Patch(facecolor=colors[0], label='Free'), 
     Patch(facecolor=colors[1], label='Set'),
-    Patch(facecolor=colors[2], label='b = 0'),
+    Patch(facecolor=colors[2], label=r'$b_{\mathrm{exp}}$ = 0'),
 ]
 
 plt.legend(handles=legend_elements,fontsize = fontsize)
+plt.suptitle("exponential",fontsize = fontsize+2)
 
 plt.tight_layout()
 plt.show()
@@ -948,7 +987,7 @@ plt.show()
 #################################################################################
 # FIG 4
 # hindcasts
-
+labels = ["(a)","(b)","(c)","(d)","(e)","(f)","(g)"]
 colors = ["y","r","b","g"]
 s = 5
 
@@ -963,31 +1002,59 @@ lims = [
         [-0.2,0.1]
         ]
 
+ticks = [
+    [0,4,8,12],
+    [-0.07,0,0.07,0.14],
+    [1,2,3,4],
+    [-0.2,-0.1,0,0.1]
+    ]
+
 variables = ["kappa","b","lambda","a"]
 variables = ["lambda","a","kappa","b"]
 params_titles =  [r"$\lambda_0$",r"$a$",r"$\kappa_0$ ",r"$b$"]
 param_units = [r"[mm h${^{-1}}$]",r"[K$^{-1}$]",r"",r"[K$^{-1}$]"]
 
-fig = plt.figure(figsize = (12,17))
+hindcasts_comb = pd.concat([hindcasts[country_i][info[country_i].cleaned_years>=min_years_strong] for country_i in range(4)])
+hindcasts_comb_exp = pd.concat([hindcasts_exp[country_i][info[country_i].cleaned_years>=min_years_strong] for country_i in range(4)])
+
+
+fig = plt.figure(figsize = (12,18))
 
 
 for i in range(4):
     vari = variables[i]
     
+    df_small = hindcasts_comb[[f"{vari}1",f"{vari}2",f"{vari}1_0",f"{vari}2_0"]]
+    corr_table = df_small.corr()
+    
     ax1 = fig.add_subplot(4,2,1+2*i)
     ax2 = fig.add_subplot(4,2,2+2*i)
     
     if i == 0:
-        ax1.set_title("b = linear",fontsize = fontsize)
-        ax2.set_title("b = 0",fontsize = fontsize)
+        ax1.set_title(f"$b$ = free \n ρ = {corr_table[f"{vari}1"][f"{vari}2"]:.2f}",fontsize = fontsize)
+        ax2.set_title(f"$b$ = 0 \n ρ = {corr_table[f"{vari}1_0"][f"{vari}2_0"]:.2f}",fontsize = fontsize)
+    else:
+        ax1.set_title(f"$ρ$ = {corr_table[f"{vari}1"][f"{vari}2"]:.2f}", 
+          fontsize=fontsize+2)
+        if vari != "b":
+            ax2.set_title(f"$ρ$ = {corr_table[f"{vari}1_0"][f"{vari}2_0"]:.2f}", 
+              fontsize=fontsize+2)
         
-    
     ax1.set_xlim(lims[i])
     ax1.set_ylim(lims[i])
     
     ax1.set_xlabel(f"{params_titles[i]} first period {param_units[i]}",fontsize = fontsize)
     ax1.set_ylabel(f"{params_titles[i]} second period {param_units[i]}",fontsize = fontsize)
     ax1.tick_params(labelsize=fontsize)
+    
+    ax1.set_xticks(ticks[i])
+    ax2.set_xticks(ticks[i])
+    ax1.set_yticks(ticks[i])
+    ax2.set_yticks(ticks[i])
+    
+    ax1.text(0.12, 1.1, labels[i], transform=ax1.transAxes,
+      fontsize=fontsize+2, va='top', ha='right')
+    
     
     if vari != "b":
         ax2.set_xlim(lims[i])
@@ -996,13 +1063,14 @@ for i in range(4):
         ax2.set_xlabel(f"{params_titles[i]} first period {param_units[i]}",fontsize = fontsize)
         ax2.set_ylabel(f"{params_titles[i]} second period {param_units[i]}",fontsize = fontsize)
         ax2.tick_params(labelsize=fontsize)
+        ax2.text(0.12, 1.1, labels[i+4], transform=ax2.transAxes,
+          fontsize=fontsize+2, va='top', ha='right')
     if vari == "b":
         ax2.set_axis_off()
     
     for country_i in [3,1,2,0]:
     
         hindcast_Fphat_short = hindcasts[country_i][info[country_i].cleaned_years>=min_years_strong]
-        hindcast_Fphat_exp_short = hindcasts_exp[country_i][info[country_i].cleaned_years>=min_years_strong]
         new_df_short = new_df[country_i][info[country_i].cleaned_years>=min_years_strong]
         
         
@@ -1036,19 +1104,38 @@ legend_elements = [
 ]
 
 plt.legend(handles = legend_elements, fontsize = fontsize, loc = "upper left")   
-plt.tight_layout()
+plt.tight_layout(w_pad = 6)
 plt.show()
 
     
  
 
+hindcasts_comb_exp.b1 = hindcasts_comb_exp.b1 * hindcasts_comb_exp.kappa1
+hindcasts_comb_exp.b2 = hindcasts_comb_exp.b2 * hindcasts_comb_exp.kappa2
 
-fig = plt.figure(figsize = (8.3,19))
+for country_i in range(4):
+    hindcasts_exp[country_i].b1 = hindcasts_exp[country_i].b1 * hindcasts_exp[country_i].kappa1
+    hindcasts_exp[country_i].b2 = hindcasts_exp[country_i].b2 * hindcasts_exp[country_i].kappa2
+    
+
+fig = plt.figure(figsize = (8.3,20))
 
 for i in range(4):
     vari = variables[i]
+    
+    df_small = hindcasts_comb_exp[[f"{vari}1",f"{vari}2"]]
+    corr_table = df_small.corr()
+    
+    
     ax1 = fig.add_subplot(4,1,1+i)
     
+    if i == 0:
+        ax1.set_title(r"$b_{\mathrm{exp}}$ = free,"+ f"\n $ρ$ = {corr_table[f"{vari}1"][f"{vari}2"]:.2f}",fontsize = fontsize)
+    
+    else:
+        ax1.set_title(f"$ρ$ = {corr_table[f"{vari}1"][f"{vari}2"]:.2f}", 
+          fontsize=fontsize+2)
+        
     ax1.set_xlim(lims[i])
     ax1.set_ylim(lims[i])
     ax1.tick_params(labelsize=fontsize)
@@ -1060,7 +1147,6 @@ for i in range(4):
     
     for country_i in [3,1,2,0]:
     
-        hindcast_Fphat_short = hindcasts[country_i][info[country_i].cleaned_years>=min_years_strong]
         hindcast_Fphat_exp_short = hindcasts_exp[country_i][info[country_i].cleaned_years>=min_years_strong]
         new_df_short = new_df[country_i][info[country_i].cleaned_years>=min_years_strong]
         
@@ -1071,6 +1157,8 @@ for i in range(4):
             
         sc = ax1.scatter(hindcast_Fphat_exp_short[f"{vari}1"],hindcast_Fphat_exp_short[f"{vari}2"],
                     s=s,label = countries[country_i],color = colors[country_i],alpha = 0.5)
+        ax1.text(0.12, 1.1, labels[i], transform=ax1.transAxes,
+                     fontsize=fontsize+2, va='top', ha='right')
 
         
         
@@ -1087,8 +1175,7 @@ legend_elements = [
     Patch(facecolor=colors[3], alpha = 0.5, label='USA'),
 ]
 
-plt.legend(handles = legend_elements, fontsize = fontsize, loc = "upper left")      
-plt.suptitle("exponential", fontsize = fontsize)
+plt.legend(handles = legend_elements, fontsize = fontsize, loc = "upper left")     
 plt.tight_layout()
 plt.show()
 
@@ -1108,9 +1195,126 @@ for country_i in range(4):
     sig_list[country_i] = hindcast_Fphat.pvals > significance #True/1 = insignificant
     sig_list_0[country_i] = hindcast_Fphat.pvals_0 > significance
     
-    sig_list[country_i] = sig_list[country_i].replace({True: 1, False: 0})
-    sig_list_0[country_i] = sig_list_0[country_i].replace({True: 1, False: 0})
+    sig_list[country_i] = sig_list[country_i].astype(int)
+    sig_list_0[country_i] = sig_list_0[country_i].astype(int)
     
     changes_pvals[country_i] = sig_list[country_i] + sig_list_0[country_i]*2 # 0 means both sig, 1 means free insig but 0 sig, 2 means free sig then 0 insig, 3 means both insig
+    
+    frac_0 = len(changes_pvals[country_i][changes_pvals[country_i]==0])/len(changes_pvals[country_i])
+    frac_1 = len(changes_pvals[country_i][changes_pvals[country_i]==1])/len(changes_pvals[country_i])
+    frac_2 = len(changes_pvals[country_i][changes_pvals[country_i]==2])/len(changes_pvals[country_i])
+    frac_3 = len(changes_pvals[country_i][changes_pvals[country_i]==3])/len(changes_pvals[country_i])
+    
+    
+    print(countries[country_i])
+    print(f"both sig: {frac_0}")
+    print(f"both insig: {frac_3}")
+    print(f"b=0 sig, else insig: {frac_1}")
+    print(f"b=0 insig, else sig: {frac_2}")
+    
+    
+    
+
+
+
+colors = ["r","b","y"]
+letter = ["(c)","(a)","(b)","(d)"]
+fontsize = 20
+
+fig = plt.figure(figsize=(12, 15.5))
+gs = GridSpec(3, 2, figure=fig,
+              width_ratios = [2.3,1],height_ratios = [1.2,1,1.7],
+              hspace = 0, wspace = 0.25)
+
+axes = [fig.add_subplot(gs[1, 1], projection=ccrs.PlateCarree()),
+        fig.add_subplot(gs[0:2, 0], projection=ccrs.PlateCarree()),
+        fig.add_subplot(gs[0, 1], projection=ccrs.PlateCarree()),
+        fig.add_subplot(gs[2, :], projection=ccrs.PlateCarree()),
+        ]
+
+
+
+#loop to go through the countries
+for country_i in range(4): 
+
+    axes[country_i].coastlines()
+    axes[country_i].add_feature(cfeature.BORDERS, linestyle=':')
+    
+    axes[country_i].set_title(letter[country_i],fontsize = fontsize+2,loc = "left")
+    
+    new_df_short = new_df[country_i][info[country_i].cleaned_years>=min_years_strong]
+    
+    
+    sc = axes[country_i].scatter(
+        new_df_short.longitude[changes_pvals[country_i]==0],
+        new_df_short.latitude[changes_pvals[country_i]==0],
+        color = colors[0],
+        s = s,
+        
+    )
+
+    sc = axes[country_i].scatter(
+        new_df_short.longitude[(changes_pvals[country_i]==1)|(changes_pvals[country_i]==2)],
+        new_df_short.latitude[(changes_pvals[country_i]==1)|(changes_pvals[country_i]==2)],
+        color = colors[1],
+        s = s
+    )
+    
+    sc = axes[country_i].scatter(
+        new_df_short.longitude[(changes_pvals[country_i]==3)],
+        new_df_short.latitude[(changes_pvals[country_i]==3)],
+        color = colors[2],
+        s = s
+    )
+    
+    
+    
+    
+    
+    # Set x and y ticks
+    gl = axes[country_i].gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+    
+    if country_i == 0:
+        gl.xlocator = FixedLocator([6,9,12,15])
+        gl.ylocator = FixedLocator([48,50,52,54])
+    elif country_i == 2:
+        gl.xlocator = FixedLocator([-7,-4,-1,2])
+        
+    
+    if country_i == 1:      
+        legend_elements = [
+            Patch(facecolor=colors[0], label='significantly different'),  # default matplotlib colors
+            Patch(facecolor=colors[2], label='not significantly \ndifferent')]
+
+        first_legend = axes[country_i].legend(handles = legend_elements,fontsize = fontsize,loc = "upper left")
+        legend_elements = [
+            Patch(facecolor=colors[1], label='significantly different \nin one case only'),
+            ]
+        axes[country_i].legend(handles = legend_elements,fontsize = fontsize,loc = "lower right")
+        axes[country_i].add_artist(first_legend)
+
+        
+        
+    else: 
+        pass
+    
+    gl.top_labels = False
+    gl.right_labels = False
+    gl.xlabel_style = {'size': fontsize}
+    gl.ylabel_style = {'size': fontsize}
+    gl.xformatter = LongitudeFormatter(degree_symbol="° ")
+    gl.yformatter = LatitudeFormatter(degree_symbol="° ")
+    
+    
+            
+            
+            
+    
+plt.show()
+
+
+
+
+
 
 

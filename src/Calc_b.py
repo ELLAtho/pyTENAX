@@ -44,14 +44,15 @@ alpha_set = 0.05
 remake = 1
 exp_make = 1
 
-country = 'Japan'
-ERA_country = 'Japan'
-country_save = 'Japan'
-code_str = 'JP_'
-minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
-name_len = 5
-min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-censor_thr = 0.9
+# country = 'Japan'
+# ERA_country = 'Japan'
+# country_save = 'Japan'
+# country_oe_save = 'Japan'
+# code_str = 'JP_'
+# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+# name_len = 5
+# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+# censor_thr = 0.9
 
 
 # country = 'Belgium'
@@ -81,15 +82,15 @@ censor_thr = 0.9
 # min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 # censor_thr = 0.9
 
-# country = 'US' 
-# ERA_country = 'US'
-# country_save = 'US_main'
-# country_oe_save = 'US_main'
-# code_str = 'US_'
-# minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
-# name_len = 6
-# min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
-# censor_thr = 0.9
+country = 'US' 
+ERA_country = 'US'
+country_save = 'US_main'
+country_oe_save = 'US_main'
+code_str = 'US_'
+minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
+name_len = 6
+min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+censor_thr = 0.9
 
 
 # country = 'Israel'
@@ -131,6 +132,7 @@ censor_thr = 0.9
 # country = 'UK' 
 # ERA_country = 'UK'
 # country_save = 'UK'
+# country_oe_save = 'UK'
 # code_str = 'UK_'
 # name_len = 0
 # min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
@@ -311,7 +313,7 @@ if df_savename not in saved_output_files: #read in files and create t time serie
             print('skip')
             F_phats[i] = np.array([np.nan,np.nan,np.nan,np.nan])
             g_phats[i] = np.array([np.nan,np.nan])
-            ns[i] = pd.Series(np.nan)
+            ns[i] = np.nan
             thr[i] = np.nan
     
         
@@ -329,7 +331,7 @@ if df_savename not in saved_output_files: #read in files and create t time serie
             #temperature model
             g_phats[i] = S.temperature_model(T)
             # M is mean n of ordinary events
-            ns[i] = len(T) / (times.oe_time.dt.year.iloc[-1] - times.oe_time.dt.year[0])  
+            ns[i] = len(T) / len(times.oe_time.dt.year.unique())  
             
             
             if i%50 == 0:
@@ -732,7 +734,7 @@ if exp_make == 1:
                 thr = np.quantile(P,S.left_censoring[1])
                 
                 
-                n = len(T) / (times.oe_time.dt.year.iloc[-1] - times.oe_time.dt.year[0])  
+                n = len(T) / len(times.oe_time.dt.year.unique())  
                 
                 oe_df = pd.DataFrame({"year":times.oe_time.dt.year, "P": P, "T": T,})
                 AMS = oe_df.groupby(oe_df.year).P.max()

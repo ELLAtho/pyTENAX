@@ -34,11 +34,11 @@ from pyTENAX.globalTENAX import *
 import glob
 
 
-F_phat_typical = [ 1.1, -0.015, 1, 0.12] # basically Germany
+F_phat_typical = [ 1.1, 0, 1, 0.07] # basically Germany
 g_phat_typical = [10, 13] # also basically Germany
-attempt = 10 # IF YOU REPEAT WITH DIFFERENT PARAMETERS CHANGE THIS NUMBER
+attempt = 5 # IF YOU REPEAT WITH DIFFERENT PARAMETERS CHANGE THIS NUMBER
 
-n_years = 30
+n_years = 10
 n = 80. # typical number of events per year
 
 n_its = 1000
@@ -226,6 +226,7 @@ if save_name_exp not in glob.glob("D:/outputs/synthetic/*"):
         
         if i%50 == 0:
             print(f"free b {F_phat_new_free_exp[i]}")
+            print(f"set b {F_phat_new_set_exp[i]}")
             time_taken = (time.time()-start_time[i-9])/10
             time_left = (n_its-i)*time_taken/60
             print(f"{i}/{n_its}. Approx time left: {time_left:.0f} mins")

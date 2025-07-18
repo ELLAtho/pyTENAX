@@ -526,7 +526,7 @@ class TENAX():
         
         return dict_ordinary, dict_dropped_oe, n_ordinary_per_year_new
     
-    def magnitude_model(self, data_oe_prec, data_oe_temp, thr, b_set = None, b_exp = False):
+    def magnitude_model(self, data_oe_prec, data_oe_temp, thr, b_set = -999, b_exp = False):
         """
         Fits the data to the magnitude model of TENAX. 
 
@@ -561,7 +561,7 @@ class TENAX():
         init_g = self.init_param_guess
         alpha = self.alpha
         
-        if b_set: 
+        if b_set != -999: 
             if b_exp:
                 min_phat_bset = minimize(lambda theta: -wbl_leftcensor_loglik_bset_bexp(theta, P, T, thr,b_set), 
                                        init_g, 

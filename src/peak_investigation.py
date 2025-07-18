@@ -41,7 +41,7 @@ from scipy.interpolate import interp1d
 from matplotlib import cm
 from matplotlib import colormaps
 from matplotlib.colors import to_rgba
-
+from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
 
 drive = 'D'
 alpha_set = 0
@@ -59,27 +59,27 @@ alpha_set = 0
 # max_lat = 50
 
 
-country = 'Japan'
-ERA_country = 'Japan'
-country_save = 'Japan'
-code_str = 'JP_'
-minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
-name_len = 5
-min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
-censor_thr = 0.9
-max_lat = 30
-
-
-
-# country = 'US' 
-# ERA_country = 'US'
-# country_save = 'US_main'
-# code_str = 'US_'
-# minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
-# name_len = 6
-# min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+# country = 'Japan'
+# ERA_country = 'Japan'
+# country_save = 'Japan'
+# code_str = 'JP_'
+# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+# name_len = 5
+# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 # censor_thr = 0.9
 # max_lat = 30
+
+
+
+country = 'US' 
+ERA_country = 'US'
+country_save = 'US_main'
+code_str = 'US_'
+minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
+name_len = 6
+min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+censor_thr = 0.9
+max_lat = 30
 
 # country = 'UK' 
 # ERA_country = 'UK'
@@ -111,7 +111,40 @@ else:
     pass
 
 
+info = pd.read_csv(drive+':/metadata/'+country+'_fulldata.csv', dtype={'station': str})
 
+
+# shouldn't need this anymore as changed files
+# if name_len!=0:
+#     info.station = info['station'].apply(lambda x: f'{int(x):0{name_len}}') #need to edit this according to file
+# else:
+#     pass
+
+info.startdate = pd.to_datetime(info.startdate)
+info.enddate = pd.to_datetime(info.enddate)
+
+#select stations
+
+
+val_info = info[info['cleaned_years']>=min_yrs] #filter out stations that are less than min
+
+
+
+if 'min_startdate' in locals():    
+    val_info = val_info[val_info['startdate']>=min_startdate]
+else:
+    pass
+
+if 'minlat' in locals():
+    
+    val_info = val_info[val_info['latitude']>=minlat] #filter station locations to within ERA bounds
+    val_info = val_info[val_info['latitude']<=maxlat]
+    val_info = val_info[val_info['longitude']>=minlon]
+    val_info = val_info[val_info['longitude']<=maxlon]
+    
+else:
+    pass
+val_info = val_info.reset_index()
 
 eTs_df = pd.read_csv(f"{drive}:/outputs/{country_save}\\eTs_df.csv",dtype = {"station":str})
 eTs = eTs_df.drop(columns = "station").to_numpy()
@@ -397,85 +430,368 @@ eTs_df1 = eTs_df[(peaks_df.n_peaks01 == n_peak)&
                       (df_parameters.latitude.between(sel_lat[0],sel_lat[1]))&
                       (df_parameters.longitude.between(sel_lon[0],sel_lon[1]))]
 
-for i in range(6):
-    oe_save = f"{drive}:/ordinary_events/{country_save}\\T_{peak1.station.iloc[i]}.csv"
-    T = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/T_{peak1.station.iloc[i]}.csv")
-    P = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/P_{peak1.station.iloc[i]}.csv")
-    oe_time = pd.read_csv(f"{drive}:/ordinary_events/{country_save}/time_{peak1.station.iloc[i]}.csv",parse_dates = ["oe_time"])
+# for i in range(6):
+#     oe_save = f"{drive}:/ordinary_events/{country_save}\\T_{peak1.station.iloc[i]}.csv"
+#     T = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/T_{peak1.station.iloc[i]}.csv")
+#     P = np.genfromtxt(f"{drive}:/ordinary_events/{country_save}/P_{peak1.station.iloc[i]}.csv")
+#     oe_time = pd.read_csv(f"{drive}:/ordinary_events/{country_save}/time_{peak1.station.iloc[i]}.csv",parse_dates = ["oe_time"])
 
     
     
-    #SPLITTING INTO SUMMER/WINTER
-    season_separations = [5, 10]
-    day_separations = [dt.timedelta(100), dt.timedelta(300)]
-    months = oe_time["oe_time"].dt.month
-    years = oe_time["oe_time"].dt.year
-    jans = pd.to_datetime(years.astype(str) + '-01-01') #make dataframe with 1st jan of each year
-    days_since_jan = oe_time["oe_time"] - jans
+#     #SPLITTING INTO SUMMER/WINTER
+#     season_separations = [5, 10]
+#     day_separations = [dt.timedelta(100), dt.timedelta(300)]
+#     months = oe_time["oe_time"].dt.month
+#     years = oe_time["oe_time"].dt.year
+#     jans = pd.to_datetime(years.astype(str) + '-01-01') #make dataframe with 1st jan of each year
+#     days_since_jan = oe_time["oe_time"] - jans
     
     
     
-    # winter_inds = months.index[(months>season_separations[1]) | (months<season_separations[0])]
-    # summer_inds = months.index[(months<season_separations[1]+1)&(months>season_separations[0]-1)]
+#     # winter_inds = months.index[(months>season_separations[1]) | (months<season_separations[0])]
+#     # summer_inds = months.index[(months<season_separations[1]+1)&(months>season_separations[0]-1)]
     
-    winter_inds = days_since_jan.index[(days_since_jan>day_separations[1]) | (days_since_jan<=day_separations[0])]
-    summer_inds = days_since_jan.index[(days_since_jan<=day_separations[1])&(days_since_jan>day_separations[0])]
+#     winter_inds = days_since_jan.index[(days_since_jan>day_separations[1]) | (days_since_jan<=day_separations[0])]
+#     summer_inds = days_since_jan.index[(days_since_jan<=day_separations[1])&(days_since_jan>day_separations[0])]
     
     
-    T_winter = T[winter_inds]
-    T_summer = T[summer_inds]
+#     T_winter = T[winter_inds]
+#     T_summer = T[summer_inds]
 
 
-    g_phat_winter = S.temperature_model(T_winter,beta = 2)
-    g_phat_summer = S.temperature_model(T_summer,beta = 2)
+#     g_phat_winter = S.temperature_model(T_winter,beta = 2)
+#     g_phat_summer = S.temperature_model(T_summer,beta = 2)
     
     
-    g_phat_winter_skew = S.temperature_model(T_winter,method = "skewnorm")
-    g_phat_summer_skew = S.temperature_model(T_summer,method = "skewnorm")
+#     g_phat_winter_skew = S.temperature_model(T_winter,method = "skewnorm")
+#     g_phat_summer_skew = S.temperature_model(T_summer,method = "skewnorm")
 
-    eT = np.arange(np.min(T),np.max(T)+4)
-    winter_pdf = gen_norm_pdf(eT, g_phat_winter[0], g_phat_winter[1], 2)
-    summer_pdf = gen_norm_pdf(eT, g_phat_summer[0], g_phat_summer[1], 2)
+#     eT = np.arange(np.min(T),np.max(T)+4)
+#     winter_pdf = gen_norm_pdf(eT, g_phat_winter[0], g_phat_winter[1], 2)
+#     summer_pdf = gen_norm_pdf(eT, g_phat_summer[0], g_phat_summer[1], 2)
     
-    winter_pdf_skew = skewnorm.pdf(eT, *g_phat_winter_skew)
-    summer_pdf_skew = skewnorm.pdf(eT, *g_phat_summer_skew)
+#     winter_pdf_skew = skewnorm.pdf(eT, *g_phat_winter_skew)
+#     summer_pdf_skew = skewnorm.pdf(eT, *g_phat_summer_skew)
 
-    combined_pdf = (winter_pdf*np.size(T_winter)+summer_pdf*np.size(T_summer))/(np.size(T_winter)+np.size(T_summer))
-    combined_pdf_skew = (winter_pdf_skew*np.size(T_winter)+summer_pdf_skew*np.size(T_summer))/(np.size(T_winter)+np.size(T_summer))
+#     combined_pdf = (winter_pdf*np.size(T_winter)+summer_pdf*np.size(T_summer))/(np.size(T_winter)+np.size(T_summer))
+#     combined_pdf_skew = (winter_pdf_skew*np.size(T_winter)+summer_pdf_skew*np.size(T_summer))/(np.size(T_winter)+np.size(T_summer))
 
     
     
     
-    g_phat_skew = S.temperature_model(T, method = "skewnorm")
+#     g_phat_skew = S.temperature_model(T, method = "skewnorm")
     
     
-    TNX_FIG_temp_model(T, g_phat_skew, 4, eT, obscol='r',valcol='b',
-                           obslabel = 'observations',
-                           vallabel = 'skewed normal',
-                           xlimits = [np.min(T)-3,np.max(T)+3],
-                           method = "skewnorm")
-    plt.plot(eTs_df1.iloc[i][1:],df1.iloc[i][1:],color = "r", label = "kernel density")
-    S.beta = 4
-    g_phat = S.temperature_model(T)
-    plt.plot(eT,gen_norm_pdf(eT, g_phat[0], g_phat[1], 4),label = "beta = 4")
-    S.beta = 6
-    g_phat6 = S.temperature_model(T)
-    plt.plot(eT,gen_norm_pdf(eT, g_phat[0], g_phat[1], 6),label = "beta = 6")
-    plt.plot(eT,combined_pdf,label = "summer and winter")
-    plt.plot(eT,combined_pdf_skew,label = "summer and winter skewnorms",color = "m")
-    plt.ylim(0,np.max(df1.iloc[i][1:])+0.01)
+#     TNX_FIG_temp_model(T, g_phat_skew, 4, eT, obscol='r',valcol='b',
+#                            obslabel = 'observations',
+#                            vallabel = 'skewed normal',
+#                            xlimits = [np.min(T)-3,np.max(T)+3],
+#                            method = "skewnorm")
+#     plt.plot(eTs_df1.iloc[i][1:],df1.iloc[i][1:],color = "r", label = "kernel density")
+#     S.beta = 4
+#     g_phat = S.temperature_model(T)
+#     plt.plot(eT,gen_norm_pdf(eT, g_phat[0], g_phat[1], 4),label = "beta = 4")
+#     S.beta = 6
+#     g_phat6 = S.temperature_model(T)
+#     plt.plot(eT,gen_norm_pdf(eT, g_phat[0], g_phat[1], 6),label = "beta = 6")
+#     plt.plot(eT,combined_pdf,label = "summer and winter")
+#     plt.plot(eT,combined_pdf_skew,label = "summer and winter skewnorms",color = "m")
+#     plt.ylim(0,np.max(df1.iloc[i][1:])+0.01)
     
+#     plt.legend()
+#     plt.title(f"{country_save}. station {peak1.station.iloc[i]}. lat {peak1.latitude.iloc[i]}. lon {peak1.longitude.iloc[i]}")
+#     plt.show()
+
+
+
+###############################################################################
+# choosing stations to look at specifically
+
+minlat_spec, minlon_spec, maxlat_spec, maxlon_spec = 36, -100, 50, -90       #30, -125, 40, -115
+
+
+mask = (df_parameters.latitude < maxlat_spec)&(
+    df_parameters.longitude < maxlon_spec)&(
+        df_parameters.latitude > minlat_spec)&(
+            df_parameters.longitude > minlon_spec) & (
+                peaks_df.n_peaks >1)&(
+                    val_info.cleaned_years > 30)
+
+                    
+                    
+                    
+info_masked = val_info[mask]
+df_parameters_masked = df_parameters[mask]
+stations_choose = df_parameters_masked.station
+stations = df_parameters.station
+
+
+# plot locations of stations chosen
+fontsize = 12
+
+fig = plt.figure(figsize=(10, 10))
+proj = ccrs.PlateCarree()
+ax = fig.add_subplot(1,1,1, projection=proj)
+
+ax.coastlines()
+ax.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+
+norm = mcolors.TwoSlopeNorm(vmin=-0.1, vcenter=0, vmax=0.1)
+
+
+
+sc = ax.scatter(
+    df_parameters.longitude,
+    df_parameters.latitude,
+    c="g",
+    alpha = 0.5,
+    s = s,
+)
+
+sc = ax.scatter(
+    df_parameters_masked.longitude,
+    df_parameters_masked.latitude,
+    c="r",
+    s = s, 
+)
+
+gl = ax.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': fontsize}
+gl.ylabel_style = {'size': fontsize}
+gl.xformatter = LongitudeFormatter(degree_symbol="° ")
+gl.yformatter = LatitudeFormatter(degree_symbol="° ")
+
+plt.show()
+
+
+###############################################################################
+
+colspecs = [(0,11), (12,20), (21,30), (31,37), (38,40), (41,71)]
+names    = ["station_id","latitude","longitude","elevation","state","name"]
+
+database_meta = pd.read_fwf("D:\\NSF_CausesData\\metadata.txt", colspecs=colspecs, names=names)
+country_meta = database_meta[(database_meta.latitude>=minlat)&(database_meta.longitude>=minlon)&(database_meta.latitude<=maxlat)&(database_meta.longitude<=maxlon)]
+
+
+
+fig = plt.figure(figsize=(10, 10))
+proj = ccrs.PlateCarree()
+ax = fig.add_subplot(1,1,1, projection=proj)
+
+ax.coastlines()
+ax.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+
+norm = mcolors.TwoSlopeNorm(vmin=-0.1, vcenter=0, vmax=0.1)
+
+
+
+sc = ax.scatter(
+    country_meta.longitude,
+    country_meta.latitude,
+    c="g",
+    alpha = 0.5,
+    s = s,
+)
+
+sc = ax.scatter(
+    df_parameters_masked.longitude,
+    df_parameters_masked.latitude,
+    c="r",
+    s = s, 
+)
+
+gl = ax.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': fontsize}
+gl.ylabel_style = {'size': fontsize}
+gl.xformatter = LongitudeFormatter(degree_symbol="° ")
+gl.yformatter = LatitudeFormatter(degree_symbol="° ")
+
+plt.show()
+
+# choose location
+meta_masked = database_meta[
+    (database_meta.latitude < maxlat_spec)&(
+        database_meta.longitude < maxlon_spec) &(
+            database_meta.latitude > minlat_spec)&(
+                database_meta.longitude > minlon_spec)]
+
+meta_stations = pd.concat([database_meta[(database_meta.latitude == df_parameters_masked.latitude.iloc[i])&(database_meta.longitude == df_parameters_masked.longitude.iloc[i])] for i in range(len(df_parameters_masked))])
+
+fig = plt.figure(figsize=(10, 10))
+proj = ccrs.PlateCarree()
+ax = fig.add_subplot(1,1,1, projection=proj)
+
+ax.coastlines()
+ax.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+
+sc = ax.scatter(
+    meta_masked.longitude,
+    meta_masked.latitude,
+    c="g",
+    alpha = 0.2,
+    s = s,
+    label = "GHCNd stations"
+)
+
+sc = ax.scatter(
+    df_parameters_masked.longitude,
+    df_parameters_masked.latitude,
+    c="r",
+    s = s, 
+    label = "selected SW double stations"
+)
+
+sc = ax.scatter(
+    meta_stations.longitude,
+    meta_stations.latitude,
+    c="b",
+    s = s, 
+    label = "GHCNd and selected"
+)
+
+
+plt.legend()
+gl = ax.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': fontsize}
+gl.ylabel_style = {'size': fontsize}
+gl.xformatter = LongitudeFormatter(degree_symbol="° ")
+gl.yformatter = LatitudeFormatter(degree_symbol="° ")
+
+plt.show()
+
+
+###############################################################################
+# load in the storm types
+storm_types = []
+drop_id = []
+
+for i in range(len(meta_stations)):
+    file_name = f"D:/NSF_CausesData/NSF_CausesData\\{meta_stations.station_id.iloc[i]}.csv"
+    if file_name in glob.glob("D:/NSF_CausesData/NSF_CausesData/*"):
+        storm_types.append(pd.read_csv(file_name,dtype={' date': str}))
+    else:
+        drop_id.append(i)
+meta_stations = meta_stations.drop(labels = meta_stations.index[drop_id]) #drop rows that aren't in the database
+
+fig = plt.figure(figsize=(5, 5))
+proj = ccrs.PlateCarree()
+ax = fig.add_subplot(1,1,1, projection=proj)
+
+ax.coastlines()
+ax.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+
+sc = ax.scatter(
+    meta_masked.longitude,
+    meta_masked.latitude,
+    c="y",
+    alpha = 0.1,
+    s = s,
+    label = "GHCNd stations"
+)
+
+
+
+for i in range(len(meta_stations)):
+    
+    sc = ax.scatter(
+        meta_stations.longitude.iloc[i],
+        meta_stations.latitude.iloc[i],
+        s = 10, 
+        label = f"{meta_stations.station_id.iloc[i]}"
+    )
+
+
+plt.legend()
+gl = ax.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': fontsize}
+gl.ylabel_style = {'size': fontsize}
+gl.xformatter = LongitudeFormatter(degree_symbol="° ")
+gl.yformatter = LatitudeFormatter(degree_symbol="° ")
+
+plt.show()
+
+
+
+df_parameters_stations = pd.concat([df_parameters_masked[(df_parameters_masked.latitude == meta_stations.latitude.iloc[i])&(df_parameters_masked.longitude == meta_stations.longitude.iloc[i])] for i in range(len(meta_stations))])
+kernel_df = df[df.station.isin(df_parameters_stations.station)]
+eTs_df_stations = eTs_df[eTs_df.station.isin(df_parameters_stations.station)]
+
+
+#load in events data
+ord_events = []
+storm_types_events = [] # for the event types matching the days of the ordinary event data
+combed_events_stuff = []
+
+
+for i in range(len(meta_stations)):
+    
+    station = df_parameters_stations.station.iloc[i]
+    
+    T_ = np.genfromtxt(f"D:/ordinary_events/US_main/T_{station}.csv")
+    P_ = np.genfromtxt(f"D:/ordinary_events/US_main/P_{station}.csv")
+    time = pd.read_csv(f"D:/ordinary_events/US_main/time_{station}.csv",parse_dates = ["oe_time"])
+    
+    
+    oe = pd.DataFrame({
+        "oe_time": time.oe_time,
+        "T" : T_,
+        "P" : P_
+        })
+    
+    oe["date"] = pd.to_datetime(oe.oe_time).dt.strftime('%Y%m%d')
+    
+    
+    storm_types_events.append(storm_types[i][storm_types[i][" date"].isin(oe.date)])
+    ord_events.append(oe)
+    
+    oe = oe[oe.date.isin(storm_types_events[i][" date"])]
+    combed_events_stuff.append(pd.concat([oe.reset_index(),storm_types_events[i].reset_index()],axis = 1))
+    
+    plt.plot(eTs_df_stations.drop(columns = "station").iloc[i].to_numpy(),kernel_df.iloc[i][1:],label = station)
+    
+plt.legend()
+plt.show()
+
+S.beta = 2
+for i in range(len(meta_stations)):
+    df_now = combed_events_stuff[i]
+    
+    causes = df_now[" cause_1"].unique()
+    g_phat = []
+    n_events = []
+    pdf_values = []
+    
+    for j in range(len(causes)):
+        little_df = df_now[df_now[" cause_1"] == causes[j]]
+        T = little_df["T"].to_numpy()
+        
+        g_phat.append(S.temperature_model(T))
+        n_events.append(len(T))
+        pdf_values.append(gen_norm_pdf(np.arange(-12,35), g_phat[j][0], g_phat[j][1], 2) * (len(T)/len(df_now)))
+        plt.plot(np.arange(-12,35),pdf_values[j],label = causes[j])
+    plt.plot(eTs_df_stations.drop(columns = "station").iloc[i].to_numpy(),kernel_df.iloc[i][1:],label = "kernel density")
+    plt.plot(np.arange(-12,35),np.sum(pdf_values,axis = 0),label = "sum")
+    plt.title(f"{meta_stations.station_id.iloc[i]}")
     plt.legend()
-    plt.title(f"{country_save}. station {peak1.station.iloc[i]}. lat {peak1.latitude.iloc[i]}. lon {peak1.longitude.iloc[i]}")
     plt.show()
-
-
-
-
-
-
-
-
-
-
+    
+        
+        
+    
 
