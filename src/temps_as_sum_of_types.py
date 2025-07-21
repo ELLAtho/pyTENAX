@@ -37,7 +37,7 @@ import cartopy.feature as cfeature
 from matplotlib.colors import LinearSegmentedColormap
 import matplotlib.patches as patches
 from scipy.stats import kendalltau, pearsonr, spearmanr
-from scipy.stats import norm, skewnorm
+from scipy.stats import norm, skewnorm, skew, kurtosis
 from scipy.interpolate import interp1d
 from matplotlib import cm
 from matplotlib import colormaps
@@ -506,8 +506,10 @@ for i in range(len(combed_events_stuff)):
     n_events = []
     pdf_values = []
     
-      
-    plt.plot(eT,prob, color = "k", linewidth = 3,label = "kernel density")
+    fig = plt.figure(figsize = (11,5))
+    ax1 = fig.add_subplot(1,2,1)
+    
+    ax1.plot(eT,prob, color = "k", linewidth = 3,label = "kernel density")
     g_phat_full = S.temperature_model(df_now["T"].to_numpy(),method = "skewnorm")
     pdf_values_full = skewnorm.pdf(eT, *g_phat_full)
     plt.plot(eT,pdf_values_full, label = "skew fit for all")
@@ -538,6 +540,7 @@ for i in range(len(combed_events_stuff)):
         
     plt.plot(eT,np.nansum(pdf_values,axis = 0), color = "r",label = "sum of storm types")
     plt.title(f"skewnorm. station: {matched_info.station.iloc[i]}")
+    plt.ylim(0,0.1)
     
     
     summer_df = df_now[(df_now.oe_time.dt.month >= 5)&(df_now.oe_time.dt.month <= 10)]
@@ -558,6 +561,20 @@ for i in range(len(combed_events_stuff)):
     
     
     plt.legend()
+    
+    
+    ax2 = fig.add_subplot(1,2,2)
+    full_temp = xr.load_dataarray(f"D:/US_temp/US_{matched_info.station.iloc[i]}.nc").to_numpy() - 273.15
+    
+    
+    kde_FT  = gaussian_kde(full_temp)
+    prob_FT = kde_FT(eT)
+    ax2.plot(eT,prob_FT,label= "full temperature distribution")
+    ax2.plot(eT,prob,label= "storms temperature distribution")
+    plt.title("full temperature distribution (kernel density)")
+    plt.legend()
+    plt.ylim(0,0.1)
+    
     
     plt.show()  
 
