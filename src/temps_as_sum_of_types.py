@@ -206,6 +206,12 @@ mask = (matched_info.latitude >= region_lats[region])&(
         matched_info.longitude >= region_lons[region])&(
             matched_info.longitude < region_lons[region+1])
 
+            
+# mask = (matched_info.latitude >= region_lats[region])&( #florida
+#     matched_info.latitude < 32)&(
+#         matched_info.longitude >= -85)&(
+#             matched_info.longitude < -60)
+
 
 matched_info_mask = matched_info[mask]
 
