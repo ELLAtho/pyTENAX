@@ -570,12 +570,20 @@ for i in range(len(combed_events_stuff)):
     
     
     ax2 = fig.add_subplot(1,2,2)
-    full_temp = xr.load_dataarray(f"D:/US_temp/US_{matched_info.station.iloc[i]}.nc").to_numpy() - 273.15
+    full_temp_xr = xr.load_dataarray(f"D:/US_temp/US_{matched_info.station.iloc[i]}.nc")
+    full_temp = full_temp_xr.to_numpy() - 273.15
+    full_temp_24hr = full_temp_xr.to_pandas().resample("d").mean() - 273.15
     
     
     kde_FT  = gaussian_kde(full_temp)
     prob_FT = kde_FT(eT)
+    
+    kde_FT_24hr  = gaussian_kde(full_temp_24hr)
+    prob_FT_24hr = kde_FT_24hr(eT)
+    
+    
     ax2.plot(eT,prob_FT,label= "full temperature distribution")
+    ax2.plot(eT,prob_FT_24hr,label= "full temperature distribution, 24 hour mean")
     ax2.plot(eT,prob,label= "storms temperature distribution")
     plt.title("full temperature distribution (kernel density)")
     plt.legend()
