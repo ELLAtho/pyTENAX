@@ -91,6 +91,18 @@ new_df = [0]*4
 df_generated_parameters = [0]*4
 df_generated_parameters_0 = [0]*4
 df_generated_parameters_exp = [0]*4
+
+
+df_generated_parameters_one2one = [0]*4
+df_generated_parameters_0_one2one = [0]*4
+df_generated_parameters_exp_one2one = [0]*4
+
+
+comb_df_gen_params = [0]*4
+comb_df_gen_params_0 = [0]*4
+comb_df_gen_params_exp = [0]*4
+
+
 info = [0]*4
 
 for country_i in range(4):
@@ -114,6 +126,27 @@ for country_i in range(4):
     df_generated_parameters[country_i] = pd.read_csv(df_gen_savename)
     df_generated_parameters_0[country_i] = pd.read_csv(f"{drive}:/outputs/{country_save}_b0/synth_generated_parameters.csv")
     df_generated_parameters_exp[country_i] = pd.read_csv(f"{drive}:/outputs/{country_save}/synth_generated_parameters_exp.csv")
+    
+    df_generated_parameters_one2one[country_i] = pd.read_csv(f"{drive}:/outputs/{country_save}/synth_generated_parameters_one2one.csv")
+    df_generated_parameters_0_one2one[country_i] = pd.read_csv(f"{drive}:/outputs/{country_save}_b0/synth_generated_parameters_one2one.csv")
+    df_generated_parameters_exp_one2one[country_i] = pd.read_csv(f"{drive}:/outputs/{country_save}/synth_generated_parameters_one2one_exp.csv")
+    
+    
+    # puts the redos all together into one dataframe
+    comb_df_gen_params[country_i] = pd.DataFrame()
+    comb_df_gen_params_0[country_i] = pd.DataFrame()
+    comb_df_gen_params_exp[country_i] = pd.DataFrame()
+
+    params = ["b", "kappa", "lambda", "a"]
+    for param in params:
+        comb_df_gen_params[country_i][param] = pd.concat([df_generated_parameters_one2one[country_i][f"{param}{j}"].copy().dropna() for j in range(5)])
+        comb_df_gen_params_0[country_i][param] = pd.concat([df_generated_parameters_0_one2one[country_i][f"{param}{j}"].copy().dropna() for j in range(5)])
+        comb_df_gen_params_exp[country_i][param] = pd.concat([df_generated_parameters_exp_one2one[country_i][f"{param}{j}"].copy().dropna() for j in range(5)])
+        
+    comb_df_gen_params[country_i].reset_index(inplace = True)
+    comb_df_gen_params_0[country_i].reset_index(inplace = True)
+    comb_df_gen_params_exp[country_i].reset_index(inplace = True)
+    
     
     info1 = pd.read_csv(drive+':/metadata/'+country+'_fulldata.csv', dtype={'station': str})
     
@@ -593,9 +626,6 @@ plt.show()
 # exp b
 params_titles =  [r"$\lambda_0$ [mm h${^{-1}}$]",r"$a$ [K$^{-1}$]",r"$\kappa_0$ ",r"$b_{\mathrm{exp}}$ [K$^{-1}$]"]
 
-for country_num in range(4):
-    df_generated_parameters_exp[country_num].b = df_generated_parameters_exp[country_num].b * df_generated_parameters_exp[country_num].kappa #change b to b * kappa
-    df_parameters_exp[country_num].b =df_parameters_exp[country_num].b * df_parameters_exp[country_num].kappa
 
 fig = plt.figure(figsize=[12,12])
 for param_num in range(4):
@@ -714,6 +744,248 @@ plt.suptitle("Exponential", fontsize = fontsize+2)
 plt.show()
 
 ###############################################################################
+# the newer version with changing n events
+params_titles =  [r"$\lambda_0$ [mm h${^{-1}}$]",r"$a$ [K$^{-1}$]",r"$\kappa_0$ ",r"$b$ [K$^{-1}$]"]
+
+fig = plt.figure(figsize=[12,12])
+for param_num in range(4):
+    ax = fig.add_subplot(1,4,param_num+1)
+    
+    vln_list = [item 
+            for country_num in range(4) 
+            for item in [ 
+            comb_df_gen_params_0[country_num][params[param_num]],
+            df_parameters_0[country_num][params[param_num]].copy().dropna(),
+                         comb_df_gen_params[country_num][params[param_num]],
+                         new_df[country_num][params[param_num]].copy().dropna(),]
+            ]
+    
+    violin = plt.violinplot(vln_list,vert=False,showmeans = True)
+    
+    #stupid workaround to darken the observed plots
+    for drk in range(darken):
+        violin2 = plt.violinplot([vln_list[l] for l in np.arange(1,17,2)],vert=False,showmeans = True,positions = np.arange(2,17,2))
+    
+    if param_num == 0:
+        plt.yticks(list(np.arange(2,17,2)),
+                   
+                    [r"$b$ = 0", r"$b$ = free"]*4,
+                    
+                   rotation = 50,
+                   size = fontsize
+                   )
+        plt.xscale("log")
+        
+        
+    elif param_num == 3:
+        plt.yticks(list(np.arange(2.5,17,4)),
+                   
+                    [
+                    'Germany',
+                    'Japan',
+                    'UK',
+                    'USA',],
+                    
+                   rotation = -90,
+                   size = fontsize,
+                   verticalalignment = "center",
+                   )
+        
+        
+        ax.yaxis.set_ticks_position("right")
+        ax.yaxis.set_label_position("right")
+        
+        
+        
+    else:
+        ax.get_yaxis().set_visible(False)
+        
+        
+    if param_num == 2:
+        plt.xscale("log")
+        
+    
+    for n in np.arange(0,4):
+        violin['bodies'][n].set_facecolor('y')
+    for n in np.arange(4,8):
+        violin['bodies'][n].set_facecolor('r')   
+    for n in np.arange(8,12):
+        violin['bodies'][n].set_facecolor('b')  
+    for n in np.arange(12,16):
+        violin['bodies'][n].set_facecolor('g')   
+        
+    for n in np.arange(0,2):
+        violin2['bodies'][n].set_facecolor('y')
+    for n in np.arange(2,4):
+        violin2['bodies'][n].set_facecolor('r')   
+    for n in np.arange(4,6):
+        violin2['bodies'][n].set_facecolor('b')  
+    for n in np.arange(6,8):
+        violin2['bodies'][n].set_facecolor('g')   
+
+
+        
+    for partname in ('cbars', 'cmeans', 'cmins', 'cmaxes'):
+        violin[partname].set_color('k')
+        violin2[partname].set_color('k')
+     
+    plt.grid(axis = 'x')
+    plt.plot(lims[param_num],[4.5,4.5],color = "k",alpha = 0.6)
+    plt.plot(lims[param_num],[8.5,8.5],color = "k",alpha = 0.6)
+    plt.plot(lims[param_num],[12.5,12.5],color = "k",alpha = 0.6)
+    
+    plt.plot(lims[param_num],[2.5,2.5],color = "k",alpha = 0.3)
+    plt.plot(lims[param_num],[6.5,6.5],color = "k",alpha = 0.3)
+    plt.plot(lims[param_num],[10.5,10.5],color = "k",alpha = 0.3)
+    plt.plot(lims[param_num],[14.5,14.5],color = "k",alpha = 0.3)
+    
+    plt.xlim(lims[param_num])
+    
+    ax.text(0.12, 1.03, letter[param_num], transform=ax.transAxes,
+      fontsize=fontsize, va='top', ha='right')
+    
+    
+    
+    plt.xticks(xticks_list[param_num],fontsize = fontsize,rotation = 45 if param_num%2 == 1 else 0)
+    ax.get_xaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
+    
+    plt.title(params_titles[param_num],fontsize = fontsize)
+
+
+dark_patch = mpatches.Patch(color='k', alpha = 0.7, label='Observed')
+light_patch = mpatches.Patch(color='k', alpha = 0.3, label='MC generated')
+
+plt.legend(handles=[dark_patch,light_patch], loc='lower right', fontsize=fontsize)
+
+plt.subplots_adjust(wspace=0, hspace=0)
+#plt.suptitle("Linear", fontsize = fontsize+2)
+
+plt.show()
+
+################################################################################
+# exp b
+params_titles =  [r"$\lambda_0$ [mm h${^{-1}}$]",r"$a$ [K$^{-1}$]",r"$\kappa_0$ ",r"$b_{\mathrm{exp}}$ [K$^{-1}$]"]
+
+
+fig = plt.figure(figsize=[12,12])
+for param_num in range(4):
+    
+    
+    ax = fig.add_subplot(1,4,param_num+1)
+    
+    vln_list = [item 
+            for country_num in range(4) 
+            for item in [ 
+            comb_df_gen_params_0[country_num][params[param_num]],
+            df_parameters_0[country_num][params[param_num]].copy().dropna(),
+                         comb_df_gen_params_exp[country_num][params[param_num]],
+                         df_parameters_exp[country_num][params[param_num]].copy().dropna(),]
+            ]
+    
+    violin = plt.violinplot(vln_list,vert=False,showmeans = True)
+    
+    #stupid workaround to darken the observed plots
+    for drk in range(darken):
+        violin2 = plt.violinplot([vln_list[l] for l in np.arange(1,17,2)],vert=False,showmeans = True,positions = np.arange(2,17,2))
+    
+    if param_num == 0:
+        plt.yticks(list(np.arange(2,17,2)),
+                   
+                    ["$b$ = 0", "$b$ = free"]*4,
+                    
+                   rotation = 50,
+                   size = fontsize
+                   )
+        plt.xscale("log")
+        
+        
+    elif param_num == 3:
+        plt.yticks(list(np.arange(2.5,17,4)),
+                   
+                    [
+                    'Germany',
+                    'Japan',
+                    'UK',
+                    'USA',],
+                    
+                   rotation = -90,
+                   size = fontsize,
+                   verticalalignment = "center",
+                   )
+        
+        
+        ax.yaxis.set_ticks_position("right")
+        ax.yaxis.set_label_position("right")
+        
+        
+        
+    else:
+        ax.get_yaxis().set_visible(False)
+        
+        
+    if param_num == 2:
+        plt.xscale("log")
+        
+    
+    for n in np.arange(0,4):
+        violin['bodies'][n].set_facecolor('y')
+    for n in np.arange(4,8):
+        violin['bodies'][n].set_facecolor('r')   
+    for n in np.arange(8,12):
+        violin['bodies'][n].set_facecolor('b')  
+    for n in np.arange(12,16):
+        violin['bodies'][n].set_facecolor('g')   
+        
+    for n in np.arange(0,2):
+        violin2['bodies'][n].set_facecolor('y')
+    for n in np.arange(2,4):
+        violin2['bodies'][n].set_facecolor('r')   
+    for n in np.arange(4,6):
+        violin2['bodies'][n].set_facecolor('b')  
+    for n in np.arange(6,8):
+        violin2['bodies'][n].set_facecolor('g')   
+
+
+        
+    for partname in ('cbars', 'cmeans', 'cmins', 'cmaxes'):
+        violin[partname].set_color('k')
+        violin2[partname].set_color('k')
+     
+    plt.grid(axis = 'x')
+    plt.plot(lims[param_num],[4.5,4.5],color = "k",alpha = 0.6)
+    plt.plot(lims[param_num],[8.5,8.5],color = "k",alpha = 0.6)
+    plt.plot(lims[param_num],[12.5,12.5],color = "k",alpha = 0.6)
+    
+    plt.plot(lims[param_num],[2.5,2.5],color = "k",alpha = 0.3)
+    plt.plot(lims[param_num],[6.5,6.5],color = "k",alpha = 0.3)
+    plt.plot(lims[param_num],[10.5,10.5],color = "k",alpha = 0.3)
+    plt.plot(lims[param_num],[14.5,14.5],color = "k",alpha = 0.3)
+    
+    plt.xlim(lims[param_num])
+    
+    ax.text(0.12, 1.03, letter[param_num], transform=ax.transAxes,
+      fontsize=fontsize, va='top', ha='right')
+    
+    
+    
+    plt.xticks(xticks_list[param_num],fontsize = fontsize,rotation = 45 if param_num%2 == 1 else 0)
+    ax.get_xaxis().set_major_formatter(matplotlib.ticker.ScalarFormatter())
+    
+    plt.title(params_titles[param_num],fontsize = fontsize)
+
+
+dark_patch = mpatches.Patch(color='k', alpha = 0.7, label='Observed')
+light_patch = mpatches.Patch(color='k', alpha = 0.3, label='MC generated')
+
+plt.legend(handles=[dark_patch,light_patch], loc='lower right', fontsize=fontsize)
+
+plt.subplots_adjust(wspace=0, hspace=0)
+plt.suptitle("Exponential", fontsize = fontsize+2)
+plt.show()
+
+
+
+###############################################################################
 #calculating the numbers
 # for country_i in range(len(countries)):
 #     print(countries[country_i])
@@ -738,41 +1010,100 @@ plt.show()
         
 
 
-print("\\begin{tabular}{l l c c c c}")
-print("\\toprule")
-print("Country & Parameter & SD Ratio & SD Ratio ($b=0$) & IQR Ratio & IQR Ratio ($b=0$) \\\\")
-print("\\midrule")
+# print("\\begin{tabular}{l l c c c c}")
+# print("\\toprule")
+# print("Country & Parameter & SD Ratio & SD Ratio ($b=0$) & IQR Ratio & IQR Ratio ($b=0$) \\\\")
+# print("\\midrule")
+
+# for country_i in range(len(countries)):
+#     country_name = countries[country_i]
+
+#     for param_num, param in enumerate(params):
+#         gen = df_generated_parameters[country_i][param]
+#         obs = new_df[country_i][param]
+#         gen_0 = df_generated_parameters_0[country_i][param]
+#         obs_0 = df_parameters_0[country_i][param]
+
+#         SD_ratio = gen.std() / obs.std()
+#         IQR_ratio = (gen.quantile(0.75) - gen.quantile(0.25)) / (obs.quantile(0.75) - obs.quantile(0.25))
+#         SD_ratio_0 = gen_0.std() / obs_0.std()
+#         IQR_ratio_0 = (gen_0.quantile(0.75) - gen_0.quantile(0.25)) / (obs_0.quantile(0.75) - obs_0.quantile(0.25))
+
+#         if param_num == 0:
+#             print(f"\\multirow{{{len(params)}}}{{*}}{{{country_name}}} & {param} & {SD_ratio:.2f} & {SD_ratio_0:.2f} & {IQR_ratio:.2f} & {IQR_ratio_0:.2f} \\\\")
+#         else:
+#             print(f" & {param} & {SD_ratio:.2f} & {SD_ratio_0:.2f} & {IQR_ratio:.2f} & {IQR_ratio_0:.2f} \\\\")
+
+# print("\\bottomrule")
+# print("\\end{tabular}")
 
 for country_i in range(len(countries)):
     country_name = countries[country_i]
 
     for param_num, param in enumerate(params):
-        gen = df_generated_parameters[country_i][param]
+        # gen = comb_df_gen_params_exp[country_i][param]
+        # obs = df_parameters_exp[country_i][param]
+        
+        # # SD_ratio = gen.std() / obs.std()
+        # IQR_ratio = (gen.quantile(0.75) - gen.quantile(0.25)) / (obs.quantile(0.75) - obs.quantile(0.25))
+        # print(country_name)
+        # print(param)
+        # print(f" exp IQR ratio: {IQR_ratio}")
+        
+        
+        gen = comb_df_gen_params[country_i][param]
         obs = new_df[country_i][param]
-        gen_0 = df_generated_parameters_0[country_i][param]
-        obs_0 = df_parameters_0[country_i][param]
-
-        SD_ratio = gen.std() / obs.std()
+        
+        # SD_ratio = gen.std() / obs.std()
         IQR_ratio = (gen.quantile(0.75) - gen.quantile(0.25)) / (obs.quantile(0.75) - obs.quantile(0.25))
-        SD_ratio_0 = gen_0.std() / obs_0.std()
-        IQR_ratio_0 = (gen_0.quantile(0.75) - gen_0.quantile(0.25)) / (obs_0.quantile(0.75) - obs_0.quantile(0.25))
+        print(country_name)
+        print(param)
+        print(f"IQR ratio: {IQR_ratio}")
 
-        if param_num == 0:
-            print(f"\\multirow{{{len(params)}}}{{*}}{{{country_name}}} & {param} & {SD_ratio:.2f} & {SD_ratio_0:.2f} & {IQR_ratio:.2f} & {IQR_ratio_0:.2f} \\\\")
-        else:
-            print(f" & {param} & {SD_ratio:.2f} & {SD_ratio_0:.2f} & {IQR_ratio:.2f} & {IQR_ratio_0:.2f} \\\\")
-
-print("\\bottomrule")
-print("\\end{tabular}")
-
+print("b = 0")
 for country_i in range(len(countries)):
     country_name = countries[country_i]
 
     for param_num, param in enumerate(params):
-        gen = df_generated_parameters_exp[country_i][param]
+        # gen = comb_df_gen_params_exp[country_i][param]
+        # obs = df_parameters_exp[country_i][param]
+        
+        # # SD_ratio = gen.std() / obs.std()
+        # IQR_ratio = (gen.quantile(0.75) - gen.quantile(0.25)) / (obs.quantile(0.75) - obs.quantile(0.25))
+        # print(country_name)
+        # print(param)
+        # print(f" exp IQR ratio: {IQR_ratio}")
+        
+        
+        gen = comb_df_gen_params_0[country_i][param]
+        obs = df_parameters_0[country_i][param]
+        
+        # SD_ratio = gen.std() / obs.std()
+        IQR_ratio = (gen.quantile(0.75) - gen.quantile(0.25)) / (obs.quantile(0.75) - obs.quantile(0.25))
+        print(country_name)
+        print(param)
+        print(f"IQR ratio: {IQR_ratio}")
+
+
+print("exp")
+for country_i in range(len(countries)):
+    country_name = countries[country_i]
+
+    for param_num, param in enumerate(params):
+        # gen = comb_df_gen_params_exp[country_i][param]
+        # obs = df_parameters_exp[country_i][param]
+        
+        # # SD_ratio = gen.std() / obs.std()
+        # IQR_ratio = (gen.quantile(0.75) - gen.quantile(0.25)) / (obs.quantile(0.75) - obs.quantile(0.25))
+        # print(country_name)
+        # print(param)
+        # print(f" exp IQR ratio: {IQR_ratio}")
+        
+        
+        gen = comb_df_gen_params_exp[country_i][param]
         obs = df_parameters_exp[country_i][param]
         
-        SD_ratio = gen.std() / obs.std()
+        # SD_ratio = gen.std() / obs.std()
         IQR_ratio = (gen.quantile(0.75) - gen.quantile(0.25)) / (obs.quantile(0.75) - obs.quantile(0.25))
         print(country_name)
         print(param)
