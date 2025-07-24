@@ -207,10 +207,10 @@ mask = (matched_info.latitude >= region_lats[region])&(
             matched_info.longitude < region_lons[region+1])
 
             
-# mask = (matched_info.latitude >= region_lats[region])&( #florida
-#     matched_info.latitude < 32)&(
-#         matched_info.longitude >= -85)&(
-#             matched_info.longitude < -60)
+mask = (matched_info.latitude >= region_lats[region])&( #florida
+    matched_info.latitude < 32)&(
+        matched_info.longitude >= -85)&(
+            matched_info.longitude < -60)
 
 
 matched_info_mask = matched_info[mask]
@@ -298,7 +298,7 @@ for i in range(len(combed_events_stuff)):
         plt.plot(eT,pdf_values[j], color = colours[j], label = causes[j])
     
     plt.plot(eT,np.sum(pdf_values,axis = 0), color = "k", linewidth = 3,label = "sum")
-    plt.title(f"betas = {S.beta}. station: {matched_info.station.iloc[i]}")
+    plt.title(f"betas = {S.beta}. station: {matched_info.station.iloc[i]} \n ({matched_info.latitude.iloc[i]:.1f},{matched_info.longitude.iloc[i]:.1f})")
     plt.legend()
     plt.show()
 
@@ -495,7 +495,8 @@ for i in range(len(combed_events_stuff)):
 
 ################################################################################
 ## plot comparison
-
+method = "norm"
+S.beta = 2
 
 for i in range(len(combed_events_stuff)):
     df_now = combed_events_stuff[i]
@@ -516,8 +517,12 @@ for i in range(len(combed_events_stuff)):
     ax1 = fig.add_subplot(1,2,1)
     
     ax1.plot(eT,prob, color = "k", linewidth = 3,label = "kernel density")
-    g_phat_full = S.temperature_model(df_now["T"].to_numpy(),method = "skewnorm")
-    pdf_values_full = skewnorm.pdf(eT, *g_phat_full)
+    g_phat_full = S.temperature_model(df_now["T"].to_numpy(),method = method)
+    if method == "skewnorm":
+        pdf_values_full = skewnorm.pdf(eT, *g_phat_full)
+    else:
+        pdf_values_full = gen_norm_pdf(eT, *g_phat_full,S.beta)
+    
     plt.plot(eT,pdf_values_full, label = "skew fit for all")
     
     
@@ -532,9 +537,12 @@ for i in range(len(combed_events_stuff)):
         
         
         try:
-            g_phat.append(S.temperature_model(T,method = "skewnorm"))
+            g_phat.append(S.temperature_model(T,method = method))
             n_events.append(len(T))
-            pdf_values.append(skewnorm.pdf(eT, *g_phat[j]) * (len(T)/len(df_now)))
+            if method == "skewnorm":
+                pdf_values.append(skewnorm.pdf(eT, *g_phat[j]) * (len(T)/len(df_now)))
+            else:
+                pdf_values.append(gen_norm_pdf(eT, *g_phat[j],S.beta)* (len(T)/len(df_now)))
             
         # process the result here
         except RuntimeError:
@@ -545,7 +553,7 @@ for i in range(len(combed_events_stuff)):
         
         
     plt.plot(eT,np.nansum(pdf_values,axis = 0), color = "r",label = "sum of storm types")
-    plt.title(f"skewnorm. station: {matched_info.station.iloc[i]}")
+    plt.title(f"{method}. station: {matched_info.station.iloc[i]}\n ({matched_info.latitude.iloc[i]:.1f},{matched_info.longitude.iloc[i]:.1f})")
     plt.ylim(0,0.1)
     
     
@@ -554,13 +562,22 @@ for i in range(len(combed_events_stuff)):
     
     
     T_winter = winter_df["T"].to_numpy()
-    g_phat_winter = S.temperature_model(T_winter,method = "skewnorm")
-    pdf_values_winter = skewnorm.pdf(eT, *g_phat_winter)
-    
+    g_phat_winter = S.temperature_model(T_winter,method = method)
+    if method == "skewnorm":
+        pdf_values_winter = skewnorm.pdf(eT, *g_phat_winter)
+    else:
+        pdf_values_winter = gen_norm_pdf(eT,*g_phat_winter,S.beta)
     
     T_summer = summer_df["T"].to_numpy()
-    g_phat_summer = S.temperature_model(T_summer,method = "skewnorm")
+    g_phat_summer = S.temperature_model(T_summer,method = method)
     pdf_values_summer = skewnorm.pdf(eT, *g_phat_summer)
+    if method == "skewnorm":
+        pdf_values_summer = skewnorm.pdf(eT, *g_phat_summer)
+    else:
+        pdf_values_summer = gen_norm_pdf(eT,*g_phat_summer,S.beta)
+    
+    
+    
     summer_winter_sum = pdf_values_summer * (len(T_summer)/len(df_now)) + pdf_values_winter * (len(T_winter)/len(df_now))
     
     plt.plot(eT,summer_winter_sum, color = "b",label = "sum of summer winter")
@@ -573,6 +590,8 @@ for i in range(len(combed_events_stuff)):
     full_temp_xr = xr.load_dataarray(f"D:/US_temp/US_{matched_info.station.iloc[i]}.nc")
     full_temp = full_temp_xr.to_numpy() - 273.15
     full_temp_24hr = full_temp_xr.to_pandas().resample("d").mean() - 273.15
+    full_temp_rolling = full_temp_xr.to_pandas().rolling("d").mean() - 273.15
+    
     
     
     kde_FT  = gaussian_kde(full_temp)
@@ -581,10 +600,15 @@ for i in range(len(combed_events_stuff)):
     kde_FT_24hr  = gaussian_kde(full_temp_24hr)
     prob_FT_24hr = kde_FT_24hr(eT)
     
+    kde_FT_rolling  = gaussian_kde(full_temp_rolling)
+    prob_FT_rolling = kde_FT_rolling(eT)
     
     ax2.plot(eT,prob_FT,label= "full temperature distribution")
     ax2.plot(eT,prob_FT_24hr,label= "full temperature distribution, 24 hour mean")
+    ax2.plot(eT,prob_FT_rolling,label= "full temperature distribution, rolling mean")
+    
     ax2.plot(eT,prob,label= "storms temperature distribution")
+    
     plt.title("full temperature distribution (kernel density)")
     plt.legend()
     plt.ylim(0,0.1)
