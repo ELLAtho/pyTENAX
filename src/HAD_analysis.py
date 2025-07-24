@@ -17,6 +17,7 @@ sys.path.append(RES_DIR)
 sys.path.append('D:')
 import numpy as np
 import pandas as pd
+from scipy.stats import gaussian_kde
 
 import datetime as dt
 import glob
@@ -29,17 +30,27 @@ import matplotlib.pyplot as plt
 
 drive = 'D'
 
-country = 'Japan'
+# country = 'Japan'
 #country = 'Germany'
-code_str = 'JP_' 
+# code_str = 'JP_' 
 #code_str = 'DE_'
-minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
 #minlat,minlon,maxlat,maxlon = 47, 3, 55, 15 #GERMANY
 name_col = 'ppt'
 temp_name_col = "temperatures"
 min_yrs = 19 #BUG. need to filter ...
 n_stations = 4
 
+
+country = 'US' 
+ERA_country = 'US'
+country_save = 'US_main'
+code_str = 'US_'
+minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
+name_len = 6
+min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+censor_thr = 0.9
+max_lat = 30
 
 Had_stations = pd.read_csv("D:/HadISD/HAD_metadata.txt",names = ['station','latitude','longitude','elevation'],sep=r"\s+")
 Had_spec = Had_stations[(Had_stations.latitude>=minlat) & (Had_stations.latitude<=maxlat)]
@@ -73,19 +84,15 @@ plt.show()
 
 
 # GET LIST OF FILES OF MATCHED HAD STATIONS
-files = [glob.glob("D:/HadISD/unzipped/*/*"+str(file)+"*.nc") for file in matched_stations.station]
-G_files = [glob.glob('D:/'+country+'/*'+str(file)+'*') for file in matched_stations.station_info]
+files0 = [glob.glob("D:/HadISD/unzipped/*/*"+str(file)+"*.nc") for file in matched_stations.station]
 
+files = [x for x in files0 if x != []]
 
+G_files0 = [glob.glob('D:/'+country+'/*'+str(file)+'*') for file in matched_stations.station_info]
+
+G_files = [G_files0[x] for x in range(len(G_files0)) if files0[x] != []]
 ###############################################################################
-
-
-
-
-g_phats = []
-F_phats = []
-scaling_rate_Ws, scaling_rate_qs  = [],[]
-
+# just looking at the temperature dists
 S = TENAX(
         return_period = [1.1,1.2,1.5,2,5,10,20,50,100, 200],
         durations = [60, 180, 360, 720, 1440],
@@ -93,16 +100,18 @@ S = TENAX(
         alpha = 1,
         min_ev_dur = 60,
         niter_smev = 1000,
+        beta = 2
     )
 
-for n in np.arange(0,len(G_files)):
-    HAD = xr.open_dataset(files[n][0]).temperatures
+for i in np.arange(0,len(G_files)):
+    HAD = xr.open_dataset(files[i][0]).temperatures
     HAD[HAD < -1000] = np.nan
     
+    t_data = HAD.to_dataframe()
     
     
-    G = pd.read_csv(G_files[n][0], skiprows=21, names=[name_col])
-    data_meta = readIntense(G_files[n][0], only_metadata=True, opened=False)
+    G = pd.read_csv(G_files[i][0], skiprows=21, names=[name_col])
+    data_meta = readIntense(G_files[i][0], only_metadata=True, opened=False)
     
     
        
@@ -116,7 +125,7 @@ for n in np.arange(0,len(G_files)):
     
     G['prec_time'] = time_list_G
     G = G.set_index('prec_time')
-    
+    G = G[G.index.isin(t_data.index)]
     
     start_time = time.time()
     data = S.remove_incomplete_years(G, name_col)
@@ -140,12 +149,106 @@ for n in np.arange(0,len(G_files)):
     print(f"Elapsed time get OE: {elapsed_time:.4f} seconds")
     
     
-    t_data = HAD.to_dataframe()
     
     
     start_time = time.time()
     df_arr_t_data = np.array(t_data[temp_name_col])
-    df_dates_t_data = np.array( t_data.index)
+    df_dates_t_data = np.array(t_data.index)
+    
+    dict_ordinary, _ , n_ordinary_per_year = S.associate_vars(dict_ordinary, df_arr_t_data, df_dates_t_data)
+    
+    elapsed_time = time.time() - start_time
+    # Print the elapsed time
+    print(f"Elapsed time : {elapsed_time:.4f} seconds")
+    
+    
+    start_time = time.time()
+    # Your data (P, T arrays) and threshold thr=3.8
+    P = dict_ordinary["60"]["ordinary"].to_numpy() # Replace with your actual data
+    T = dict_ordinary["60"]["T"].to_numpy()  # Replace with your actual data
+    
+    eT = np.arange(np.min(T)-4,np.max(T)+4,1)
+    
+    
+    
+    kde  = gaussian_kde(T) #use kernel density to get probability
+    prob = kde(eT)
+    
+    kde_full  = gaussian_kde(t_data.temperatures.dropna().to_numpy()) #use kernel density to get probability
+    prob_full = kde_full(eT)
+    
+    t_daily_mean = t_data.resample("d").mean().dropna().to_numpy().squeeze()
+    
+    kde_full_daily_mean  = gaussian_kde(t_daily_mean) #use kernel density to get probability
+    prob_full_daily_mean = kde_full_daily_mean(eT)
+    
+    plt.plot(eT,prob, label = "storms")
+    plt.plot(eT,prob_full, label = "full dist")
+    plt.plot(eT,prob_full_daily_mean, label = "full dist, daily mean")
+    plt.legend()
+    plt.title(f"({data_meta.latitude},{data_meta.longitude})")
+    plt.show()
+
+###############################################################################
+
+# something weird here
+g_phats = []
+F_phats = []
+scaling_rate_Ws, scaling_rate_qs  = [],[]
+
+S.beta = 4
+
+for i in np.arange(0,len(G_files)):
+    HAD = xr.open_dataset(files[i][0]).temperatures
+    HAD[HAD < -1000] = np.nan
+    
+    t_data = HAD.to_dataframe()
+    
+    
+    G = pd.read_csv(G_files[i][0], skiprows=21, names=[name_col])
+    data_meta = readIntense(G_files[i][0], only_metadata=True, opened=False)
+    
+    
+       
+    #extract start and end dates from metadata
+    start_date_G= dt.datetime.strptime(data_meta.start_datetime, "%Y%m%d%H")
+    end_date_G= dt.datetime.strptime(data_meta.end_datetime, "%Y%m%d%H")
+    
+    time_list_G= [start_date_G+ dt.timedelta(hours=x) for x in range(0, G.size)] #make timelist of size of FI
+    # replace -999 with nan
+    G[G == -999] = np.nan
+    
+    G['prec_time'] = time_list_G
+    G = G.set_index('prec_time')
+    G = G[G.index.isin(t_data.index)]
+    
+    start_time = time.time()
+    data = S.remove_incomplete_years(G, name_col)
+    
+    #get data from pandas to numpy array
+    df_arr = np.array(data[name_col])
+    df_dates = np.array(data.index)
+    
+    idx_ordinary=S.get_ordinary_events(data=df_arr,dates=df_dates, name_col=name_col,  check_gaps=False)
+        
+    
+    #get ordinary events by removing too short events
+    #returns boolean array, dates of OE in TO, FROM format, and count of OE in each years
+    arr_vals,arr_dates,n_ordinary_per_year=S.remove_short(idx_ordinary)
+    
+    #assign ordinary events values by given durations, values are in depth per duration, NOT in intensity mm/h
+    dict_ordinary, dict_AMS = S.get_ordinary_events_values(data=df_arr,dates=df_dates, arr_dates_oe=arr_dates)
+    
+    elapsed_time = time.time() - start_time
+    # Print the elapsed time
+    print(f"Elapsed time get OE: {elapsed_time:.4f} seconds")
+    
+    
+    
+    
+    start_time = time.time()
+    df_arr_t_data = np.array(t_data[temp_name_col])
+    df_dates_t_data = np.array(t_data.index)
     
     dict_ordinary, _ , n_ordinary_per_year = S.associate_vars(dict_ordinary, df_arr_t_data, df_dates_t_data)
     
