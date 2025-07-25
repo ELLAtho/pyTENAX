@@ -17,6 +17,7 @@ sys.path.append(RES_DIR)
 sys.path.append('D:')
 import numpy as np
 import pandas as pd
+import xarray as xr
 import time
 
 import datetime as dt
@@ -59,14 +60,21 @@ def yearly_mu(x, A, B, shift = 0, p = 365.25/(2*np.pi), daysize = 0, daylength =
 def yearly_sigma(x, var, delta, ave_loc, p = 365.25/(2*np.pi)):
     return (1 + delta * np.sin(x/p + ave_loc/p))*var
 
+def storm_filter(mu, sigma, x = np.arange(0,365)): #basically removes a chunk of days, following a normal distribution centered at day mu and spread by day sigma
+    pdf = gen_norm_pdf(x, mu, sigma, 2)
+    weights = (1-pdf)/len(x)
+    return weights
+
+
 def gen_sine_temperature_pdf(eT, A, B, var, delta, ave_loc, x= np.arange(0,365), p = 365.25/(2*np.pi), daysize = 0, daylength = 1/(2*np.pi)):
     mu = yearly_mu(x, A, B, p = p, daysize = daysize, daylength = daylength)
     sigma = yearly_sigma(x, var, delta, ave_loc, p = p)
     
-    norms = [gen_norm_pdf(eT, mu[i], sigma[i], 2)/len(x) for i in x]
-    pdf = sum(norms) #TODO: here you can put weighting as a storm filter
+    norms = [gen_norm_pdf(eT, mu[i], sigma[i], 2)/len(x) for i in x] #TODO: here you can put weighting as a storm filter
+    pdf = sum(norms) 
     return pdf
-    
+
+
 
 def sine_temperature_loglik_day_incl(theta, T, p = 365.25/(2*np.pi), daylength = 1/(2*np.pi)):
    
@@ -254,45 +262,10 @@ fontsize = 15
 n_lat = len(region_lats)-1
 n_lon = len(region_lons)-1
 
+###############################################################################
+# select stations (longest) in each grid
 
-fig = plt.figure(figsize=(10, 10))
-proj = ccrs.PlateCarree()
-ax = fig.add_subplot(1,1,1, projection=proj)
-
-ax.coastlines()
-ax.add_feature(cfeature.BORDERS, linestyle=':')
-
-
-
-sc = ax.scatter(
-    val_info.longitude,
-    val_info.latitude,
-    c="g",
-    s = s,
-    label = "all stations"
-)
-
-
-for lat_i in range(n_lat-1):
-    ax.plot([minlon-3,maxlon+3],[region_lats[lat_i+1],region_lats[lat_i+1]],  'r', linewidth=2, transform=ccrs.PlateCarree())
-
-for lon_i in range(n_lon-1):
-    ax.plot([region_lons[lon_i+1],region_lons[lon_i+1]],[minlat-3,maxlat+3],  'r', linewidth=2, transform=ccrs.PlateCarree())
-
-
-plt.legend()
-gl = ax.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
-gl.top_labels = False
-gl.right_labels = False
-gl.xlabel_style = {'size': fontsize}
-gl.ylabel_style = {'size': fontsize}
-gl.xformatter = LongitudeFormatter(degree_symbol="° ")
-gl.yformatter = LatitudeFormatter(degree_symbol="° ")
-
-plt.xlim(-125,-70)
-plt.ylim(25,50)
-
-plt.show()
+numb_per_grid = 2
 
 station_names = []
 station_lats = []
@@ -311,13 +284,15 @@ for i in range(len(region_lats)-1):
                     val_info.longitude < maxlon_now)
                     
         info_now = val_info[mask].sort_values(by="cleaned_years",ascending=False).reset_index()
-        station_names.append(info_now.station.iloc[0])
-        station_lats.append(info_now.latitude.iloc[0])
-        station_lons.append(info_now.longitude.iloc[0])
+        
+        for k in range(numb_per_grid):
+            station_names.append(info_now.station.iloc[k])
+            station_lats.append(info_now.latitude.iloc[k])
+            station_lons.append(info_now.longitude.iloc[k])
 
 
-
-
+###############################################################################
+# plot the station locations
 
 s = 3
 fontsize = 15
@@ -369,6 +344,9 @@ plt.ylim(25,50)
 
 plt.show()
 
+###############################################################################
+# model
+
 
 for i in range(len(station_names)):
     station = station_names[i]
@@ -384,8 +362,10 @@ for i in range(len(station_names)):
         "P" : P_
         })
     
-    oe["date"] = pd.to_datetime(oe.oe_time).dt.strftime('%Y%m%d')
-    
+    oe["date"] = pd.to_datetime(oe.oe_time).dt.date
+    oe["days_of_year"] = pd.to_datetime(oe.date) - pd.to_datetime({'year': oe.oe_time.dt.year, 'month': 1, 'day': 1})
+    cycle_mean = oe.groupby("days_of_year")["T"].mean()
+    cycle_std = oe.groupby("days_of_year")["T"].std()
     
     phat = sine_temperature_model(T_)
     pdf = gen_sine_temperature_pdf(eT,*phat)
@@ -398,6 +378,102 @@ for i in range(len(station_names)):
     plt.plot(eT,pdf)
     plt.title(f"{station}. ({station_lats[i]},{station_lons[i]})")
     plt.show()
+    
+    
+    xs = np.arange(len(cycle_std))
+    
+    
+    shift = minimize(lambda theta: np.sum((yearly_mu(xs, phat[0], phat[1], shift = theta) - cycle_mean)**2),
+                    0,
+                    method='Nelder-Mead').x[0]
+    
+    
+    
+    fig = plt.figure(figsize=(12,6))
+    ax = fig.add_subplot(1,2,1)
+    
+    #plot observed averaged cycle
+    ax.plot(xs,cycle_mean)
+    
+    #plot simulated cycle
+    plt.plot(xs,yearly_mu(xs, phat[0], phat[1], shift = shift))
+    
+    
+    ax.set_xlabel("day of year")
+    ax.set_ylabel("Temperature [C]")
+    plt.title("Mean yearly cycle")
+    
+    ax = fig.add_subplot(1,2,2)
+    ax.plot(xs,cycle_std)
+    plt.plot(xs,yearly_sigma(xs,phat[2],phat[3],shift+phat[4])/2) #TODO: factor of 2 out... need to check some of the definitions
+    
+    ax.set_xlabel("day of year")
+    ax.set_ylabel("Temperature [C]")  
+    plt.title("standard deviation yearly cycle")
+    plt.show()
+    
+    ###########################################################################
+    # do it with cut version of none oe
+    
+    
+    full_temp_xr = xr.load_dataarray(f"D:/US_temp/US_{station}.nc")
+    full_temp = full_temp_xr.to_numpy().squeeze() - 273.15
+    full_temp_24hr = full_temp_xr.squeeze().to_pandas().resample("d").mean() - 273.15
+    
+    full_temp_24hr_shortened = pd.DataFrame(full_temp_24hr[-5000:-1])
+    full_temp_24hr_shortened["days_of_year"] = (
+        full_temp_24hr_shortened.index - full_temp_24hr_shortened.index.normalize().to_period("Y").start_time).days
+    
+    cycle_mean = full_temp_24hr_shortened.groupby("days_of_year")["t2m"].mean()
+    cycle_std = full_temp_24hr_shortened.groupby("days_of_year")["t2m"].std()
+    
+    T_full = full_temp_24hr_shortened.t2m.to_numpy()
+    phat_full = sine_temperature_model(T_full)
+    pdf = gen_sine_temperature_pdf(eT,*phat_full)
+    
+    eT_hist = np.arange(-20,40)
+    eT_edges = np.concatenate([np.array([eT_hist[0]-(eT_hist[1]-eT_hist[0])/2]),(eT_hist + (eT_hist[1]-eT_hist[0])/2)]) #convert bin centres into bin edges
+    hist, bin_edges = np.histogram(T_full, bins=eT_edges, density=True)
+    plt.plot(eT_hist, hist, '--')
+    
+    plt.plot(eT,pdf)
+    plt.title(f"full temperature {station}. ({station_lats[i]},{station_lons[i]})")
+    plt.show()
+    
+    
+    xs = np.arange(len(cycle_std))
+    
+    
+    shift = minimize(lambda theta: np.sum((yearly_mu(xs, phat_full[0], phat_full[1], shift = theta) - cycle_mean)**2),
+                    0,
+                    method='Nelder-Mead').x[0]
+    
+    
+    
+    fig = plt.figure(figsize=(12,6))
+    ax = fig.add_subplot(1,2,1)
+    
+    #plot observed averaged cycle
+    ax.plot(xs,cycle_mean)
+    
+    #plot simulated cycle
+    plt.plot(xs,yearly_mu(xs, phat_full[0], phat_full[1], shift = shift))
+    
+    
+    ax.set_xlabel("day of year")
+    ax.set_ylabel("Temperature [C]")
+    plt.title("Mean yearly cycle")
+    
+    ax = fig.add_subplot(1,2,2)
+    ax.plot(xs,cycle_std)
+    plt.plot(xs,yearly_sigma(xs,phat_full[2],phat_full[3],shift+phat_full[4])) #TODO: factor of 2 out... need to check some of the definitions
+    
+    ax.set_xlabel("day of year")
+    ax.set_ylabel("Temperature [C]")  
+    plt.title("standard deviation yearly cycle")
+    plt.show()
+    
+    
     
 
 
