@@ -29,6 +29,8 @@ from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
 
 from scipy.stats import norm
 from scipy.optimize import minimize
+from scipy import fft
+
 
 from pyTENAX.intense import *
 from pyTENAX.pyTENAX import *
@@ -51,26 +53,27 @@ ave_loc = 0 #equivalent to shift, where the changes start in the year
 daysize = 3
 
 x = np.arange(0,365)
+
 xhour = np.arange(0,365,1/24)
 
 # definition of the function for mu in the temperature distribution over the year
 def yearly_mu(x, A, B, shift = 0, p = 365.25/(2*np.pi), daysize = 0, daylength = 1/(2*np.pi)):
-    return A + B*np.sin(x/p + shift/p) + daysize*np.sin(x/daylength)
+    return A + B*np.sin((x + shift)/p) + daysize*np.sin(x/daylength)
 
 def yearly_sigma(x, var, delta, ave_loc, p = 365.25/(2*np.pi)):
     return (1 + delta * np.sin(x/p + ave_loc/p))*var
 
 def storm_filter(mu, sigma, x = np.arange(0,365)): #basically removes a chunk of days, following a normal distribution centered at day mu and spread by day sigma
-    pdf = gen_norm_pdf(x, mu, sigma, 2)
+    pdf = norm.pdf(x, loc = mu, scale = sigma)
     weights = (1-pdf)/len(x)
     return weights
 
 
-def gen_sine_temperature_pdf(eT, A, B, var, delta, ave_loc, x= np.arange(0,365), p = 365.25/(2*np.pi), daysize = 0, daylength = 1/(2*np.pi)):
-    mu = yearly_mu(x, A, B, p = p, daysize = daysize, daylength = daylength)
-    sigma = yearly_sigma(x, var, delta, ave_loc, p = p)
+def gen_sine_temperature_pdf(eT, A, B, var, delta, ave_loc, x= np.arange(0,365), p_mu = 365.25/(2*np.pi),  p_sigma = 365.25/(2*np.pi), daysize = 0, daylength = 1/(2*np.pi)):
+    mu = yearly_mu(x, A, B, p = p_mu, daysize = daysize, daylength = daylength)
+    sigma = yearly_sigma(x, var, delta, ave_loc, p = p_sigma)#*np.sqrt(2)
     
-    norms = [gen_norm_pdf(eT, mu[i], sigma[i], 2)/len(x) for i in x] #TODO: here you can put weighting as a storm filter
+    norms = [norm.pdf(eT, loc = mu[i], scale = sigma[i])/len(x) for i in x] #TODO: here you can put weighting as a storm filter
     pdf = sum(norms) 
     return pdf
 
@@ -86,27 +89,134 @@ def sine_temperature_loglik_day_incl(theta, T, p = 365.25/(2*np.pi), daylength =
     
     return sum(np.log(pdf + 1e-10))
 
-def sine_temperature_loglik(theta, T, p = 365.25/(2*np.pi)):
+def sine_temperature_loglik(theta, T, p_mu = 365.25/(2*np.pi), p_sigma = 365.25/(2*np.pi)):
    
     A, B, var, delta, ave_loc = theta[0], theta[1], theta[2], theta[3], theta[4]
     
     
-    pdf = gen_sine_temperature_pdf(T, A, B, var, delta, ave_loc, x= np.arange(0,365), p = p)
+    pdf = gen_sine_temperature_pdf(T, A, B, var, delta, ave_loc, x= np.arange(0,365), p_mu = p_mu, p_sigma = p_sigma)
     
     return sum(np.log(pdf + 1e-10))
 
-def sine_temperature_model(x, init_params = [13, 4, 3, 0.5, 90, 0], day_incl = False):
+def sine_temperature_model(T_obs, init_params = [13, 4, 3, 0.5, 90, 0], day_incl = False):
     if day_incl:
-        phat = minimize(lambda theta: -sine_temperature_loglik_day_incl(theta, x),
+        phat = minimize(lambda theta: -sine_temperature_loglik_day_incl(theta, T_obs),
                         init_params,
-                        method='Nelder-Mead')
+                        method = 'Nelder-Mead')
+        param_names = ['A', 'B', 'var', 'delta', 'ave_loc', 'daysize']
     else:
         init_params = init_params[0:-1]
-        phat = minimize(lambda theta: -sine_temperature_loglik(theta, x),
+        phat = minimize(lambda theta: -sine_temperature_loglik(theta, T_obs),
                         init_params,
-                        method='Nelder-Mead')
+                        method = 'Nelder-Mead')
+        param_names = ['A', 'B', 'var', 'delta', 'ave_loc']
+        
+        
+    return dict(zip(param_names, phat.x))
+
+
+
+################################################################################
+# functions to fit the two seperately
+def datetime_series_to_array(series): #series = oe.oe_time
+    dates = pd.to_datetime(series).dt.date
+    start_date = dates[0]
+    diffs = np.array([(day - start_date).days for day in dates])
+    return diffs
     
-    return phat.x
+
+# fits a sine wave to the observed T by minimizing the residuals
+def yearly_mu_fit(x,T_obs,init_params = [13, 5, 0, 365.25/(2*np.pi)]): # x in days as integer array
+    
+    def residuals(theta, x, T_obs):
+        mu_sim = yearly_mu(x, A = theta[0], B = theta[1], shift = theta[2], p = theta[3])
+        
+        diffs = mu_sim - T_obs
+        
+        return np.nansum(diffs**2)
+    
+    phat = minimize(lambda theta: residuals(theta, x, T_obs),
+                    init_params,
+                    method = 'L-BFGS-B')
+    
+    
+    param_names = ['A', 'B', 'shift', 'p_mu']
+    return dict(zip(param_names, phat.x))
+
+
+def yearly_sigma_fit(std_obs_cycle, init_params = [5, 0.5, 100, 365.25/(2*np.pi)]): # std_obs_cycle is a pd.Series
+    
+    x = std_obs_cycle.index.astype("int")
+    
+    def residuals(theta, x, obs):
+        sigma_sim = yearly_sigma(x,theta[0],theta[1],theta[2], p = theta[3])
+        diffs = sigma_sim - obs
+        
+        return np.nansum(diffs**2)
+    
+    
+    phat = minimize(lambda theta: residuals(theta, x, std_obs_cycle.to_numpy()),
+                    init_params,
+                    method = 'L-BFGS-B')
+    
+    param_names = ['var', 'delta', 'ave_loc', 'p_sigma']
+    return dict(zip(param_names, phat.x))
+
+
+  # EG
+# plt.plot(eT_hist, hist, '--')
+# plt.plot(eT, gen_sine_temperature_pdf(eT, phat_chack[0],
+#                                       phat_chack[1], 
+#                                       phat_sigma[0],
+#                                       phat_sigma[1], 
+#                                       phat_sigma[2] - phat_chack[2], 
+#                                       p_mu = phat_chack[3],
+#                                       p_sigma = phat_sigma[3],))  
+    
+
+################################################################################
+
+# functions as francesco said
+def sine_temperature_loglik_v2(theta, x, T):
+   
+    A, B, shift, p_mu = theta[0], theta[1], theta[2], theta[3]
+    var, delta, ave_loc, p_sigma = theta[4], theta[5], theta[6], theta[7]
+    
+    mu = yearly_mu(x, A, B, shift = shift, p = p_mu)
+    sigma = yearly_sigma(x, var, delta, ave_loc, p = p_sigma)
+    
+    pdf = norm.pdf(T, mu, sigma)
+    
+    return sum(np.log(pdf + 1e-10))
+
+
+def sine_temperature_model_v2(x, T_obs, 
+                              init_params = [13, 4, 0, 365.25/(2*np.pi), 3, 0.5, 90, 365.25/(2*np.pi)],
+                              bounds = [(-50, 50), (0, 30), (None, None), (50/(2*np.pi), 366/(2*np.pi)),  # A, B, shift, p_mu
+          (1e-3, 30), (0, 1), (0, 365.25/(2*np.pi)), (50/(2*np.pi), 366/(2*np.pi))] ):
+    
+    phat = minimize(lambda theta: -sine_temperature_loglik_v2(theta, x, T_obs),
+                    init_params,
+                    method = 'L-BFGS-B',
+                    bounds = bounds)
+    
+    param_names = ['A', 'B', 'shift', 'p_mu', 'var', 'delta', 'ave_loc', 'p_sigma']
+    return dict(zip(param_names, phat.x))
+
+
+
+#################################################################################
+# fourier transformsss
+def FT_temp_model(x, T_obs):
+    
+    
+    
+    
+    return phat
+
+
+
+#################################################################################
 
 
 theta = [A, B, var, delta, ave_loc, 0]
@@ -132,6 +242,7 @@ norms = [gen_norm_pdf(eT, yearly_mu(x[i], A, B, shift),
 plt.plot(eT,sum(norms)/(365), label = "daily ave")
 plt.plot(eT,sum(norms_day)/(365*24), label = "incl diurnal cycle")
 plt.title(f"mu = {A} + {B}sin((day + {shift})*2pi/365.25), \n sigma = (1 + {delta} * np.sin((day + {ave_loc})*2pi/365.25))*{var}")
+plt.xlim(-3,30)
 plt.legend()
 plt.show()
 
@@ -174,6 +285,7 @@ for i in range(3):
         
         ax = fig.add_subplot(3,3,1+i+3*j)
         ax.plot(eT,sum(norms)/365)
+        plt.xlim(0,30)
         plt.title(f"B = {B}, ave_loc = {ave_loc}")
 
 plt.suptitle(f"mu = {A} + B*sin((day + {shift})*2pi/365.25), \n sigma = (1 + {delta} * np.sin((day + ave_loc)*2pi/365.25))*{var}")
@@ -265,7 +377,7 @@ n_lon = len(region_lons)-1
 ###############################################################################
 # select stations (longest) in each grid
 
-numb_per_grid = 2
+numb_per_grid = 1
 
 station_names = []
 station_lats = []
@@ -346,7 +458,7 @@ plt.show()
 
 ###############################################################################
 # model
-
+phat2s = []
 
 for i in range(len(station_names)):
     station = station_names[i]
@@ -363,29 +475,66 @@ for i in range(len(station_names)):
         })
     
     oe["date"] = pd.to_datetime(oe.oe_time).dt.date
-    oe["days_of_year"] = pd.to_datetime(oe.date) - pd.to_datetime({'year': oe.oe_time.dt.year, 'month': 1, 'day': 1})
+    oe['days_of_year'] = pd.to_datetime(oe['date']).dt.dayofyear
+    
+    
     cycle_mean = oe.groupby("days_of_year")["T"].mean()
     cycle_std = oe.groupby("days_of_year")["T"].std()
     
     phat = sine_temperature_model(T_)
-    pdf = gen_sine_temperature_pdf(eT,*phat)
+    pdf = gen_sine_temperature_pdf(eT,phat["A"],phat["B"],phat["var"],phat["delta"],phat["ave_loc"])
     
     eT_hist = np.arange(-20,40)
     eT_edges = np.concatenate([np.array([eT_hist[0]-(eT_hist[1]-eT_hist[0])/2]),(eT_hist + (eT_hist[1]-eT_hist[0])/2)]) #convert bin centres into bin edges
     hist, bin_edges = np.histogram(T_, bins=eT_edges, density=True)
+    
+    # the opposite way round
+    days = datetime_series_to_array(oe.oe_time)
+    
+    phat_sigma = yearly_sigma_fit(cycle_std)
+    phat_mu = yearly_mu_fit(days, T_)
+    pdf_back = gen_sine_temperature_pdf(eT, phat_mu["A"], phat_mu["B"],
+                                        phat_sigma["var"], phat_sigma["delta"],
+                                        phat_sigma["ave_loc"] - phat_mu["shift"],
+                                        p_mu = phat_mu["p_mu"], p_sigma = phat_sigma["p_sigma"])
+    
+    ## new version as francesco said
+    phat2 = sine_temperature_model_v2(days, T_)
+    phat2s.append(phat2)
+    
+    
+    pdf2 = gen_sine_temperature_pdf(eT,phat2["A"],phat2["B"],
+                                    phat2["var"],phat2["delta"],
+                                    phat2["ave_loc"]-phat2["shift"],       
+                                    p_mu = phat2["p_mu"], p_sigma = phat2["p_sigma"])
+ 
+    
+    
     plt.plot(eT_hist, hist, '--')
     
-    plt.plot(eT,pdf)
+    plt.plot(eT,pdf, label = "fitted on pdf")
+    
+    plt.plot(eT, pdf_back,
+             label = "backwards fit")
+    
+    plt.plot(eT,pdf2, label = "new version")
+    
+    plt.legend()
+    
     plt.title(f"{station}. ({station_lats[i]},{station_lons[i]})")
     plt.show()
     
     
-    xs = np.arange(len(cycle_std))
+    xs = np.arange(1,len(cycle_std)+1)
     
     
-    shift = minimize(lambda theta: np.sum((yearly_mu(xs, phat[0], phat[1], shift = theta) - cycle_mean)**2),
+    shift = minimize(lambda theta: np.sum((yearly_mu(xs, phat["A"], phat["B"], shift = theta) - cycle_mean)**2),
                     0,
                     method='Nelder-Mead').x[0]
+    
+    day_difference = oe.days_of_year.astype("int").iloc[0]/(3600*24*10e8)
+    
+    
     
     
     
@@ -396,8 +545,11 @@ for i in range(len(station_names)):
     ax.plot(xs,cycle_mean)
     
     #plot simulated cycle
-    plt.plot(xs,yearly_mu(xs, phat[0], phat[1], shift = shift))
+    plt.plot(xs,yearly_mu(xs, phat["A"], phat["B"], shift = shift), label = "fitted on pdf")
+    plt.plot(xs,yearly_mu(xs, phat_mu["A"], phat_mu["B"], shift = phat_mu["shift"] - day_difference, p = phat_mu["p_mu"]), label = "backwards fit")
+    plt.plot(xs,yearly_mu(xs, phat2["A"], phat2["B"], shift = phat2["shift"] - day_difference, p = phat2["p_mu"]), label = "new version")
     
+    plt.legend()
     
     ax.set_xlabel("day of year")
     ax.set_ylabel("Temperature [C]")
@@ -405,7 +557,9 @@ for i in range(len(station_names)):
     
     ax = fig.add_subplot(1,2,2)
     ax.plot(xs,cycle_std)
-    plt.plot(xs,yearly_sigma(xs,phat[2],phat[3],shift+phat[4])/2) #TODO: factor of 2 out... need to check some of the definitions
+    plt.plot(xs,yearly_sigma(xs,phat["var"],phat["delta"],shift+phat["ave_loc"])) 
+    plt.plot(xs,yearly_sigma(xs,phat_sigma["var"],phat_sigma["delta"],phat_sigma["ave_loc"],p=phat_sigma["p_sigma"])) 
+    plt.plot(xs,yearly_sigma(xs,phat2["var"],phat2["delta"],phat2["ave_loc"],p=phat2["p_sigma"])) 
     
     ax.set_xlabel("day of year")
     ax.set_ylabel("Temperature [C]")  
@@ -421,34 +575,64 @@ for i in range(len(station_names)):
     full_temp_24hr = full_temp_xr.squeeze().to_pandas().resample("d").mean() - 273.15
     
     full_temp_24hr_shortened = pd.DataFrame(full_temp_24hr[-5000:-1])
-    full_temp_24hr_shortened["days_of_year"] = (
-        full_temp_24hr_shortened.index - full_temp_24hr_shortened.index.normalize().to_period("Y").start_time).days
+    full_temp_24hr_shortened["days_of_year"] = full_temp_24hr_shortened.index.dayofyear
     
     cycle_mean = full_temp_24hr_shortened.groupby("days_of_year")["t2m"].mean()
     cycle_std = full_temp_24hr_shortened.groupby("days_of_year")["t2m"].std()
     
     T_full = full_temp_24hr_shortened.t2m.to_numpy()
     phat_full = sine_temperature_model(T_full)
-    pdf = gen_sine_temperature_pdf(eT,*phat_full)
+    pdf = gen_sine_temperature_pdf(eT, phat_full["A"],phat_full["B"],phat_full["var"],phat_full["delta"],phat_full["ave_loc"])
     
     eT_hist = np.arange(-20,40)
     eT_edges = np.concatenate([np.array([eT_hist[0]-(eT_hist[1]-eT_hist[0])/2]),(eT_hist + (eT_hist[1]-eT_hist[0])/2)]) #convert bin centres into bin edges
     hist, bin_edges = np.histogram(T_full, bins=eT_edges, density=True)
+    
+    
+    days = np.arange(0,len(T_full))
+    
+    phat_sigma = yearly_sigma_fit(cycle_std)
+    phat_mu = yearly_mu_fit(days, T_full)
+    pdf_back = gen_sine_temperature_pdf(eT, phat_mu["A"], phat_mu["B"],
+                                        phat_sigma["var"], phat_sigma["delta"],
+                                        phat_sigma["ave_loc"] - phat_mu["shift"],
+                                        p_mu = phat_mu["p_mu"], p_sigma = phat_sigma["p_sigma"])
+    
+    ## new version as francesco said
+    phat2 = sine_temperature_model_v2(days, T_full)
+    
+    
+    
+    pdf2 = gen_sine_temperature_pdf(eT,phat2["A"],phat2["B"],
+                                    phat2["var"],phat2["delta"],
+                                    phat2["ave_loc"]-phat2["shift"],       
+                                    p_mu = phat2["p_mu"], p_sigma = phat2["p_sigma"])
+ 
+    
+
+    
     plt.plot(eT_hist, hist, '--')
     
-    plt.plot(eT,pdf)
+    plt.plot(eT,pdf, label = "fitted on pdf")
+    
+    plt.plot(eT, pdf_back,
+             label = "backwards fit")
+    
+    plt.plot(eT,pdf2, label = "new version")
+    
     plt.title(f"full temperature {station}. ({station_lats[i]},{station_lons[i]})")
+    plt.legend()
     plt.show()
     
     
-    xs = np.arange(len(cycle_std))
+    xs = np.arange(1,len(cycle_std)+1)
     
     
-    shift = minimize(lambda theta: np.sum((yearly_mu(xs, phat_full[0], phat_full[1], shift = theta) - cycle_mean)**2),
+    shift = minimize(lambda theta: np.sum((yearly_mu(xs, phat_full["A"], phat_full["B"], shift = theta) - cycle_mean)**2),
                     0,
                     method='Nelder-Mead').x[0]
     
-    
+    day_difference = full_temp_24hr_shortened.days_of_year.iloc[0] # this is because the shift is based on the difference from where the cycle starts, rather than the beginning of the year
     
     fig = plt.figure(figsize=(12,6))
     ax = fig.add_subplot(1,2,1)
@@ -457,23 +641,28 @@ for i in range(len(station_names)):
     ax.plot(xs,cycle_mean)
     
     #plot simulated cycle
-    plt.plot(xs,yearly_mu(xs, phat_full[0], phat_full[1], shift = shift))
+    plt.plot(xs,yearly_mu(xs, phat_full["A"], phat_full["B"], shift = shift), label = "fitted on pdf")
+    plt.plot(xs,yearly_mu(xs, phat_mu["A"], phat_mu["B"], shift = phat_mu["shift"]-day_difference, p = phat_mu["p_mu"]), label = "backwards fit")
+    plt.plot(xs,yearly_mu(xs, phat2["A"], phat2["B"], shift = phat2["shift"] - day_difference, p = phat2["p_mu"]), label = "new version")
     
     
     ax.set_xlabel("day of year")
     ax.set_ylabel("Temperature [C]")
-    plt.title("Mean yearly cycle")
+    plt.title(f"{i} Mean yearly cycle, full")
+    plt.legend()
     
     ax = fig.add_subplot(1,2,2)
     ax.plot(xs,cycle_std)
-    plt.plot(xs,yearly_sigma(xs,phat_full[2],phat_full[3],shift+phat_full[4])) #TODO: factor of 2 out... need to check some of the definitions
+    plt.plot(xs,yearly_sigma(xs,phat_full["var"],phat_full["delta"],shift+phat_full["ave_loc"])) #TODO: factor of 2 out... need to check some of the definitions
+    plt.plot(xs,yearly_sigma(xs,phat_sigma["var"],phat_sigma["delta"],phat_sigma["ave_loc"],p=phat_sigma["p_sigma"])) 
+    plt.plot(xs,yearly_sigma(xs,phat2["var"],phat2["delta"],phat2["ave_loc"],p=phat2["p_sigma"])) 
     
     ax.set_xlabel("day of year")
     ax.set_ylabel("Temperature [C]")  
-    plt.title("standard deviation yearly cycle")
+    plt.title("standard deviation yearly cycle, full")
     plt.show()
     
-    
+
     
 
 
