@@ -34,7 +34,9 @@ import xarray as xr
 import time
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
-from matplotlib.ticker import FuncFormatter
+from matplotlib.ticker import FuncFormatter, FormatStrFormatter
+
+
 import cartopy.crs as ccrs
 import matplotlib.dates as mdates
 import cartopy.feature as cfeature
@@ -275,7 +277,7 @@ def weighted_avg_and_std(values, weights):
 # maps of spatial distributions
 
 s = 3
-sig_mod = 4
+sig_mod = 8
 norm = mcolors.TwoSlopeNorm(vmin=-0.1, vcenter=0, vmax=0.1)
 
 
@@ -403,7 +405,10 @@ for country_i in range(4):
 
 
 cb = plt.colorbar(sc, orientation='horizontal',  extend = "both")
-cb.set_label(r'$b$ [K$^{-1}$]', fontsize=fontsize)  
+cb.ax.xaxis.set_major_formatter(FormatStrFormatter('%.3g'))
+
+
+cb.set_label(r'$b$ [°C$^{-1}$]', fontsize=fontsize)  
 cb.ax.tick_params(labelsize=fontsize)
 
 
@@ -484,7 +489,10 @@ for country_i in range(4):
 
 
 cb = plt.colorbar(sc, orientation='horizontal',  extend = "both")
-cb.set_label(r'$b_{\mathrm{exp}}$ [K$^{-1}$]', fontsize=fontsize)  
+cb.ax.xaxis.set_major_formatter(FormatStrFormatter('%.3g'))
+
+
+cb.set_label(r'$b_{\mathrm{exp}}$ [°C$^{-1}$]', fontsize=fontsize)  
 cb.ax.tick_params(labelsize=fontsize)
 
 
@@ -501,7 +509,7 @@ darken = 2
 
 # linear b
 params = ["lambda","a","kappa","b"]
-params_titles =  [r"$\lambda_0$ [mm h${^{-1}}$]",r"$a$ [K$^{-1}$]",r"$\kappa_0$ ",r"$b$ [K$^{-1}$]"]
+params_titles =  [r"$\lambda_0$ [mm h${^{-1}}$]",r"$a$ [°C$^{-1}$]",r"$\kappa_0$ [-]",r"$b$ [°C$^{-1}$]"]
 xticks_list = [[0.3,1,3,9],np.arange(-0.07,0.15,0.07),[0.5,1,2,4],np.arange(-0.18,0.1,0.06)]
 lims = [[0.11,16],[-0.07,0.15],[0.3,6],[-0.19,0.1]]
 
@@ -624,7 +632,7 @@ plt.show()
 
 ################################################################################
 # exp b
-params_titles =  [r"$\lambda_0$ [mm h${^{-1}}$]",r"$a$ [K$^{-1}$]",r"$\kappa_0$ ",r"$b_{\mathrm{exp}}$ [K$^{-1}$]"]
+params_titles =  [r"$\lambda_0$ [mm h${^{-1}}$]",r"$a$ [°C$^{-1}$]",r"$\kappa_0$ [-]",r"$b_{\mathrm{exp}}$ [°C$^{-1}$]"]
 
 
 fig = plt.figure(figsize=[12,12])
@@ -745,7 +753,7 @@ plt.show()
 
 ###############################################################################
 # the newer version with changing n events
-params_titles =  [r"$\lambda_0$ [mm h${^{-1}}$]",r"$a$ [K$^{-1}$]",r"$\kappa_0$ ",r"$b$ [K$^{-1}$]"]
+params_titles =  [r"$\lambda_0$ [mm h${^{-1}}$]",r"$a$ [°C$^{-1}$]",r"$\kappa_0$ [-] ",r"$b$ [°C$^{-1}$]"]
 
 fig = plt.figure(figsize=[12,12])
 for param_num in range(4):
@@ -864,7 +872,7 @@ plt.show()
 
 ################################################################################
 # exp b
-params_titles =  [r"$\lambda_0$ [mm h${^{-1}}$]",r"$a$ [K$^{-1}$]",r"$\kappa_0$ ",r"$b_{\mathrm{exp}}$ [K$^{-1}$]"]
+params_titles =  [r"$\lambda_0$ [mm h${^{-1}}$]",r"$a$ [°C$^{-1}$]",r"$\kappa_0$ [-]",r"$b_{\mathrm{exp}}$ [°C$^{-1}$]"]
 
 
 fig = plt.figure(figsize=[12,12])
@@ -1182,10 +1190,10 @@ for i in range(3):
     ax.yaxis.set_major_locator(plt.FixedLocator(custom_ticks)) 
     ax.yaxis.set_minor_locator(plt.NullLocator())
     
-    ax.text(0.12, 1.06, labels[i], transform=ax.transAxes,
+    ax.text(-0.03, 1.06, labels[i], transform=ax.transAxes,
       fontsize=fontsize+2, va='top', ha='right')
     
-    ax.set_title(f"$b$ = {uses[i*3].b[0]}",fontsize = fontsize+2)
+    ax.set_title(f"$b$ = {uses[i*3].b[0]}"+r" °C$^{-1}$",fontsize = fontsize+2)
     ax.set_xlabel("Return period (years)",fontsize = fontsize)
     ax.set_ylabel("gen_RL/RL",fontsize = fontsize)
     
@@ -1276,10 +1284,10 @@ for i in range(3):
     ax.yaxis.set_minor_locator(plt.NullLocator())
     ax.set_ylabel("gen_RL/RL",fontsize = fontsize)
     
-    ax.text(0.12, 1.06, labels[i], transform=ax.transAxes,
+    ax.text(-0.03, 1.06, labels[i], transform=ax.transAxes,
       fontsize=fontsize+2, va='top', ha='right')
     
-    ax.set_title(r"$b_{\mathrm{exp}}$"+f" = {uses[i*3].b[0]}",fontsize = fontsize+2)
+    ax.set_title(r"$b_{\mathrm{exp}}$"+f" = {uses[i*3].b[0]}"+r" °C$^{-1}$",fontsize = fontsize+2)
     plt.xlabel("Return period (years)",fontsize = fontsize)
     
     if i == 0:
@@ -1343,7 +1351,7 @@ ticks = [
 variables = ["kappa","b","lambda","a"]
 variables = ["lambda","a","kappa","b"]
 params_titles =  [r"$\lambda_0$",r"$a$",r"$\kappa_0$ ",r"$b$"]
-param_units = [r"[mm h${^{-1}}$]",r"[K$^{-1}$]",r"",r"[K$^{-1}$]"]
+param_units = [r"[mm h${^{-1}}$]",r"[°C$^{-1}$]",r"[-]",r"[°C$^{-1}$]"]
 
 hindcasts_comb = pd.concat([hindcasts[country_i][info[country_i].cleaned_years>=min_years_strong] for country_i in range(4)])
 hindcasts_comb_exp = pd.concat([hindcasts_exp[country_i][info[country_i].cleaned_years>=min_years_strong] for country_i in range(4)])
