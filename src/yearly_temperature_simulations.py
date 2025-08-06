@@ -207,11 +207,35 @@ def sine_temperature_model_v2(x, T_obs,
 
 #################################################################################
 # fourier transformsss
-def FT_temp_model(x, T_obs):
+def FT_temp_model(days, T_obs):
+    mean = np.mean(T_obs)
+    resids = T_obs - mean
+    
+    N = len(T_obs)
+    T = 1 # one day... for now
+    yf = fft.fft(resids)
+    xf = fft.fftfreq(N, T)[:N//2]
+    
+    Fyy = abs(yf)
+    
+    guess_freq = abs(xf[np.argmax(Fyy[1:])+1])   # excluding the zero frequency "peak", which is related to offset
+    guess_amp = np.std(resids) * 2.**0.5
+    
+    #set the frequency to what we xpect it to be... so issues with resolution are reduced
+    if (1/(guess_freq*2*np.pi) < 370/(2*np.pi)) & (1/(guess_freq*2*np.pi) > 350/(2*np.pi)):
+        p_mu = 365.25/(2*np.pi)
+    elif (1/(guess_freq*2*np.pi) < 370/(4*np.pi)) & (1/(guess_freq*2*np.pi) > 350/(4*np.pi)):
+        p_mu = 365.25/(4*np.pi)
+    else:
+        p_mu = 1/(guess_freq*2*np.pi)
+        print("WARNING: p not a factor 1 or 2 of the year length")
     
     
+    phat_list = [mean, guess_amp, p_mu, 1/(guess_freq*2*np.pi)]
     
+    param_names = ['A', 'B', 'p_mu', 'p_mu_actual_calculated']
     
+    phat = dict(zip(param_names, phat_list))
     return phat
 
 
@@ -508,6 +532,10 @@ for i in range(len(station_names)):
                                     phat2["ave_loc"]-phat2["shift"],       
                                     p_mu = phat2["p_mu"], p_sigma = phat2["p_sigma"])
  
+    
+    
+    day_difference = oe.days_of_year.iloc[0]
+    
     
     
     plt.plot(eT_hist, hist, '--')
