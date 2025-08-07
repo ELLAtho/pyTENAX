@@ -500,10 +500,13 @@ for i in range(len(station_names)):
     
     oe["date"] = pd.to_datetime(oe.oe_time).dt.date
     oe['days_of_year'] = pd.to_datetime(oe['date']).dt.dayofyear
+    oe["days_of_year10"] = np.trunc(oe.days_of_year/10)*10
     
     
     cycle_mean = oe.groupby("days_of_year")["T"].mean()
     cycle_std = oe.groupby("days_of_year")["T"].std()
+    
+    cycle_std10 = oe.groupby("days_of_year10")["T"].std()
     
     phat = sine_temperature_model(T_)
     pdf = gen_sine_temperature_pdf(eT,phat["A"],phat["B"],phat["var"],phat["delta"],phat["ave_loc"])
@@ -516,11 +519,32 @@ for i in range(len(station_names)):
     days = datetime_series_to_array(oe.oe_time)
     
     phat_sigma = yearly_sigma_fit(cycle_std)
+    phat_sigma10 = yearly_sigma_fit(cycle_std10) # this is std calculated in 10 day chunks
     phat_mu = yearly_mu_fit(days, T_)
+    
+    
+    deviations_from_yearly_mu = oe["T"] - yearly_mu(days, phat_mu["A"], phat_mu["B"], shift = phat_mu["shift"], p = phat_mu["p_mu"])
+    
+    eT_hist_deviation = np.arange(-20,20)
+    eT_edges_deviation = np.concatenate([np.array([eT_hist_deviation[0]-(eT_hist_deviation[1]-eT_hist_deviation[0])/2]),(eT_hist_deviation + (eT_hist_deviation[1]-eT_hist_deviation[0])/2)]) #convert bin centres into bin edges
+    hist_deviation, bin_edges = np.histogram(deviations_from_yearly_mu, bins=eT_edges_deviation, density=True)
+    
+    
+    plt.plot(eT_hist_deviation, hist_deviation, '--') #TODO: fit a normal distribution to this...
+    plt.title("distribution of the deviations")
+    plt.show()
+    
+    
     pdf_back = gen_sine_temperature_pdf(eT, phat_mu["A"], phat_mu["B"],
                                         phat_sigma["var"], phat_sigma["delta"],
                                         phat_sigma["ave_loc"] - phat_mu["shift"],
                                         p_mu = phat_mu["p_mu"], p_sigma = phat_sigma["p_sigma"])
+    
+    pdf_back10 = gen_sine_temperature_pdf(eT, phat_mu["A"], phat_mu["B"],
+                                        phat_sigma10["var"], phat_sigma10["delta"],
+                                        phat_sigma10["ave_loc"] - phat_mu["shift"],
+                                        p_mu = phat_mu["p_mu"], p_sigma = phat_sigma10["p_sigma"])
+    
     
     ## new version as francesco said
     phat2 = sine_temperature_model_v2(days, T_)
@@ -546,10 +570,13 @@ for i in range(len(station_names)):
              label = "backwards fit")
     
     plt.plot(eT,pdf2, label = "new version")
+
+    plt.plot(eT, pdf_back10,
+             label = "backwards fit, std smoothed over 10 days")
     
     plt.legend()
     
-    plt.title(f"{station}. ({station_lats[i]},{station_lons[i]})")
+    plt.title(f"{i} {station}. ({station_lats[i]},{station_lons[i]})")
     plt.show()
     
     
@@ -581,13 +608,14 @@ for i in range(len(station_names)):
     
     ax.set_xlabel("day of year")
     ax.set_ylabel("Temperature [C]")
-    plt.title("Mean yearly cycle")
+    plt.title(f"{i} Mean yearly cycle")
     
     ax = fig.add_subplot(1,2,2)
     ax.plot(xs,cycle_std)
     plt.plot(xs,yearly_sigma(xs,phat["var"],phat["delta"],shift+phat["ave_loc"])) 
     plt.plot(xs,yearly_sigma(xs,phat_sigma["var"],phat_sigma["delta"],phat_sigma["ave_loc"],p=phat_sigma["p_sigma"])) 
     plt.plot(xs,yearly_sigma(xs,phat2["var"],phat2["delta"],phat2["ave_loc"],p=phat2["p_sigma"])) 
+    plt.plot(xs,yearly_sigma(xs,phat_sigma10["var"],phat_sigma10["delta"],phat_sigma10["ave_loc"],p=phat_sigma10["p_sigma"])) 
     
     ax.set_xlabel("day of year")
     ax.set_ylabel("Temperature [C]")  
@@ -648,7 +676,7 @@ for i in range(len(station_names)):
     
     plt.plot(eT,pdf2, label = "new version")
     
-    plt.title(f"full temperature {station}. ({station_lats[i]},{station_lons[i]})")
+    plt.title(f"{i} full temperature {station}. ({station_lats[i]},{station_lons[i]})")
     plt.legend()
     plt.show()
     
