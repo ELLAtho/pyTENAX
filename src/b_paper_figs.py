@@ -1195,7 +1195,7 @@ for i in range(3):
     
     ax.set_title(f"$b$ = {uses[i*3].b[0]}"+r" °C$^{-1}$",fontsize = fontsize+2)
     ax.set_xlabel("Return period (years)",fontsize = fontsize)
-    ax.set_ylabel("gen_RL/RL",fontsize = fontsize)
+    ax.set_ylabel("Bias in return levels",fontsize = fontsize)
     
     if i == 0:
         legend_elements = [
@@ -1282,7 +1282,7 @@ for i in range(3):
     ax.set_yticklabels(custom_ticklabels,fontsize = fontsize)
     ax.yaxis.set_major_locator(plt.FixedLocator(custom_ticks)) 
     ax.yaxis.set_minor_locator(plt.NullLocator())
-    ax.set_ylabel("gen_RL/RL",fontsize = fontsize)
+    ax.set_ylabel("Bias in return levels",fontsize = fontsize)
     
     ax.text(-0.03, 1.06, labels[i], transform=ax.transAxes,
       fontsize=fontsize+2, va='top', ha='right')

@@ -348,8 +348,8 @@ plt.show()
 
 # 5a2 USA
 
-skew_FRMSE_df = pd.read_csv(f"{drive}:/outputs/{country_save}\\temp_FRMSE_skew.csv",dtype = {"station":str})
-temp_FRMSE_df4 = pd.read_csv(f"{drive}:/outputs/{country_save}\\temp_FRMSE.csv",dtype = {"station":str})
+skew_FRMSE_df = pd.read_csv(f"{drive}:/outputs/{country_save}/old_parameters_couple_month_missing\\temp_FRMSE_skew.csv",dtype = {"station":str})
+temp_FRMSE_df4 = pd.read_csv(f"{drive}:/outputs/{country_save}/old_parameters_couple_month_missing\\temp_FRMSE.csv",dtype = {"station":str})
 
 FRMSE_skew_4_20 =  skew_FRMSE_df.FRMSE_upper_perc - temp_FRMSE_df4.FRMSE_upper_perc
 

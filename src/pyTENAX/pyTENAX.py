@@ -1385,7 +1385,6 @@ def TNX_FIG_temp_model(T, g_phat, beta, eT, obscol='r',valcol='b',
     # Plot empirical PDF of T
     eT_edges = np.concatenate([np.array([eT[0]-(eT[1]-eT[0])/2]),(eT + (eT[1]-eT[0])/2)]) #convert bin centres into bin edges
     hist, bin_edges = np.histogram(T, bins=eT_edges, density=True)
-    plt.plot(eT, hist, '--', color=obscol, label=obslabel)
     
     
     # Plot analytical PDF of T (validation)
@@ -1395,6 +1394,7 @@ def TNX_FIG_temp_model(T, g_phat, beta, eT, obscol='r',valcol='b',
         pdf_values = gen_norm_pdf(eT, g_phat[0], g_phat[1], beta)
         
     plt.plot(eT, pdf_values, '-', color=valcol, label=vallabel)
+    plt.plot(eT, hist, '--', color=obscol, label=obslabel)
     
     # Set plot parameters
     #ax.set_xlim(Tlims)
