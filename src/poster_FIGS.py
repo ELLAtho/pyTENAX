@@ -410,8 +410,8 @@ fig = plt.figure(figsize = (4,4))
 ax = fig.add_subplot(1,1,1)
 
 plt.plot(eRP,AMS,"k+",label = "annual maxima") #plot observed return levels
-plt.plot(eRP,RL_0,color = "b", label = f"b = 0")
-plt.plot(eRP,RL,"r--",label = "b = fitted")  #plot TENAX return levels
+plt.plot(eRP,RL_0,color = "b", label = "b = 0")
+plt.plot(eRP,RL,"r--",label = f"b = {F_phat[1][0]:.3f}")  #plot TENAX return levels
 
 plt.ylim(0,45)
 plt.xscale('log')
