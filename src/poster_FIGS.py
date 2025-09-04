@@ -1251,7 +1251,7 @@ for i in range(len(stations)):
     plt.xlim(xlims[i])
     plt.ylim(ylims[i])
     
-    plt.legend(fontsize = fontsize)
+    
     
     plt.title(f"({lat:.2f}, {lon:.2f})",fontsize = fontsize)
     plt.xlabel("Temperature [°C]", fontsize = fontsize)
@@ -1315,6 +1315,10 @@ for i in range(len(stations)):
 
 
 
+plt.plot([1,2,6],[1,3,6], label = "backwards fit", color = '#4daf4a', linewidth = 3)
 
+plt.plot([1,2,6],[1,3,6], label = "fitted on pdf",color = "b", linewidth = 3)
 
-
+plt.plot([1,2,6],[1,3,6],'r--', linewidth = 3, label = "observations")
+plt.legend(fontsize = fontsize)
+plt.show()
