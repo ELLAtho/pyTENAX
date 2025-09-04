@@ -38,6 +38,7 @@ from pyTENAX.globalTENAX import *
 import glob
 
 
+# %% Defining parameters and simulation functions
 #### a simulation of all the temperatures during the year
 
 ### define the easy functions
@@ -78,7 +79,7 @@ def gen_sine_temperature_pdf(eT, A, B, var, delta, ave_loc, x= np.arange(0,365),
     return pdf
 
 
-
+# %% Functions for fitting observations
 def sine_temperature_loglik_day_incl(theta, T, p = 365.25/(2*np.pi), daylength = 1/(2*np.pi)):
    
     A, B, var, delta = theta[0], theta[1], theta[2], theta[3] 
@@ -115,9 +116,7 @@ def sine_temperature_model(T_obs, init_params = [13, 4, 3, 0.5, 90, 0], day_incl
     return dict(zip(param_names, phat.x))
 
 
-
-################################################################################
-# functions to fit the two seperately
+# %% functions to fit the two seperately
 def datetime_series_to_array(series): #series = oe.oe_time
     dates = pd.to_datetime(series).dt.date
     start_date = dates[0]
@@ -174,9 +173,8 @@ def yearly_sigma_fit(std_obs_cycle, init_params = [5, 0.5, 100, 365.25/(2*np.pi)
 #                                       p_sigma = phat_sigma[3],))  
     
 
-################################################################################
 
-# functions as francesco said
+# %%  functions as francesco said
 def sine_temperature_loglik_v2(theta, x, T):
    
     A, B, shift, p_mu = theta[0], theta[1], theta[2], theta[3]
@@ -205,8 +203,7 @@ def sine_temperature_model_v2(x, T_obs,
 
 
 
-#################################################################################
-# fourier transformsss
+# %%  fourier transformsss
 def FT_temp_model(days, T_obs):
     mean = np.mean(T_obs)
     resids = T_obs - mean
@@ -238,10 +235,46 @@ def FT_temp_model(days, T_obs):
     phat = dict(zip(param_names, phat_list))
     return phat
 
+def FT_std_model(T_series, window = 10):
+    rolling_std = T_series.rolling(window).std()[window-1:]
+    
+    mean = np.mean(rolling_std)
+    
+    resids = rolling_std - mean
+    
+    N = len(rolling_std)
+    T = 1 # one day... for now
+    yf = fft.fft(resids)
+    xf = fft.fftfreq(N, T)[:N//2]
+    
+    
+    Fyy = abs(yf)
+    
+    guess_freq = abs(xf[np.argmax(Fyy[1:])+1])   # excluding the zero frequency "peak", which is related to offset
+    guess_amp = np.std(resids) * 2.**0.5
+    
+    ave_loc = np.angle(yf[np.argmax(Fyy[1:])]) * 365.25/(2*np.pi)
+    
+    
+    if (1/(guess_freq*2*np.pi) < 370/(2*np.pi)) & (1/(guess_freq*2*np.pi) > 350/(2*np.pi)):
+        p_sigma = 365.25/(2*np.pi)
+    elif (1/(guess_freq*2*np.pi) < 370/(4*np.pi)) & (1/(guess_freq*2*np.pi) > 350/(4*np.pi)):
+        p_sigma = 365.25/(4*np.pi)
+    else:
+        p_sigma = 1/(guess_freq*2*np.pi)
+        print("WARNING: p not a factor 1 or 2 of the year length")
+    
+    
+    phat_list = [mean, guess_amp/mean, p_sigma, 1/(guess_freq*2*np.pi), ave_loc]
+    
+    param_names = ['var', 'delta', 'p_sigma', 'p_sigma_actual_calculated', 'ave_loc']
+    
+    phat = dict(zip(param_names, phat_list))
+    return phat
+    
 
 
-#################################################################################
-
+# %% plot the generated distributions from parameters
 
 theta = [A, B, var, delta, ave_loc, 0]
 
@@ -317,8 +350,101 @@ plt.suptitle(f"mu = {A} + B*sin((day + {shift})*2pi/365.25), \n sigma = (1 + {de
 plt.show()
 
 
-################################################################################
-## Looking at some examples
+# %% sliders
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+from plotly.offline import plot
+import itertools
+from dash import Dash, dcc, html, Output, Input
+
+As = np.arange(10,21)
+Bs = np.arange(2,11)
+sigs = np.arange(2,6)
+dels = np.arange(0.2,1,0.2)
+phis = np.arange(0,181,30)
+
+
+app = Dash(__name__)
+
+app.layout = html.Div([
+    html.H2("Temperature model"),
+    
+    dcc.Graph(id="climate-plot"),
+    
+    html.Div([
+        html.Label("B"),
+        dcc.Slider(min=min(Bs), max=max(Bs), step=1, value=Bs[0],
+                   marks={int(b): str(int(b)) for b in Bs}, id="B-slider")
+    ], style={"margin": "20px"}),
+
+    html.Div([
+        html.Label("σ"),
+        dcc.Slider(min=min(sigs), max=max(sigs), step=1, value=sigs[0],
+                   marks={int(s): str(int(s)) for s in sigs}, id="sigma-slider")
+    ], style={"margin": "20px"}),
+
+    html.Div([
+        html.Label("δ"),
+        dcc.Slider(min=float(min(dels)), max=float(max(dels)), step=0.2, value=dels[0],
+                   marks={round(d,1): str(round(d,1)) for d in dels}, id="delta-slider")
+    ], style={"margin": "20px"}),
+
+    html.Div([
+        html.Label("φ"),
+        dcc.Slider(min=min(phis), max=max(phis), step=30, value=phis[0],
+                   marks={int(p): str(int(p)) for p in phis}, id="phi-slider")
+    ], style={"margin": "20px"})
+])
+
+
+@app.callback(
+    Output("climate-plot", "figure"),
+    Input("B-slider", "value"),
+    Input("sigma-slider", "value"),
+    Input("delta-slider", "value"),
+    Input("phi-slider", "value")
+)
+def update_plot(B, sigma, delta, phi):
+    mu_vals = yearly_mu(x, A, B, shift)
+    sigma_vals = yearly_sigma(x, sigma, delta, phi)
+
+    # yearly cycle traces
+    traces = [
+        go.Scatter(x=x, y=mu_vals, name="Mean"),
+        go.Scatter(x=x, y=mu_vals - sigma_vals, name="-σ"),
+        go.Scatter(x=x, y=mu_vals + sigma_vals, fill="tonextx", name="+σ")
+    ]
+    
+    # distribution subplot
+    norms = [gen_norm_pdf(eT, mu_vals[i], sigma_vals[i], 2) for i in range(365)]
+    traces.append(go.Scatter(x=eT, y=sum(norms)/365, name="Distribution"))
+
+    # Create subplot layout
+    fig = make_subplots(rows=1, cols=2, subplot_titles=("Yearly Cycle", "Distribution"))
+    fig.add_traces(traces[:3], rows=[1,1,1], cols=[1,1,1]).update_layout(xaxis_title="Day of year", yaxis_title="Temperature [°C]")
+
+    fig.add_trace(traces[3], row=1, col=2)
+    
+    fig.update_xaxes(title_text="Day of Year", row=1, col=1)
+    fig.update_xaxes(title_text="Temperature (°C)", row=1, col=2)
+    
+    fig.update_yaxes(title_text="Temperature (°C)", row=1, col=1)
+    fig.update_yaxes(title_text="pdf", row=1, col=2)
+
+    fig.update_layout(title=f"B={B}, σ={sigma}, δ={delta}, φ={phi}",
+                      showlegend=False)
+    return fig
+
+
+if __name__ == "__main__":
+    app.run(debug=True)
+    import webbrowser
+    webbrowser.open("http://127.0.0.1:8050/")
+    app.run(debug=True, use_reloader=False)
+
+
+
+# %% fitting to observations, reading data
 
 
 drive = 'D'
@@ -399,7 +525,7 @@ n_lat = len(region_lats)-1
 n_lon = len(region_lons)-1
 
 ###############################################################################
-# select stations (longest) in each grid
+# %% select stations (longest) in each grid
 
 numb_per_grid = 1
 
@@ -481,7 +607,7 @@ plt.ylim(25,50)
 plt.show()
 
 ###############################################################################
-# model
+# %% run model
 phat2s = []
 
 for i in range(len(station_names)):
@@ -561,7 +687,9 @@ for i in range(len(station_names)):
     day_difference = oe.days_of_year.iloc[0]
     
     
+    fig = plt.figure(figsize=(18,6))
     
+    ax = fig.add_subplot(1,3,1)
     plt.plot(eT_hist, hist, '--')
     
     plt.plot(eT,pdf, label = "fitted on pdf")
@@ -577,7 +705,7 @@ for i in range(len(station_names)):
     plt.legend()
     
     plt.title(f"{i} {station}. ({station_lats[i]},{station_lons[i]})")
-    plt.show()
+    
     
     
     xs = np.arange(1,len(cycle_std)+1)
@@ -593,8 +721,7 @@ for i in range(len(station_names)):
     
     
     
-    fig = plt.figure(figsize=(12,6))
-    ax = fig.add_subplot(1,2,1)
+    ax = fig.add_subplot(1,3,2)
     
     #plot observed averaged cycle
     ax.plot(xs,cycle_mean)
@@ -610,7 +737,7 @@ for i in range(len(station_names)):
     ax.set_ylabel("Temperature [C]")
     plt.title(f"{i} Mean yearly cycle")
     
-    ax = fig.add_subplot(1,2,2)
+    ax = fig.add_subplot(1,3,3)
     ax.plot(xs,cycle_std)
     plt.plot(xs,yearly_sigma(xs,phat["var"],phat["delta"],shift+phat["ave_loc"])) 
     plt.plot(xs,yearly_sigma(xs,phat_sigma["var"],phat_sigma["delta"],phat_sigma["ave_loc"],p=phat_sigma["p_sigma"])) 
@@ -635,6 +762,7 @@ for i in range(len(station_names)):
     
     cycle_mean = full_temp_24hr_shortened.groupby("days_of_year")["t2m"].mean()
     cycle_std = full_temp_24hr_shortened.groupby("days_of_year")["t2m"].std()
+    rolling_std = full_temp_24hr_shortened.t2m.rolling(10).std()
     
     T_full = full_temp_24hr_shortened.t2m.to_numpy()
     phat_full = sine_temperature_model(T_full)
@@ -667,6 +795,9 @@ for i in range(len(station_names)):
     
 
     
+    fig = plt.figure(figsize=(18,6))
+    ax = fig.add_subplot(1,3,1)
+    
     plt.plot(eT_hist, hist, '--')
     
     plt.plot(eT,pdf, label = "fitted on pdf")
@@ -678,7 +809,7 @@ for i in range(len(station_names)):
     
     plt.title(f"{i} full temperature {station}. ({station_lats[i]},{station_lons[i]})")
     plt.legend()
-    plt.show()
+    
     
     
     xs = np.arange(1,len(cycle_std)+1)
@@ -690,8 +821,7 @@ for i in range(len(station_names)):
     
     day_difference = full_temp_24hr_shortened.days_of_year.iloc[0] # this is because the shift is based on the difference from where the cycle starts, rather than the beginning of the year
     
-    fig = plt.figure(figsize=(12,6))
-    ax = fig.add_subplot(1,2,1)
+    ax = fig.add_subplot(1,3,2)
     
     #plot observed averaged cycle
     ax.plot(xs,cycle_mean)
@@ -707,9 +837,9 @@ for i in range(len(station_names)):
     plt.title(f"{i} Mean yearly cycle, full")
     plt.legend()
     
-    ax = fig.add_subplot(1,2,2)
+    ax = fig.add_subplot(1,3,3)
     ax.plot(xs,cycle_std)
-    plt.plot(xs,yearly_sigma(xs,phat_full["var"],phat_full["delta"],shift+phat_full["ave_loc"])) #TODO: factor of 2 out... need to check some of the definitions
+    plt.plot(xs,yearly_sigma(xs,phat_full["var"],phat_full["delta"],shift+phat_full["ave_loc"])) 
     plt.plot(xs,yearly_sigma(xs,phat_sigma["var"],phat_sigma["delta"],phat_sigma["ave_loc"],p=phat_sigma["p_sigma"])) 
     plt.plot(xs,yearly_sigma(xs,phat2["var"],phat2["delta"],phat2["ave_loc"],p=phat2["p_sigma"])) 
     
