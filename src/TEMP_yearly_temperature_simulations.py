@@ -204,7 +204,7 @@ def sine_temperature_model_v2(x, T_obs,
 
 
 # %%  fourier transformsss
-def FT_temp_model(days, T_obs):
+def FT_temp_model(T_obs):
     mean = np.mean(T_obs)
     resids = T_obs - mean
     
@@ -218,6 +218,11 @@ def FT_temp_model(days, T_obs):
     guess_freq = abs(xf[np.argmax(Fyy[1:])+1])   # excluding the zero frequency "peak", which is related to offset
     guess_amp = np.std(resids) * 2.**0.5
     
+    
+    c = np.real(yf[np.argmax(Fyy[1:])+1])
+    s = -np.imag(yf[np.argmax(Fyy[1:])+1])
+    angle = np.arctan2(s, c)
+    
     #set the frequency to what we xpect it to be... so issues with resolution are reduced
     if (1/(guess_freq*2*np.pi) < 370/(2*np.pi)) & (1/(guess_freq*2*np.pi) > 350/(2*np.pi)):
         p_mu = 365.25/(2*np.pi)
@@ -228,9 +233,9 @@ def FT_temp_model(days, T_obs):
         print("WARNING: p not a factor 1 or 2 of the year length")
     
     
-    phat_list = [mean, guess_amp, p_mu, 1/(guess_freq*2*np.pi)]
+    phat_list = [mean, guess_amp, p_mu, 1/(guess_freq*2*np.pi), angle]
     
-    param_names = ['A', 'B', 'p_mu', 'p_mu_actual_calculated']
+    param_names = ['A', 'B', 'p_mu', 'p_mu_actual_calculated','angle']
     
     phat = dict(zip(param_names, phat_list))
     return phat
@@ -253,7 +258,9 @@ def FT_std_model(T_series, window = 10):
     guess_freq = abs(xf[np.argmax(Fyy[1:])+1])   # excluding the zero frequency "peak", which is related to offset
     guess_amp = np.std(resids) * 2.**0.5
     
-    ave_loc = np.angle(yf[np.argmax(Fyy[1:])]) * 365.25/(2*np.pi)
+    c = np.real(yf[np.argmax(Fyy[1:])+1])
+    s = -np.imag(yf[np.argmax(Fyy[1:])+1])
+    angle = np.arctan2(s, c)
     
     
     if (1/(guess_freq*2*np.pi) < 370/(2*np.pi)) & (1/(guess_freq*2*np.pi) > 350/(2*np.pi)):
@@ -265,12 +272,77 @@ def FT_std_model(T_series, window = 10):
         print("WARNING: p not a factor 1 or 2 of the year length")
     
     
-    phat_list = [mean, guess_amp/mean, p_sigma, 1/(guess_freq*2*np.pi), ave_loc]
+    ave_loc = (-angle+np.pi/2) * p_sigma/(2*np.pi)
     
-    param_names = ['var', 'delta', 'p_sigma', 'p_sigma_actual_calculated', 'ave_loc']
+    phat_list = [mean, guess_amp/mean, p_sigma, 1/(guess_freq*2*np.pi), ave_loc, angle]
+    
+    param_names = ['var', 'delta', 'p_sigma', 'p_sigma_actual_calculated', 'ave_loc','angle']
     
     phat = dict(zip(param_names, phat_list))
     return phat
+    
+
+def FT_plot(T_series, window = 10): #TODO: the shift is still wrong... don't know if it is relatively correct
+    
+    phat_mu = FT_temp_model(T_series[window-1:].to_numpy())
+    
+    phat_sigma = FT_std_model(T_series, window = window)
+    
+    rolling_std = T_series.rolling(window).std()[window-1:]
+    
+    shift = (-phat_mu["angle"]+np.pi/2)*phat_mu["p_mu"]*2
+    
+    x = np.arange(len(rolling_std))
+    
+    
+    fig = plt.figure(figsize=(18,6))
+    ax = fig.add_subplot(1,3,1)
+    ax.plot(T_series[window-1:],label = "observations")
+    
+    ax.plot(T_series.index[window-1:],
+            yearly_mu(x,phat_mu["A"],phat_mu["B"],
+                      shift,
+                      phat_mu["p_mu"]
+                      ),label = "FT")
+    
+    ax.set_title("Temperature")
+    plt.legend()
+    
+    ax = fig.add_subplot(1,3,2)
+    ax.plot(rolling_std, label = "std")
+    
+    ax.plot(T_series.index[window-1:],
+            yearly_sigma(x,phat_sigma["var"],phat_sigma["delta"],
+                         phat_sigma["ave_loc"],phat_sigma["p_sigma"]))
+    
+    ax.set_title(f"Standard deviation, window = {window} days")
+    plt.legend()
+    
+def FT_model(T_series, window = 10, plot_dist = True): 
+    
+    phat_mu = FT_temp_model(T_series[window-1:].to_numpy())
+    
+    phat_sigma = FT_std_model(T_series, window = window)
+    
+    del_angle = phat_sigma["angle"] - phat_mu["angle"]
+    ave_loc_out = del_angle *365.25/(2*np.pi)
+    
+    if plot_dist == True:
+        eT = np.arange(-12,40,0.2)
+        eT_hist = np.arange(-20,40)
+        eT_edges = np.concatenate([np.array([eT_hist[0]-(eT_hist[1]-eT_hist[0])/2]),(eT_hist + (eT_hist[1]-eT_hist[0])/2)]) #convert bin centres into bin edges
+        hist, bin_edges = np.histogram(T_series.to_numpy(), bins=eT_edges, density=True)
+        
+        pdf = gen_sine_temperature_pdf(eT,phat_mu["A"],phat_mu["B"],phat_sigma["var"],phat_sigma["delta"],ave_loc_out)
+        
+        
+        plt.plot(eT_hist, hist, "b--", label = "observations")
+        plt.plot(eT, pdf, "r", label = "pdf")
+        plt.show()
+    else:
+        pass
+    
+    return phat_mu, phat_sigma, ave_loc_out
     
 
 
