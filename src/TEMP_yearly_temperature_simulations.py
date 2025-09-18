@@ -161,6 +161,40 @@ def yearly_sigma_fit(std_obs_cycle, init_params = [5, 0.5, 100, 365.25/(2*np.pi)
     param_names = ['var', 'delta', 'ave_loc', 'p_sigma']
     return dict(zip(param_names, phat.x))
 
+def yearly_sigma_fit_rolling(oe_dataframe, window = 40, init_params = [5, 0.5, 100, 365.25/(2*np.pi)]): # std_obs_cycle is a pd.Series
+    
+    oe_dataframe["days_from_start"] = ((oe_dataframe.oe_time - oe_dataframe.oe_time[0]).astype("int")/(24*60*60*10e8)).round().astype("int")
+    
+    # calculate rolling std according to the day
+    rolling_std = [np.nan]*len(oe_dataframe)
+    
+    for i in np.arange(0,len(oe_dataframe)):
+        day = oe_dataframe.days_from_start.iloc[i]
+        if day >= window-1:
+            df_section = oe_dataframe[(oe_dataframe.days_from_start<=day)&(oe_dataframe.days_from_start>day-window)]
+            rolling_std[i] = df_section["T"].std()
+        else:
+            pass
+    
+    x = oe_dataframe.days_from_start
+    
+    def residuals(theta, x, obs):
+        sigma_sim = yearly_sigma(x,theta[0],theta[1],theta[2], p = theta[3])
+        diffs = sigma_sim - obs
+        
+        return np.nansum(diffs**2)
+    
+    
+    phat = minimize(lambda theta: residuals(theta, x, rolling_std),
+                    init_params,
+                    method = 'L-BFGS-B')
+    
+    param_names = ['var', 'delta', 'ave_loc', 'p_sigma']
+    return dict(zip(param_names, phat.x)), rolling_std
+
+
+
+
 
   # EG
 # plt.plot(eT_hist, hist, '--')
@@ -240,7 +274,7 @@ def FT_temp_model(T_obs):
     phat = dict(zip(param_names, phat_list))
     return phat
 
-def FT_std_model(T_series, window = 10):
+def FT_std_model(T_series, window = 40):
     rolling_std = T_series.rolling(window).std()[window-1:]
     
     mean = np.mean(rolling_std)
@@ -282,7 +316,7 @@ def FT_std_model(T_series, window = 10):
     return phat
     
 
-def FT_plot(T_series, window = 10): #TODO: the shift is still wrong... don't know if it is relatively correct
+def FT_plot(T_series, window = 40): #TODO: the shift is still wrong... don't know if it is relatively correct
     
     phat_mu = FT_temp_model(T_series[window-1:].to_numpy())
     
@@ -318,7 +352,7 @@ def FT_plot(T_series, window = 10): #TODO: the shift is still wrong... don't kno
     ax.set_title(f"Standard deviation, window = {window} days")
     plt.legend()
     
-def FT_model(T_series, window = 10, plot_dist = True): 
+def FT_model(T_series, window = 40, plot_dist = True): 
     
     phat_mu = FT_temp_model(T_series[window-1:].to_numpy())
     
@@ -920,9 +954,70 @@ for i in range(len(station_names)):
     plt.title("standard deviation yearly cycle, full")
     plt.show()
     
-
+# %% run model with rolling std
+for i in range(len(station_names)):
+    station = station_names[i]
     
-
+    T_ = np.genfromtxt(f"D:/ordinary_events/US_main/T_{station}.csv")
+    P_ = np.genfromtxt(f"D:/ordinary_events/US_main/P_{station}.csv")
+    times = pd.read_csv(f"D:/ordinary_events/US_main/time_{station}.csv",parse_dates = ["oe_time"])
+    
+    
+    oe = pd.DataFrame({
+        "oe_time": times.oe_time,
+        "T" : T_,
+        "P" : P_
+        })
+    
+    oe["date"] = pd.to_datetime(oe.oe_time).dt.date
+    oe['days_of_year'] = pd.to_datetime(oe['date']).dt.dayofyear
+    
+    days = datetime_series_to_array(oe.oe_time)
+    
+    phat_sigma_rolling30, rolling_std30 = yearly_sigma_fit_rolling(oe, window = 30)
+    phat_sigma_rolling40, rolling_std40 = yearly_sigma_fit_rolling(oe, window = 40)
+    phat_sigma_rolling50, rolling_std50 = yearly_sigma_fit_rolling(oe, window = 50)
+    
+    phat_mu = yearly_mu_fit(days, T_)
+    
+    eT_hist = np.arange(-20,40)
+    eT_edges = np.concatenate([np.array([eT_hist[0]-(eT_hist[1]-eT_hist[0])/2]),(eT_hist + (eT_hist[1]-eT_hist[0])/2)]) #convert bin centres into bin edges
+    hist, bin_edges = np.histogram(T_, bins=eT_edges, density=True)
+    
+    pdf30 = gen_sine_temperature_pdf(eT, phat_mu["A"], phat_mu["B"],
+                                        phat_sigma_rolling30["var"], phat_sigma_rolling30["delta"],
+                                        phat_sigma_rolling30["ave_loc"] - phat_mu["shift"],
+                                        p_mu = phat_mu["p_mu"], p_sigma = phat_sigma_rolling30["p_sigma"])
+    
+    
+    pdf40 = gen_sine_temperature_pdf(eT, phat_mu["A"], phat_mu["B"],
+                                        phat_sigma_rolling40["var"], phat_sigma_rolling40["delta"],
+                                        phat_sigma_rolling40["ave_loc"] - phat_mu["shift"],
+                                        p_mu = phat_mu["p_mu"], p_sigma = phat_sigma_rolling40["p_sigma"])
+    
+    pdf50 = gen_sine_temperature_pdf(eT, phat_mu["A"], phat_mu["B"],
+                                        phat_sigma_rolling50["var"], phat_sigma_rolling50["delta"],
+                                        phat_sigma_rolling50["ave_loc"] - phat_mu["shift"],
+                                        p_mu = phat_mu["p_mu"], p_sigma = phat_sigma_rolling50["p_sigma"])
+    
+    
+    fig = plt.figure(figsize = (12,5))
+    
+    ax = fig.add_subplot(1,3,1)
+    ax.plot(eT_hist, hist, '--')
+    ax.plot(eT,pdf30)
+    ax.set_title("window = 30 days")
+    
+    ax = fig.add_subplot(1,3,2)
+    ax.plot(eT_hist, hist, '--')
+    ax.plot(eT,pdf40)
+    ax.set_title("window = 40 days")
+    
+    ax = fig.add_subplot(1,3,3)
+    ax.plot(eT_hist, hist, '--')
+    ax.plot(eT,pdf50)
+    ax.set_title("window = 50 days")
+    plt.show()
 
 
 
