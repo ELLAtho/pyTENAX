@@ -5,6 +5,7 @@ Created on Tue May 13 17:53:56 2025
 @author: ellar
 """
 
+# %% imports and definitions
 
 from os.path import dirname, join
 from os import getcwd
@@ -239,7 +240,7 @@ for i in range(len(uses)):
     RL_true.append(RL_typical)
     RL_true_exp.append(RL_typical_exp)
 
-
+# %% tests
 # t test for average of b
 for country_i in range(4):
     t_test = ttest_1samp(new_df[country_i].b,0,nan_policy = "omit")
@@ -273,7 +274,7 @@ def weighted_avg_and_std(values, weights):
 
 
 
-# FIG 1
+# %% FIG 1
 # maps of spatial distributions
 
 s = 3
@@ -501,7 +502,7 @@ plt.show()
 
 ###############################################################################
 
-# FIG 2
+# %% FIG 2
 # Synthetic spreads
 
 letter = ["(a)","(b)","(c)","(d)"]
@@ -631,7 +632,7 @@ plt.show()
 
 
 ################################################################################
-# exp b
+# %% exp b
 params_titles =  [r"$\lambda_0$ [mm h${^{-1}}$]",r"$a$ [°C$^{-1}$]",r"$\kappa_0$ [-]",r"$b_{\mathrm{exp}}$ [°C$^{-1}$]"]
 
 
@@ -752,7 +753,7 @@ plt.suptitle("Exponential", fontsize = fontsize+2)
 plt.show()
 
 ###############################################################################
-# the newer version with changing n events
+# %% the newer version with changing n events
 params_titles =  [r"$\lambda_0$ [mm h${^{-1}}$]",r"$a$ [°C$^{-1}$]",r"$\kappa_0$ [-] ",r"$b$ [°C$^{-1}$]"]
 
 fig = plt.figure(figsize=[12,12])
@@ -871,7 +872,7 @@ plt.subplots_adjust(wspace=0, hspace=0)
 plt.show()
 
 ################################################################################
-# exp b
+# %% exp b
 params_titles =  [r"$\lambda_0$ [mm h${^{-1}}$]",r"$a$ [°C$^{-1}$]",r"$\kappa_0$ [-]",r"$b_{\mathrm{exp}}$ [°C$^{-1}$]"]
 
 
@@ -994,7 +995,7 @@ plt.show()
 
 
 ###############################################################################
-#calculating the numbers
+# %% calculating the numbers
 # for country_i in range(len(countries)):
 #     print(countries[country_i])
 #     for param_num in range(4):
@@ -1118,7 +1119,7 @@ for country_i in range(len(countries)):
         print(f"IQR ratio: {IQR_ratio}")
 
 #################################################################################
-# FIG 3
+# %% FIG 3
 # synthetic FRMSE
 
 
@@ -1324,11 +1325,19 @@ plt.show()
 
 
 #################################################################################
-# FIG 4
+# %% FIG 4
 # hindcasts
 labels = ["(a)","(b)","(c)","(d)","(e)","(f)","(g)"]
 colors = ["y","r","b","g"]
 s = 5
+
+def RPD(set1,set2):
+    diffs = 2*abs(set1-set2)/(abs(set1)+abs(set2))
+    return np.mean(diffs)
+
+
+comp_choice = "RPD" #"corr"
+
 
 norm = mcolors.Normalize(vmin=0, vmax=1)
 threshold = 2.5
@@ -1369,15 +1378,29 @@ for i in range(4):
     ax1 = fig.add_subplot(4,2,1+2*i)
     ax2 = fig.add_subplot(4,2,2+2*i)
     
-    if i == 0:
-        ax1.set_title(f"$b$ = free \n ρ = {corr_table[f"{vari}1"][f"{vari}2"]:.2f}",fontsize = fontsize)
-        ax2.set_title(f"$b$ = 0 \n ρ = {corr_table[f"{vari}1_0"][f"{vari}2_0"]:.2f}",fontsize = fontsize)
-    else:
-        ax1.set_title(f"$ρ$ = {corr_table[f"{vari}1"][f"{vari}2"]:.2f}", 
-          fontsize=fontsize+2)
-        if vari != "b":
-            ax2.set_title(f"$ρ$ = {corr_table[f"{vari}1_0"][f"{vari}2_0"]:.2f}", 
+    
+    if comp_choice == "corr":
+        if i == 0:
+            ax1.set_title(f"$b$ = free \n ρ = {corr_table[f"{vari}1"][f"{vari}2"]:.2f}",fontsize = fontsize)
+            ax2.set_title(f"$b$ = 0 \n ρ = {corr_table[f"{vari}1_0"][f"{vari}2_0"]:.2f}",fontsize = fontsize)
+        else:
+            ax1.set_title(f"$ρ$ = {corr_table[f"{vari}1"][f"{vari}2"]:.2f}", 
               fontsize=fontsize+2)
+            if vari != "b":
+                ax2.set_title(f"$ρ$ = {corr_table[f"{vari}1_0"][f"{vari}2_0"]:.2f}", 
+                  fontsize=fontsize+2)
+    
+    elif comp_choice == "RPD":
+        if i == 0:
+            ax1.set_title(f"$b$ = free \n sMAPE = {RPD(df_small[f"{vari}1"],df_small[f"{vari}2"]):.2f}",fontsize = fontsize)
+            ax2.set_title(f"$b$ = 0 \n sMAPE = {RPD(df_small[f"{vari}1_0"],df_small[f"{vari}2_0"]):.2f}",fontsize = fontsize)
+        else:
+            ax1.set_title(f"sMAPE = {RPD(df_small[f"{vari}1"],df_small[f"{vari}2"]):.2f}", 
+              fontsize=fontsize+2)
+            if vari != "b":
+                ax2.set_title(f"sMAPE = {RPD(df_small[f"{vari}1_0"],df_small[f"{vari}2_0"]):.2f}", 
+                  fontsize=fontsize+2)
+    
         
     ax1.set_xlim(lims[i])
     ax1.set_ylim(lims[i])
@@ -1446,11 +1469,11 @@ plt.legend(handles = legend_elements, fontsize = fontsize, loc = "upper left")
 plt.tight_layout(w_pad = 6)
 plt.show()
 
-    
- 
 
-hindcasts_comb_exp.b1 = hindcasts_comb_exp.b1 * hindcasts_comb_exp.kappa1
-hindcasts_comb_exp.b2 = hindcasts_comb_exp.b2 * hindcasts_comb_exp.kappa2
+ 
+# %% exponential
+# hindcasts_comb_exp.b1 = hindcasts_comb_exp.b1 * hindcasts_comb_exp.kappa1
+# hindcasts_comb_exp.b2 = hindcasts_comb_exp.b2 * hindcasts_comb_exp.kappa2
 
 for country_i in range(4):
     hindcasts_exp[country_i].b1 = hindcasts_exp[country_i].b1 * hindcasts_exp[country_i].kappa1
@@ -1520,7 +1543,7 @@ plt.show()
 
     
 ###############################################################################
-# FIG 5
+# %% FIG 5
 # hindcast maps
 significance = 0.05
 
