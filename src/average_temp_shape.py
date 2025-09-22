@@ -4,7 +4,7 @@ Created on Mon Mar 24 10:39:33 2025
 
 @author: ellar
 """
-
+# %% imports adn data
 from os.path import dirname, join
 from os import getcwd
 import sys
@@ -40,6 +40,7 @@ from scipy.interpolate import interp1d
 from matplotlib import cm
 from matplotlib import colormaps
 from matplotlib.colors import to_rgba
+from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
 
 
 
@@ -183,7 +184,7 @@ else:
     pass
 
 
-
+# %% making data
 
 save_name = f"{drive}:/outputs/{country_save}\\average_temp_shape.csv"
 output_files = glob.glob(f"{drive}:/outputs/{country_save}/*")
@@ -361,7 +362,7 @@ else:
 
 
 ################################################################################♦
-#interping for shifts
+# %% interping for shifts
 temp_aves = df.drop(columns = "station").mean(axis = 0)
 
 x_vals = np.arange(-0.5,0.5,1/1000)
@@ -444,7 +445,7 @@ temp_aves_proper_north= np.nanmean(interp_y_north,axis =0)
 
 
 ################################################################################
-#total average temperature shape
+# %% total average temperature shape
 non_event_temp_savename = f"{drive}:/outputs/{country_save}\\non_event_temp.csv"
 if non_event_temp_savename not in output_files:
     print("temp average shape not calculated yet for non events. here we gooooooo")
@@ -576,7 +577,7 @@ for i in np.arange(0,len(df_parameters)):
         non_event_interp_y[i][(interp_x>=np.min((non_event_eTs[i]-non_event_aves[i])/non_event_sds[i])) & (interp_x<=np.max((non_event_eTs[i]-non_event_aves[i])/non_event_sds[i]))] = interp_func(interp_x_here)*non_event_sds[i]
         
 ###############################################################################
-#total average temperature shape collated to days
+# %% total average temperature shape collated to days
 non_event_temp_savename_days = f"{drive}:/outputs/{country_save}\\non_event_temp_days.csv"
 non_event_average_savename_days = f"{drive}:/outputs/{country_save}\\average_non_event_temp_days.csv"
 if non_event_temp_savename_days not in output_files:
@@ -676,7 +677,7 @@ for i in np.arange(0,len(df_parameters)):
     
 
 ###############################################################################
-#plots
+# %% plots
 fig = plt.figure(figsize = (15,15))
 ax1 = fig.add_subplot(3,3,1)
 
@@ -804,7 +805,67 @@ plt.xlabel("(Temperature - mean)/std")
 
 plt.show()
 
-# PLOT WITH LAT RAINBOW
+# %% animated plot
+fontsize = 20
+
+lats_list = df_parameters.sort_values(by = "latitude").latitude.to_numpy()
+lons_list = df_parameters.sort_values(by = "latitude").longitude.to_numpy()
+
+proj = ccrs.PlateCarree()
+
+
+
+i=0
+
+box = [35,40,-125,-120] #lat,lat,lon,lon
+df_parameters_small = df_parameters[(df_parameters.latitude>=box[0])&(df_parameters.latitude<box[1])&
+                         (df_parameters.longitude>=box[2])&(df_parameters.longitude<box[3])]
+
+df_small = df[(df_parameters.latitude>=box[0])&(df_parameters.latitude<box[1])&
+                         (df_parameters.longitude>=box[2])&(df_parameters.longitude<box[3])]
+
+eTs_small = eTs[(df_parameters.reset_index().latitude>=box[0])&(df_parameters.reset_index().latitude<box[1])&
+                         (df_parameters.reset_index().longitude>=box[2])&(df_parameters.reset_index().longitude<box[3])]
+
+fig = plt.figure()
+
+ax = fig.add_subplot(1,2,1, projection=proj)
+ax.coastlines()
+ax.add_feature(cfeature.BORDERS, linestyle=':')
+
+ax.plot([box[2],box[3]],[box[0],box[0]],  'r', linewidth=2, transform=ccrs.PlateCarree())
+ax.plot([box[2],box[3]],[box[1],box[1]],  'r', linewidth=2, transform=ccrs.PlateCarree())
+ax.plot([box[2],box[2]],[box[0],box[1]],  'r', linewidth=2, transform=ccrs.PlateCarree())
+ax.plot([box[3],box[3]],[box[0],box[1]],  'r', linewidth=2, transform=ccrs.PlateCarree())
+
+gl = ax.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+# gl.xlabel_style = {'size': fontsize}
+# gl.ylabel_style = {'size': fontsize}
+gl.xformatter = LongitudeFormatter(degree_symbol="° ")
+gl.yformatter = LatitudeFormatter(degree_symbol="° ")
+
+plt.xlim(-125,-70)
+plt.ylim(25,50)
+
+
+ax = fig.add_subplot(1,2,2)
+for j in np.arange(0,len(df_parameters_small)):    
+    if np.isnan(aves[i]):
+        pass
+    else:    
+        ax.plot(eTs_small[j] ,df_small.iloc[j][1:],alpha = 0.1,color = "b")
+plt.xlim(-30,40)
+plt.ylim(0,0.2)
+
+plt.show()
+
+
+
+
+
+# %% PLOT WITH LAT RAINBOW
 df_boundaries = [np.min(df_parameters.latitude),np.min(df_parameters.longitude),np.max(df_parameters.latitude),np.max(df_parameters.longitude)]
 
 
@@ -932,7 +993,7 @@ plt.show()
 
 
 
-# PLOT WITH FULL COLOR GRADIENT
+# %% PLOT WITH FULL COLOR GRADIENT
 colors = [to_rgba((lat, lon, 0.7, 1)) for lat, lon in zip(normed_lats, normed_lons)]
 
 
@@ -1041,7 +1102,7 @@ plt.xlabel("(Temperature - mean)/std")
 plt.show()
 
 ###############################################################################
-#regional splits
+# %% regional splits
 lon_lims = [truncate_neg(np.min(df_parameters.longitude),2.5),np.ceil(np.max(df_parameters.longitude/2.5))*2.5]
 lat_lims = [truncate_neg(np.min(df_parameters.latitude),2.5),np.ceil(np.max(df_parameters.latitude/2.5))*2.5]
 

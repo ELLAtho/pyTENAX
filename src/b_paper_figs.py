@@ -1331,12 +1331,10 @@ labels = ["(a)","(b)","(c)","(d)","(e)","(f)","(g)"]
 colors = ["y","r","b","g"]
 s = 5
 
-def RPD(set1,set2):
-    diffs = 2*abs(set1-set2)/(abs(set1)+abs(set2))
-    return np.mean(diffs)
+def rmse(predictions, targets):
+    return np.sqrt(((predictions - targets) ** 2).mean())
 
 
-comp_choice = "RPD" #"corr"
 
 
 norm = mcolors.Normalize(vmin=0, vmax=1)
@@ -1366,7 +1364,7 @@ hindcasts_comb = pd.concat([hindcasts[country_i][info[country_i].cleaned_years>=
 hindcasts_comb_exp = pd.concat([hindcasts_exp[country_i][info[country_i].cleaned_years>=min_years_strong] for country_i in range(4)])
 
 
-fig = plt.figure(figsize = (12,18))
+fig = plt.figure(figsize = (12,20))
 
 
 for i in range(4):
@@ -1379,28 +1377,22 @@ for i in range(4):
     ax2 = fig.add_subplot(4,2,2+2*i)
     
     
-    if comp_choice == "corr":
-        if i == 0:
-            ax1.set_title(f"$b$ = free \n ρ = {corr_table[f"{vari}1"][f"{vari}2"]:.2f}",fontsize = fontsize)
-            ax2.set_title(f"$b$ = 0 \n ρ = {corr_table[f"{vari}1_0"][f"{vari}2_0"]:.2f}",fontsize = fontsize)
-        else:
-            ax1.set_title(f"$ρ$ = {corr_table[f"{vari}1"][f"{vari}2"]:.2f}", 
+    if i == 0:
+        ax1.set_title(
+            f"$b$ = free \n ρ = {corr_table[f"{vari}1"][f"{vari}2"]:.2f} \n RMSD = {rmse(df_small[f"{vari}1"],df_small[f"{vari}2"]):.2f}",
+            fontsize = fontsize)
+        ax2.set_title(
+            f"$b$ = 0 \n ρ = {corr_table[f"{vari}1_0"][f"{vari}2_0"]:.2f} \n RMSD = {rmse(df_small[f"{vari}1_0"],df_small[f"{vari}2_0"]):.2f}",
+                      fontsize = fontsize)
+    else:
+        ax1.set_title(
+            f"$ρ$ = {corr_table[f"{vari}1"][f"{vari}2"]:.2f} \n RMSD = {rmse(df_small[f"{vari}1"],df_small[f"{vari}2"]):.2f}", 
+          fontsize=fontsize+2)
+        if vari != "b":
+            ax2.set_title(
+                f"$ρ$ = {corr_table[f"{vari}1_0"][f"{vari}2_0"]:.2f} \n RMSD = {rmse(df_small[f"{vari}1_0"],df_small[f"{vari}2_0"]):.2f}", 
               fontsize=fontsize+2)
-            if vari != "b":
-                ax2.set_title(f"$ρ$ = {corr_table[f"{vari}1_0"][f"{vari}2_0"]:.2f}", 
-                  fontsize=fontsize+2)
-    
-    elif comp_choice == "RPD":
-        if i == 0:
-            ax1.set_title(f"$b$ = free \n sMAPE = {RPD(df_small[f"{vari}1"],df_small[f"{vari}2"]):.2f}",fontsize = fontsize)
-            ax2.set_title(f"$b$ = 0 \n sMAPE = {RPD(df_small[f"{vari}1_0"],df_small[f"{vari}2_0"]):.2f}",fontsize = fontsize)
-        else:
-            ax1.set_title(f"sMAPE = {RPD(df_small[f"{vari}1"],df_small[f"{vari}2"]):.2f}", 
-              fontsize=fontsize+2)
-            if vari != "b":
-                ax2.set_title(f"sMAPE = {RPD(df_small[f"{vari}1_0"],df_small[f"{vari}2_0"]):.2f}", 
-                  fontsize=fontsize+2)
-    
+
         
     ax1.set_xlim(lims[i])
     ax1.set_ylim(lims[i])
@@ -1480,7 +1472,7 @@ for country_i in range(4):
     hindcasts_exp[country_i].b2 = hindcasts_exp[country_i].b2 * hindcasts_exp[country_i].kappa2
     
 
-fig = plt.figure(figsize = (8.3,20))
+fig = plt.figure(figsize = (7,20))
 
 for i in range(4):
     vari = variables[i]
@@ -1492,10 +1484,10 @@ for i in range(4):
     ax1 = fig.add_subplot(4,1,1+i)
     
     if i == 0:
-        ax1.set_title(r"$b_{\mathrm{exp}}$ = free,"+ f"\n $ρ$ = {corr_table[f"{vari}1"][f"{vari}2"]:.2f}",fontsize = fontsize)
+        ax1.set_title(r"$b_{\mathrm{exp}}$ = free,"+ f"\n $ρ$ = {corr_table[f"{vari}1"][f"{vari}2"]:.2f} \n RMSD = {rmse(df_small[f"{vari}1"],df_small[f"{vari}2"]):.2f}",fontsize = fontsize)
     
     else:
-        ax1.set_title(f"$ρ$ = {corr_table[f"{vari}1"][f"{vari}2"]:.2f}", 
+        ax1.set_title(f"$ρ$ = {corr_table[f"{vari}1"][f"{vari}2"]:.2f} \n RMSD = {rmse(df_small[f"{vari}1"],df_small[f"{vari}2"]):.2f}", 
           fontsize=fontsize+2)
         
     ax1.set_xlim(lims[i])

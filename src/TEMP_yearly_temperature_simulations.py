@@ -381,6 +381,16 @@ def FT_model(T_series, window = 40, plot_dist = True):
 
 
 # %% plot the generated distributions from parameters
+A = 13 #average yearly temperature
+B = 7 # range of temperature going up and down
+p = 365.25/(2*np.pi) #period (aka a year)
+shift = 0 # shift of starting point
+
+
+var = 2 #variance of the normal distribution around
+delta = 0.3 #dependence on the day
+ave_loc = 180 #equivalent to shift, where the changes start in the year
+daysize = 3
 
 theta = [A, B, var, delta, ave_loc, 0]
 
@@ -389,23 +399,30 @@ plt.fill_between(xhour,
                  yearly_mu(xhour, A, B, shift, daysize = daysize) - yearly_sigma(xhour, var, delta, ave_loc),
                  yearly_mu(xhour, A, B, shift, daysize = daysize) + yearly_sigma(xhour, var, delta, ave_loc),
                  alpha = 0.5)
-plt.title(f"mu = {A} + {B}sin((day + {shift})*2pi/365.25), \n sigma = (1 + {delta} * np.sin((day + {ave_loc})*2pi/365.25))*{var}")
-
+# plt.title(f"mu = {A} + {B}sin((day + {shift})*2pi/365.25), \n sigma = (1 + {delta} * np.sin((day + {ave_loc})*2pi/365.25))*{var}")
+plt.ylabel("temperature [C]")
+plt.xlabel("day of year")
+plt.xlim(0,365)
 plt.show()
+
 
 eT = np.arange(-12,40,0.2)
 norms_day = [gen_norm_pdf(eT, yearly_mu(xhour[i], A, B, shift, daysize = daysize),
-                      yearly_sigma(xhour[i], var, delta, ave_loc), 2) for i in range(365*24)]
+                      yearly_sigma(xhour[i], var, delta, ave_loc)*np.sqrt(2), 2) for i in range(365*24)]
 
 norms = [gen_norm_pdf(eT, yearly_mu(x[i], A, B, shift),
-                      yearly_sigma(x[i], var, delta, ave_loc), 2) for i in range(365)]
+                      yearly_sigma(x[i], var, delta, ave_loc)*np.sqrt(2), 2) for i in range(365)]
 
+norms2 = [norm.pdf(eT,loc = yearly_mu(xhour[i], A, B, shift, daysize = daysize), scale = yearly_sigma(xhour[i], var, delta, ave_loc))for i in range(365*24)]
 
-
-plt.plot(eT,sum(norms)/(365), label = "daily ave")
 plt.plot(eT,sum(norms_day)/(365*24), label = "incl diurnal cycle")
+plt.plot(eT,sum(norms)/(365), label = "daily ave")
+# plt.plot(eT, gen_sine_temperature_pdf(eT, A, B, var, delta, ave_loc), "--")
+# plt.plot(eT, sum(norms2)/(365*24), "--")
 plt.title(f"mu = {A} + {B}sin((day + {shift})*2pi/365.25), \n sigma = (1 + {delta} * np.sin((day + {ave_loc})*2pi/365.25))*{var}")
 plt.xlim(-3,30)
+plt.xlabel("Temperature [C]")
+plt.ylabel("pdf")
 plt.legend()
 plt.show()
 
@@ -426,7 +443,9 @@ for i in range(3):
                          yearly_mu(x, A, B, shift) - yearly_sigma(x, var, delta, ave_loc),
                          yearly_mu(x, A, B, shift) + yearly_sigma(x, var, delta, ave_loc),
                          alpha = 0.5)
-        plt.title(f"B = {B}, ave_loc = {ave_loc}")
+        plt.title(f"B = {B}, φ = {ave_loc}")
+        plt.xlim(0,365)
+        plt.ylabel("Temperature [C]")
         
         plt.ylim(6,22)
 
@@ -443,13 +462,13 @@ for i in range(3):
     for j in range(3):
         ave_loc = ave_locs[j]
         
-        norms = [gen_norm_pdf(eT, yearly_mu(x[i], A, B, shift),
-                              yearly_sigma(x[i], var, delta, ave_loc), 2) for i in range(365)]
+        # norms = [gen_norm_pdf(eT, yearly_mu(x[i], A, B, shift),
+        #                       yearly_sigma(x[i], var, delta, ave_loc), 2) for i in range(365)]
         
         ax = fig.add_subplot(3,3,1+i+3*j)
-        ax.plot(eT,sum(norms)/365)
+        ax.plot(eT,gen_sine_temperature_pdf(eT,A,B,var,delta,ave_loc))
         plt.xlim(0,30)
-        plt.title(f"B = {B}, ave_loc = {ave_loc}")
+        plt.title(f"B = {B}, φ = {ave_loc}")
 
 plt.suptitle(f"mu = {A} + B*sin((day + {shift})*2pi/365.25), \n sigma = (1 + {delta} * np.sin((day + ave_loc)*2pi/365.25))*{var}")
 
