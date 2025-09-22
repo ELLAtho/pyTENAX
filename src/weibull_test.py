@@ -73,7 +73,7 @@ from scipy.stats import linregress
     
     
 #     return is_rejected, p_out, p_hi, p_lo, scale, shape
-
+# %%
 def create_syntethic_records(seed_random, synthetic_records_amount, record_size, shape, scale):
     '''--------------------------------------------------------------------------
     Function that generates synthetic records using the Weibull parameters which were
@@ -114,7 +114,7 @@ def create_syntethic_records(seed_random, synthetic_records_amount, record_size,
     
     return records_df
 
-
+# %%
 def check_confidence_interval(annual_max_indexes, records_df, p_confidence, annual_max, censor_value, p_out_dicts_lst):
     '''--------------------------------------------------------------------------
     Function that checks the fraction of the annual/block maxima that are out of the confidence interval.
@@ -165,7 +165,7 @@ def check_confidence_interval(annual_max_indexes, records_df, p_confidence, annu
     
     return p_out_dicts_lst
 
-
+# %%
 def find_optimal_threshold(p_out_dicts_lst, p_confidence):
     '''--------------------------------------------------------------------------
     Function that finds the optimal threshold out of the list of dicts.
@@ -213,14 +213,14 @@ def find_optimal_threshold(p_out_dicts_lst, p_confidence):
         # No threshold rejected
         
     return optimal_threshold 
-
-country = 'Japan'
-ERA_country = 'Japan'
-country_save = 'Japan'
-code_str = 'JP'
-minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
-name_len = 5
-min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
+# %%
+# country = 'Japan'
+# ERA_country = 'Japan'
+# country_save = 'Japan'
+# code_str = 'JP'
+# minlat,minlon,maxlat,maxlon = 24, 122.9, 45.6, 145.8 #JAPAN
+# name_len = 5
+# min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data yet
 
 
 # country = 'UK' 
@@ -231,14 +231,14 @@ min_startdate = dt.datetime(1900,1,1) #this is for if havent read all ERA5 data 
 # min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
 
 
-# country = 'US' 
-# ERA_country = 'US'
-# country_save = 'US_main'
-# country_oe_save = 'US_main'
-# code_str = 'US'
-# minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
-# name_len = 6
-# min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
+country = 'US' 
+ERA_country = 'US'
+country_save = 'US_main'
+country_oe_save = 'US_main'
+code_str = 'US'
+minlat,minlon,maxlat,maxlon = 24, -125, 56, -66  
+name_len = 6
+min_startdate = dt.datetime(1950,1,1) #this is for if havent read all ERA5 data yet
 
 
 # country = 'Germany' 
