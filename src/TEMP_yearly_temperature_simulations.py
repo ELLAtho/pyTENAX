@@ -35,7 +35,6 @@ from scipy import fft
 from pyTENAX.intense import *
 from pyTENAX.pyTENAX import *
 from pyTENAX.globalTENAX import *
-import glob
 
 
 # %% Defining parameters and simulation functions
@@ -217,9 +216,9 @@ def sine_temperature_loglik_v2(theta, x, T):
     mu = yearly_mu(x, A, B, shift = shift, p = p_mu)
     sigma = yearly_sigma(x, var, delta, ave_loc, p = p_sigma)
     
-    pdf = norm.pdf(T, mu, sigma)
+    pdfs = np.log(norm.pdf(T, mu, sigma) + 1e-20)
     
-    return sum(np.log(pdf + 1e-10))
+    return sum(pdfs)
 
 
 def sine_temperature_model_v2(x, T_obs, 
@@ -770,7 +769,7 @@ for i in range(len(station_names)):
     days = datetime_series_to_array(oe.oe_time)
     
     phat_sigma = yearly_sigma_fit(cycle_std)
-    phat_sigma10 = yearly_sigma_fit(cycle_std10) # this is std calculated in 10 day chunks
+    # phat_sigma10 = yearly_sigma_fit(cycle_std10) # this is std calculated in 10 day chunks
     phat_mu = yearly_mu_fit(days, T_)
     
     
@@ -791,21 +790,21 @@ for i in range(len(station_names)):
                                         phat_sigma["ave_loc"] - phat_mu["shift"],
                                         p_mu = phat_mu["p_mu"], p_sigma = phat_sigma["p_sigma"])
     
-    pdf_back10 = gen_sine_temperature_pdf(eT, phat_mu["A"], phat_mu["B"],
-                                        phat_sigma10["var"], phat_sigma10["delta"],
-                                        phat_sigma10["ave_loc"] - phat_mu["shift"],
-                                        p_mu = phat_mu["p_mu"], p_sigma = phat_sigma10["p_sigma"])
+    # pdf_back10 = gen_sine_temperature_pdf(eT, phat_mu["A"], phat_mu["B"],
+    #                                     phat_sigma10["var"], phat_sigma10["delta"],
+    #                                     phat_sigma10["ave_loc"] - phat_mu["shift"],
+    #                                     p_mu = phat_mu["p_mu"], p_sigma = phat_sigma10["p_sigma"])
     
     
     ## new version as francesco said
-    phat2 = sine_temperature_model_v2(days, T_)
-    phat2s.append(phat2)
+    # phat2 = sine_temperature_model_v2(days, T_)
+    # phat2s.append(phat2)
     
     
-    pdf2 = gen_sine_temperature_pdf(eT,phat2["A"],phat2["B"],
-                                    phat2["var"],phat2["delta"],
-                                    phat2["ave_loc"]-phat2["shift"],       
-                                    p_mu = phat2["p_mu"], p_sigma = phat2["p_sigma"])
+    # pdf2 = gen_sine_temperature_pdf(eT,phat2["A"],phat2["B"],
+    #                                 phat2["var"],phat2["delta"],
+    #                                 phat2["ave_loc"]-phat2["shift"],       
+    #                                 p_mu = phat2["p_mu"], p_sigma = phat2["p_sigma"])
  
     
     
@@ -822,10 +821,10 @@ for i in range(len(station_names)):
     plt.plot(eT, pdf_back,
              label = "backwards fit")
     
-    plt.plot(eT,pdf2, label = "new version")
+    # plt.plot(eT,pdf2, label = "new version")
 
-    plt.plot(eT, pdf_back10,
-             label = "backwards fit, std smoothed over 10 days")
+    # plt.plot(eT, pdf_back10,
+             # label = "backwards fit, std smoothed over 10 days")
     
     plt.legend()
     
@@ -854,7 +853,7 @@ for i in range(len(station_names)):
     #plot simulated cycle
     plt.plot(xs,yearly_mu(xs, phat["A"], phat["B"], shift = shift), label = "fitted on pdf")
     plt.plot(xs,yearly_mu(xs, phat_mu["A"], phat_mu["B"], shift = phat_mu["shift"] - day_difference, p = phat_mu["p_mu"]), label = "backwards fit")
-    plt.plot(xs,yearly_mu(xs, phat2["A"], phat2["B"], shift = phat2["shift"] - day_difference, p = phat2["p_mu"]), label = "new version")
+    # plt.plot(xs,yearly_mu(xs, phat2["A"], phat2["B"], shift = phat2["shift"] - day_difference, p = phat2["p_mu"]), label = "new version")
     
     plt.legend()
     
@@ -866,12 +865,30 @@ for i in range(len(station_names)):
     ax.plot(xs,cycle_std)
     plt.plot(xs,yearly_sigma(xs,phat["var"],phat["delta"],shift+phat["ave_loc"])) 
     plt.plot(xs,yearly_sigma(xs,phat_sigma["var"],phat_sigma["delta"],phat_sigma["ave_loc"],p=phat_sigma["p_sigma"])) 
-    plt.plot(xs,yearly_sigma(xs,phat2["var"],phat2["delta"],phat2["ave_loc"],p=phat2["p_sigma"])) 
-    plt.plot(xs,yearly_sigma(xs,phat_sigma10["var"],phat_sigma10["delta"],phat_sigma10["ave_loc"],p=phat_sigma10["p_sigma"])) 
+    # plt.plot(xs,yearly_sigma(xs,phat2["var"],phat2["delta"],phat2["ave_loc"],p=phat2["p_sigma"])) 
+    # plt.plot(xs,yearly_sigma(xs,phat_sigma10["var"],phat_sigma10["delta"],phat_sigma10["ave_loc"],p=phat_sigma10["p_sigma"])) 
     
     ax.set_xlabel("day of year")
     ax.set_ylabel("Temperature [C]")  
     plt.title("standard deviation yearly cycle")
+    plt.show()
+    
+    # plot scatter
+    s = 2
+    plt.scatter(oe['days_of_year'],T_,s = s,alpha = 0.5, color = "r")
+    
+    plt.plot(xs,yearly_mu(xs, phat_mu["A"], phat_mu["B"],phat_mu["shift"] - day_difference, p = phat_mu["p_mu"]),color ="b")
+    plt.fill_between(xs,
+                     yearly_mu(xs, phat_mu["A"], phat_mu["B"],phat_mu["shift"] - day_difference, p = phat_mu["p_mu"]) - 3*yearly_sigma(xs,phat_sigma["var"],phat_sigma["delta"],phat_sigma["ave_loc"],p=phat_sigma["p_sigma"]),
+                     yearly_mu(xs, phat_mu["A"], phat_mu["B"],phat_mu["shift"] - day_difference, p = phat_mu["p_mu"]) + 3*yearly_sigma(xs,phat_sigma["var"],phat_sigma["delta"],phat_sigma["ave_loc"],p=phat_sigma["p_sigma"]),
+                     alpha = 0.2,
+                     color = "b",
+                     label = "3 times std"
+                     )
+    plt.legend()
+    plt.xlim(0,365)
+    plt.xlabel("day of year")
+    plt.ylabel("Temperature (C)")
     plt.show()
     
     ###########################################################################
@@ -908,14 +925,14 @@ for i in range(len(station_names)):
                                         p_mu = phat_mu["p_mu"], p_sigma = phat_sigma["p_sigma"])
     
     ## new version as francesco said
-    phat2 = sine_temperature_model_v2(days, T_full)
+    # phat2 = sine_temperature_model_v2(days, T_full)
     
     
     
-    pdf2 = gen_sine_temperature_pdf(eT,phat2["A"],phat2["B"],
-                                    phat2["var"],phat2["delta"],
-                                    phat2["ave_loc"]-phat2["shift"],       
-                                    p_mu = phat2["p_mu"], p_sigma = phat2["p_sigma"])
+    # pdf2 = gen_sine_temperature_pdf(eT,phat2["A"],phat2["B"],
+    #                                 phat2["var"],phat2["delta"],
+    #                                 phat2["ave_loc"]-phat2["shift"],       
+    #                                 p_mu = phat2["p_mu"], p_sigma = phat2["p_sigma"])
  
     
 
@@ -930,7 +947,7 @@ for i in range(len(station_names)):
     plt.plot(eT, pdf_back,
              label = "backwards fit")
     
-    plt.plot(eT,pdf2, label = "new version")
+    # plt.plot(eT,pdf2, label = "new version")
     
     plt.title(f"{i} full temperature {station}. ({station_lats[i]},{station_lons[i]})")
     plt.legend()
@@ -954,7 +971,7 @@ for i in range(len(station_names)):
     #plot simulated cycle
     plt.plot(xs,yearly_mu(xs, phat_full["A"], phat_full["B"], shift = shift), label = "fitted on pdf")
     plt.plot(xs,yearly_mu(xs, phat_mu["A"], phat_mu["B"], shift = phat_mu["shift"]-day_difference, p = phat_mu["p_mu"]), label = "backwards fit")
-    plt.plot(xs,yearly_mu(xs, phat2["A"], phat2["B"], shift = phat2["shift"] - day_difference, p = phat2["p_mu"]), label = "new version")
+    # plt.plot(xs,yearly_mu(xs, phat2["A"], phat2["B"], shift = phat2["shift"] - day_difference, p = phat2["p_mu"]), label = "new version")
     
     
     ax.set_xlabel("day of year")
@@ -966,7 +983,7 @@ for i in range(len(station_names)):
     ax.plot(xs,cycle_std)
     plt.plot(xs,yearly_sigma(xs,phat_full["var"],phat_full["delta"],shift+phat_full["ave_loc"])) 
     plt.plot(xs,yearly_sigma(xs,phat_sigma["var"],phat_sigma["delta"],phat_sigma["ave_loc"],p=phat_sigma["p_sigma"])) 
-    plt.plot(xs,yearly_sigma(xs,phat2["var"],phat2["delta"],phat2["ave_loc"],p=phat2["p_sigma"])) 
+    # plt.plot(xs,yearly_sigma(xs,phat2["var"],phat2["delta"],phat2["ave_loc"],p=phat2["p_sigma"])) 
     
     ax.set_xlabel("day of year")
     ax.set_ylabel("Temperature [C]")  
@@ -1037,7 +1054,53 @@ for i in range(len(station_names)):
     ax.plot(eT,pdf50)
     ax.set_title("window = 50 days")
     plt.show()
-
+    
+    # plot the yearly cycle
+    fig = plt.figure(figsize = (12,4))
+    ax = fig.add_subplot(1,3,1)
+    
+    ax.scatter(oe['days_of_year'],T_,s = s)
+    plt.plot(x,yearly_mu(x, phat_mu["A"], phat_mu["B"],phat_mu["shift"]),color ="b")
+    plt.fill_between(x,
+                     yearly_mu(x, phat_mu["A"], phat_mu["B"],phat_mu["shift"]) - 3*yearly_sigma(x,phat_sigma_rolling30["var"],phat_sigma_rolling30["delta"],phat_sigma_rolling30["ave_loc"]+phat_mu["shift"]),
+                     yearly_mu(x, phat_mu["A"], phat_mu["B"],phat_mu["shift"]) + 3*yearly_sigma(x,phat_sigma_rolling30["var"],phat_sigma_rolling30["delta"],phat_sigma_rolling30["ave_loc"]+phat_mu["shift"]),
+                     alpha = 0.2,
+                     color = "b",
+                     label = "3 times std"
+                     )
+    plt.legend()
+    
+    ax = fig.add_subplot(1,3,2)
+    
+    ax.scatter(oe['days_of_year'],T_,s = s)
+    
+    plt.plot(x,yearly_mu(x, phat_mu["A"], phat_mu["B"],phat_mu["shift"]),color ="b")
+    plt.fill_between(x,
+                     yearly_mu(x, phat_mu["A"], phat_mu["B"],phat_mu["shift"]) - 3*yearly_sigma(x,phat_sigma_rolling40["var"],phat_sigma_rolling40["delta"],phat_sigma_rolling40["ave_loc"]),
+                     yearly_mu(x, phat_mu["A"], phat_mu["B"],phat_mu["shift"]) + 3*yearly_sigma(x,phat_sigma_rolling40["var"],phat_sigma_rolling40["delta"],phat_sigma_rolling40["ave_loc"]),
+                     alpha = 0.2,
+                     color = "b",
+                     label = "3 times std"
+                     )
+    plt.legend()
+    
+    ax = fig.add_subplot(1,3,3)
+    
+    ax.scatter(oe['days_of_year'],T_,s = s)
+    
+    plt.plot(x,yearly_mu(x, phat_mu["A"], phat_mu["B"],phat_mu["shift"]),color ="b")
+    plt.fill_between(x,
+                     yearly_mu(x, phat_mu["A"], phat_mu["B"],phat_mu["shift"]) - 3*yearly_sigma(x,phat_sigma_rolling50["var"],phat_sigma_rolling50["delta"],phat_sigma_rolling50["ave_loc"]),
+                     yearly_mu(x, phat_mu["A"], phat_mu["B"],phat_mu["shift"]) + 3*yearly_sigma(x,phat_sigma_rolling50["var"],phat_sigma_rolling50["delta"],phat_sigma_rolling50["ave_loc"]),
+                     alpha = 0.2,
+                     color = "b",
+                     label = "3 times std"
+                     )
+    plt.legend()
+    
+    plt.show()
+    
+    
 
 
 

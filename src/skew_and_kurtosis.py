@@ -115,7 +115,7 @@ else:
 val_info = val_info.reset_index()
 
 
-# read in data for storm types with matching stations
+# %% calculate skew and kurtosis
 station_ids = val_info.station.to_numpy()
 
 saved_files = glob.glob(f"{drive}:/outputs/{country_save}/*")
@@ -170,7 +170,7 @@ else:
     skew_kurt_df = pd.read_csv(savename, dtype={'station': str})
 
 
-
+# %% getting the n peaks
 save_name = f"{drive}:/outputs/{country_save}\\average_temp_shape.csv"
 df = pd.read_csv(save_name,dtype = {0:str})
 eTs_df = pd.read_csv(f"{drive}:/outputs/{country_save}\\eTs_df.csv",dtype = {"station":str})
@@ -178,6 +178,7 @@ eTs = eTs_df.drop(columns = "station").to_numpy()
 
 n_peaks = [0]*len(df)
 n_peaks01 = [0]*len(df)
+
 prominences = np.array([[np.nan,np.nan,np.nan,np.nan,np.nan]]*len(df))
 diffs = np.array([[np.nan,np.nan,np.nan,np.nan]]*len(df))
 
@@ -211,7 +212,7 @@ peaks_df = pd.DataFrame({
     
     })
 
-
+# %% plot maps
 
 bounds = [0.5,1.5,2.5,3.5,4.5]  # 3 discrete levels
 norm_peak = mcolors.BoundaryNorm(bounds, plt.get_cmap("plasma").N)
@@ -227,9 +228,9 @@ n_lat = len(region_lats)-1
 n_lon = len(region_lons)-1
 
 
-fig = plt.figure(figsize=(12, 14))
+fig = plt.figure(figsize=(16, 8))
 proj = ccrs.PlateCarree()
-ax = fig.add_subplot(3,2,1, projection=proj)
+ax = fig.add_subplot(2,3,1, projection=proj)
 
 ax.coastlines()
 ax.add_feature(cfeature.BORDERS, linestyle=':')
@@ -266,7 +267,7 @@ plt.ylim(25,50)
 plt.title("Skew storms", fontsize = fontsize)
 
 
-ax = fig.add_subplot(3,2,2, projection=proj)
+ax = fig.add_subplot(2,3,2, projection=proj)
 
 ax.coastlines()
 ax.add_feature(cfeature.BORDERS, linestyle=':')
@@ -302,8 +303,44 @@ plt.ylim(25,50)
 
 plt.title("Skew full temp", fontsize = fontsize)
 
+ax = fig.add_subplot(2,3,3, projection=proj)
 
-ax = fig.add_subplot(3,2,3, projection=proj)
+ax.coastlines()
+ax.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+
+sc = ax.scatter(
+    val_info.longitude,
+    val_info.latitude,
+    c = skew_kurt_df.skews - skew_kurt_df.skew_full_temp,
+    s = s,
+    norm = mcolors.TwoSlopeNorm(vmin=-.75, vcenter=0, vmax=.75),
+    cmap = "seismic"
+    )
+
+
+gl = ax.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': fontsize}
+gl.ylabel_style = {'size': fontsize}
+gl.xformatter = LongitudeFormatter(degree_symbol="° ")
+gl.yformatter = LatitudeFormatter(degree_symbol="° ")
+
+
+cb = plt.colorbar(sc, orientation='horizontal', extend = "both")
+cb.ax.tick_params(labelsize=fontsize)
+cb.set_label("skew", fontsize=fontsize)
+
+
+plt.xlim(-125,-70)
+plt.ylim(25,50)
+
+plt.title("Storms - full", fontsize = fontsize)
+
+
+ax = fig.add_subplot(2,3,4, projection=proj)
 
 ax.coastlines()
 ax.add_feature(cfeature.BORDERS, linestyle=':')
@@ -339,7 +376,7 @@ plt.ylim(25,50)
 
 plt.title("Kurtosis storms", fontsize = fontsize)
 
-ax = fig.add_subplot(3,2,4, projection=proj)
+ax = fig.add_subplot(2,3,5, projection=proj)
 
 ax.coastlines()
 ax.add_feature(cfeature.BORDERS, linestyle=':')
@@ -375,7 +412,50 @@ plt.ylim(25,50)
 
 plt.title("Kurtosis full temp", fontsize = fontsize)
 
-ax = fig.add_subplot(3,2,5, projection=proj)
+
+ax = fig.add_subplot(2,3,6, projection=proj)
+
+ax.coastlines()
+ax.add_feature(cfeature.BORDERS, linestyle=':')
+
+
+
+sc = ax.scatter(
+    val_info.longitude,
+    val_info.latitude,
+    c=skew_kurt_df.kurts - skew_kurt_df.kurt_full_temp,
+    s = s,
+    norm = mcolors.TwoSlopeNorm(vmin=-1.5, vcenter=0, vmax=1.5),
+    cmap = "PRGn"
+    )
+
+
+gl = ax.gridlines(draw_labels=True, linewidth=0.5, color='gray', alpha=0.5, linestyle='--')
+gl.top_labels = False
+gl.right_labels = False
+gl.xlabel_style = {'size': fontsize}
+gl.ylabel_style = {'size': fontsize}
+gl.xformatter = LongitudeFormatter(degree_symbol="° ")
+gl.yformatter = LatitudeFormatter(degree_symbol="° ")
+
+
+cb = plt.colorbar(sc, orientation='horizontal', extend = "both")
+cb.ax.tick_params(labelsize=fontsize)
+cb.set_label("kurtosis", fontsize=fontsize)
+
+
+plt.xlim(-125,-70)
+plt.ylim(25,50)
+
+plt.title("Storms - full", fontsize = fontsize)
+
+
+plt.show()
+
+# %% plot number of peaks only
+
+fig = plt.figure()
+ax = fig.add_subplot(1,1,1, projection=proj)
 
 ax.coastlines()
 ax.add_feature(cfeature.BORDERS, linestyle=':')
@@ -409,15 +489,6 @@ plt.xlim(-125,-70)
 plt.ylim(25,50)
 
 plt.title("n peaks", fontsize = fontsize)
-
-
-
-plt.show()
-
-
-
-
-
 
 
 
