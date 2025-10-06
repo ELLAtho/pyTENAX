@@ -33,18 +33,10 @@ import xarray as xr
 import time
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
-from matplotlib.ticker import FuncFormatter
 import cartopy.crs as ccrs
-import matplotlib.dates as mdates
 import cartopy.feature as cfeature
-from matplotlib.colors import LinearSegmentedColormap
-import matplotlib.patches as patches
-from scipy.stats import kendalltau, pearsonr, spearmanr
 from scipy.interpolate import interp1d
-from scipy.spatial import ConvexHull
-from matplotlib import cm
-import alphashape
-from shapely.geometry import Polygon
+
 from matplotlib.ticker import FixedLocator, FormatStrFormatter
 from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
 from matplotlib.ticker import ScalarFormatter
@@ -233,6 +225,11 @@ plt.show()
 
 
 
+
+n = len(T)/info[info.station == station].cleaned_years
+g_phat2deg = g_phat + [2,0]
+Ts = np.arange(np.min(T) - S.temp_delta, np.max(T) + S.temp_delta, S.temp_res_monte_carlo)
+
 AMS = RL_df[new_df.station == station].obs_AMS.to_numpy()[0]
 RL = RL_df[new_df.station == station].return_levels.to_numpy()[0]
 RL0 = RL_df[new_df.station == station].return_levels_b0.to_numpy()[0]
@@ -241,11 +238,19 @@ plot_pos = np.arange(1,np.size(AMS)+1)/(1+np.size(AMS))
 
 RP = 1/(1-plot_pos)
 
+S.return_period = RP
+RL2, __, __ = S.model_inversion(F_phat, g_phat2deg, n, Ts)
+RL2_0, __, __ = S.model_inversion(F_phat0, g_phat2deg, n, Ts)
+
+
 fig = plt.figure(figsize = (5,5))
 TNX_FIG_valid(AMS,RP,RL,smev_RL=[],RL_unc=0,smev_RL_unc=0,TENAXcol='b',obscol_shape = 'g+',smev_colshape = '--r',TENAXlabel = 'The TENAX model',obslabel='Annual maxima',smevlabel = 'The SMEV model',alpha = 0.2,xlimits = [1,200],ylimits = [0,50])
 plt.plot(RP,RL0,color = "b", alpha = 0.3)
+plt.plot(RP,RL2,color = "r",label = "+ 2°C")
+plt.plot(RP,RL2_0,color = "r", alpha = 0.3)
+
 plt.xlim(1,23)
-plt.ylim(0,40)
+plt.ylim(0,50)
 plt.xticks(fontsize = fontsize)
 plt.yticks(fontsize = fontsize)
 plt.xlabel('return period (years)', fontsize = fontsize)
