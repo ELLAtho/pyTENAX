@@ -474,99 +474,6 @@ plt.suptitle(f"mu = {A} + B*sin((day + {shift})*2pi/365.25), \n sigma = (1 + {de
 plt.show()
 
 
-# %% sliders
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
-from plotly.offline import plot
-import itertools
-from dash import Dash, dcc, html, Output, Input
-
-As = np.arange(10,21)
-Bs = np.arange(2,11)
-sigs = np.arange(2,6)
-dels = np.arange(0.2,1,0.2)
-phis = np.arange(0,181,30)
-
-
-app = Dash(__name__)
-
-app.layout = html.Div([
-    html.H2("Temperature model"),
-    
-    dcc.Graph(id="climate-plot"),
-    
-    html.Div([
-        html.Label("B"),
-        dcc.Slider(min=min(Bs), max=max(Bs), step=1, value=Bs[0],
-                   marks={int(b): str(int(b)) for b in Bs}, id="B-slider")
-    ], style={"margin": "20px"}),
-
-    html.Div([
-        html.Label("σ"),
-        dcc.Slider(min=min(sigs), max=max(sigs), step=1, value=sigs[0],
-                   marks={int(s): str(int(s)) for s in sigs}, id="sigma-slider")
-    ], style={"margin": "20px"}),
-
-    html.Div([
-        html.Label("δ"),
-        dcc.Slider(min=float(min(dels)), max=float(max(dels)), step=0.2, value=dels[0],
-                   marks={round(d,1): str(round(d,1)) for d in dels}, id="delta-slider")
-    ], style={"margin": "20px"}),
-
-    html.Div([
-        html.Label("φ"),
-        dcc.Slider(min=min(phis), max=max(phis), step=30, value=phis[0],
-                   marks={int(p): str(int(p)) for p in phis}, id="phi-slider")
-    ], style={"margin": "20px"})
-])
-
-
-@app.callback(
-    Output("climate-plot", "figure"),
-    Input("B-slider", "value"),
-    Input("sigma-slider", "value"),
-    Input("delta-slider", "value"),
-    Input("phi-slider", "value")
-)
-def update_plot(B, sigma, delta, phi):
-    mu_vals = yearly_mu(x, A, B, shift)
-    sigma_vals = yearly_sigma(x, sigma, delta, phi)
-
-    # yearly cycle traces
-    traces = [
-        go.Scatter(x=x, y=mu_vals, name="Mean"),
-        go.Scatter(x=x, y=mu_vals - sigma_vals, name="-σ"),
-        go.Scatter(x=x, y=mu_vals + sigma_vals, fill="tonextx", name="+σ")
-    ]
-    
-    # distribution subplot
-    norms = [gen_norm_pdf(eT, mu_vals[i], sigma_vals[i], 2) for i in range(365)]
-    traces.append(go.Scatter(x=eT, y=sum(norms)/365, name="Distribution"))
-
-    # Create subplot layout
-    fig = make_subplots(rows=1, cols=2, subplot_titles=("Yearly Cycle", "Distribution"))
-    fig.add_traces(traces[:3], rows=[1,1,1], cols=[1,1,1]).update_layout(xaxis_title="Day of year", yaxis_title="Temperature [°C]")
-
-    fig.add_trace(traces[3], row=1, col=2)
-    
-    fig.update_xaxes(title_text="Day of Year", row=1, col=1)
-    fig.update_xaxes(title_text="Temperature (°C)", row=1, col=2)
-    
-    fig.update_yaxes(title_text="Temperature (°C)", row=1, col=1)
-    fig.update_yaxes(title_text="pdf", row=1, col=2)
-
-    fig.update_layout(title=f"B={B}, σ={sigma}, δ={delta}, φ={phi}",
-                      showlegend=False)
-    return fig
-
-
-if __name__ == "__main__":
-    app.run(debug=True)
-    import webbrowser
-    webbrowser.open("http://127.0.0.1:8050/")
-    app.run(debug=True, use_reloader=False)
-
-
 
 # %% fitting to observations, reading data
 
@@ -651,7 +558,7 @@ n_lon = len(region_lons)-1
 ###############################################################################
 # %% select stations (longest) in each grid
 
-numb_per_grid = 1
+numb_per_grid = 2
 
 station_names = []
 station_lats = []
@@ -900,6 +807,7 @@ for i in range(len(station_names)):
     full_temp_24hr = full_temp_xr.squeeze().to_pandas().resample("d").mean() - 273.15
     
     full_temp_24hr_shortened = pd.DataFrame(full_temp_24hr[-5000:-1])
+    full_temp_24hr_shortened.rename(columns={0: "t2m"},inplace = True)
     full_temp_24hr_shortened["days_of_year"] = full_temp_24hr_shortened.index.dayofyear
     
     cycle_mean = full_temp_24hr_shortened.groupby("days_of_year")["t2m"].mean()
@@ -1100,6 +1008,88 @@ for i in range(len(station_names)):
     
     plt.show()
     
+# %% model w time dependence version... only full
+
+for i in range(len(station_names)):
+    station = station_names[i]
+    
+    full_temp_xr = xr.load_dataarray(f"D:/US_temp/US_{station}.nc")
+    full_temp = full_temp_xr.to_numpy().squeeze() - 273.15
+    full_temp_24hr = full_temp_xr.squeeze().to_pandas().resample("d").mean() - 273.15
+    
+    full_temp_24hr_shortened = pd.DataFrame(full_temp_24hr[-5000:-1])
+    full_temp_24hr_shortened.rename(columns={0: "t2m"},inplace = True)
+    full_temp_24hr_shortened["days_of_year"] = full_temp_24hr_shortened.index.dayofyear
+    
+    day_shift = full_temp_24hr_shortened.index[0].day
+    
+    cycle_mean = full_temp_24hr_shortened.groupby("days_of_year")["t2m"].mean()
+    cycle_std = full_temp_24hr_shortened.groupby("days_of_year")["t2m"].std()
+    rolling_std = full_temp_24hr_shortened.t2m.rolling(10).std()
+    
+    T_full = full_temp_24hr_shortened.t2m.to_numpy()
+    days = np.arange(0,len(T_full))
+    
+    
+    phat = sine_temperature_model_v2(days, T_full)
+    pdf = gen_sine_temperature_pdf(eT, phat["A"], phat["B"],
+                                        phat["var"], phat["delta"],
+                                        phat["ave_loc"] - phat["shift"],
+                                        p_mu = phat["p_mu"], p_sigma = phat["p_sigma"])
+    
+    
+    eT_hist = np.arange(-20,40)
+    eT_edges = np.concatenate([np.array([eT_hist[0]-(eT_hist[1]-eT_hist[0])/2]),(eT_hist + (eT_hist[1]-eT_hist[0])/2)]) #convert bin centres into bin edges
+    hist, bin_edges = np.histogram(T_full, bins=eT_edges, density=True)
+    
+    
+    fig = plt.figure(figsize=(18,6))
+    ax = fig.add_subplot(1,3,1)
+    
+    plt.plot(eT_hist, hist, '--')
+    
+    plt.plot(eT,pdf)
+    
+    # plt.plot(eT,pdf2, label = "new version")
+    
+    plt.title(f"{i} full temperature {station}. ({station_lats[i]},{station_lons[i]})")
+    
+    
+    
+    xs = np.arange(1,len(cycle_std)+1)
+    
+    
+    shift = minimize(lambda theta: np.sum((yearly_mu(xs, phat_full["A"], phat_full["B"], shift = theta) - cycle_mean)**2),
+                    0,
+                    method='Nelder-Mead').x[0]
+    
+    day_difference = full_temp_24hr_shortened.days_of_year.iloc[0] # this is because the shift is based on the difference from where the cycle starts, rather than the beginning of the year
+    
+    ax = fig.add_subplot(1,3,2)
+    
+    #plot observed averaged cycle
+    ax.plot(xs,cycle_mean)
+    
+    #plot simulated cycle
+    plt.plot(xs,yearly_mu(xs, phat["A"], phat["B"], shift = phat["shift"]-day_shift))
+    
+    
+    ax.set_xlabel("day of year")
+    ax.set_ylabel("Temperature [C]")
+    plt.title(f"{i} Mean yearly cycle, full")
+    
+    ax = fig.add_subplot(1,3,3)
+    ax.plot(xs,cycle_std)
+    plt.plot(xs,yearly_sigma(xs,phat["var"],phat["delta"],shift+phat["ave_loc"])) 
+    
+    ax.set_xlabel("day of year")
+    ax.set_ylabel("Temperature [C]")  
+    plt.title("standard deviation yearly cycle, full")
+    plt.show()
+
+
+
+
     
 
 

@@ -22,7 +22,7 @@ import pandas as pd
 from scipy.stats import gaussian_kde
 from scipy.stats import ttest_ind
 from scipy.stats import ttest_1samp
-from scipy.stats import lmoment
+# from scipy.stats import lmoment
 
 import datetime as dt
 import glob
@@ -56,12 +56,13 @@ from scipy.stats import kendalltau, pearsonr, spearmanr
 from scipy.interpolate import interp1d
 from scipy.spatial import ConvexHull
 from matplotlib import cm
-import alphashape
-from shapely.geometry import Polygon
-import matplotlib.ticker as mticker
+# import alphashape
+# from shapely.geometry import Polygon
+# import matplotlib.ticker as mticker
 from matplotlib.ticker import ScalarFormatter
-from matplotlib.ticker import MultipleLocator
+# from matplotlib.ticker import MultipleLocator
 from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
+from matplotlib.lines import Line2D
 
 drive = 'D'
 
@@ -1141,8 +1142,8 @@ for i in range(3):
     boxplot_list = [synth_RL[years][f"{bstyle}_{ret_lvls[ret_n]}"].dropna()/RL_true[years][ret_n*3] for ret_n in range(2) for bstyle in ["free","set","b0"] for years in [i*3,i*3+2,i*3+1]]
     # positions = np.concat([np.arange(0,4.5,0.5),np.arange(5,9.5,0.5)]) 
     
-    base_positions = np.concat([np.arange(0+pos*(1.5+gap1),1.5+pos*(1.5+gap1),0.5) for pos in range(3)])
-    positions = np.concat([base_positions,base_positions+(1.5+2*(1.5+gap1))+gap2])
+    base_positions = np.concatenate([np.arange(0+pos*(1.5+gap1),1.5+pos*(1.5+gap1),0.5) for pos in range(3)])
+    positions = np.concatenate([base_positions,base_positions+(1.5+2*(1.5+gap1))+gap2])
                           
     
     box_plot = ax.boxplot(boxplot_list,
@@ -1236,8 +1237,8 @@ for i in range(3):
     #plot boxes
     boxplot_list = [synth_RL[years][f"{bstyle}_{ret_lvls[ret_n]}_exp"].dropna()/RL_true_exp[years][ret_n*3] for ret_n in range(2) for bstyle in ["free","set","b0"] for years in [i*3,i*3+2,i*3+1]]
     
-    base_positions = np.concat([np.arange(0+pos*(1.5+gap1),1.5+pos*(1.5+gap1),0.5) for pos in range(3)])
-    positions = np.concat([base_positions,base_positions+(1.5+2*(1.5+gap1))+gap2])
+    base_positions = np.concatenate([np.arange(0+pos*(1.5+gap1),1.5+pos*(1.5+gap1),0.5) for pos in range(3)])
+    positions = np.concatenate([base_positions,base_positions+(1.5+2*(1.5+gap1))+gap2])
        
     
     box_plot = ax.boxplot(boxplot_list,
@@ -1328,8 +1329,13 @@ plt.show()
 # %% FIG 4
 # hindcasts
 labels = ["(a)","(b)","(c)","(d)","(e)","(f)","(g)"]
-colors = ["y","r","b","g"]
-s = 5
+# colors = ["y","r","b","g"]
+colors = ["y","m","b","g"]
+shapes = ["^","x",".","v"]
+s = 20
+alpha = 1
+# colors = ['#377eb8', '#ff7f00', '#4daf4a','#f781bf']
+
 
 def rmse(predictions, targets):
     return np.sqrt(((predictions - targets) ** 2).mean())
@@ -1364,6 +1370,8 @@ hindcasts_comb = pd.concat([hindcasts[country_i][info[country_i].cleaned_years>=
 hindcasts_comb_exp = pd.concat([hindcasts_exp[country_i][info[country_i].cleaned_years>=min_years_strong] for country_i in range(4)])
 
 
+
+
 fig = plt.figure(figsize = (12,20))
 
 
@@ -1379,18 +1387,18 @@ for i in range(4):
     
     if i == 0:
         ax1.set_title(
-            f"$b$ = free \n ρ = {corr_table[f"{vari}1"][f"{vari}2"]:.2f} \n RMSD = {rmse(df_small[f"{vari}1"],df_small[f"{vari}2"]):.2f}",
+            f"$b$ = free \n ρ = {corr_table[f'{vari}1'][f'{vari}2']:.2f} \n RMSD = {rmse(df_small[f'{vari}1'],df_small[f'{vari}2']):.2f}",
             fontsize = fontsize)
         ax2.set_title(
-            f"$b$ = 0 \n ρ = {corr_table[f"{vari}1_0"][f"{vari}2_0"]:.2f} \n RMSD = {rmse(df_small[f"{vari}1_0"],df_small[f"{vari}2_0"]):.2f}",
+            f"$b$ = 0 \n ρ = {corr_table[f'{vari}1_0'][f'{vari}2_0']:.2f} \n RMSD = {rmse(df_small[f'{vari}1_0'],df_small[f'{vari}2_0']):.2f}",
                       fontsize = fontsize)
     else:
         ax1.set_title(
-            f"$ρ$ = {corr_table[f"{vari}1"][f"{vari}2"]:.2f} \n RMSD = {rmse(df_small[f"{vari}1"],df_small[f"{vari}2"]):.2f}", 
+            f"$ρ$ = {corr_table[f'{vari}1'][f'{vari}2']:.2f} \n RMSD = {rmse(df_small[f'{vari}1'],df_small[f'{vari}2']):.2f}", 
           fontsize=fontsize+2)
         if vari != "b":
             ax2.set_title(
-                f"$ρ$ = {corr_table[f"{vari}1_0"][f"{vari}2_0"]:.2f} \n RMSD = {rmse(df_small[f"{vari}1_0"],df_small[f"{vari}2_0"]):.2f}", 
+                f"$ρ$ = {corr_table[f'{vari}1_0'][f'{vari}2_0']:.2f} \n RMSD = {rmse(df_small[f'{vari}1_0'],df_small[f'{vari}2_0']):.2f}", 
               fontsize=fontsize+2)
 
         
@@ -1434,7 +1442,7 @@ for i in range(4):
                 ax2.plot(lims[i],lims[i],label = "line of equality",linestyle = "--")
             
         sc = ax1.scatter(hindcast_Fphat_short[f"{vari}1"],hindcast_Fphat_short[f"{vari}2"],
-                    s=s,label = countries[country_i],color = colors[country_i],alpha = 0.5)
+                    s=s,label = countries[country_i],color = colors[country_i],alpha = alpha, marker = shapes[country_i])
         
         
         
@@ -1446,16 +1454,30 @@ for i in range(4):
         
         if vari != "b": 
             sc = ax2.scatter(hindcast_Fphat_short[f"{vari}1_0"],hindcast_Fphat_short[f"{vari}2_0"],
-                        s=s,label = countries[country_i],color = colors[country_i],alpha = 0.5)
+                        s=s,label = countries[country_i],color = colors[country_i],alpha = alpha, marker = shapes[country_i])
         
         
         
+# legend_elements = [
+#     Patch(facecolor=colors[0], alpha = alpha, label='Germany          '),  # default matplotlib colors
+#     Patch(facecolor=colors[1], alpha = alpha, label='UK'),
+#     Patch(facecolor=colors[2], alpha = alpha, label='Japan'),
+#     Patch(facecolor=colors[3], alpha = alpha, label='USA'),
+# ]
+
 legend_elements = [
-    Patch(facecolor=colors[0], alpha = 0.5, label='Germany          '),  # default matplotlib colors
-    Patch(facecolor=colors[1], alpha = 0.5, label='UK'),
-    Patch(facecolor=colors[2], alpha = 0.5, label='Japan'),
-    Patch(facecolor=colors[3], alpha = 0.5, label='USA'),
+    Line2D(
+        [0], [0],
+        marker=shapes[i],
+        color=colors[i],      # marker color = series color
+        markersize=12,        # larger marker for legend
+        linestyle="None",
+        label=label
+    )
+    for i, label in enumerate(['Germany', 'UK', 'Japan', 'USA'])
 ]
+
+plt.legend(handles=legend_elements, loc='upper left')
 
 plt.legend(handles = legend_elements, fontsize = fontsize, loc = "upper left")   
 plt.tight_layout(w_pad = 6)
